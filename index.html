@@ -15,19 +15,14 @@
 
   <style>
     html, body { margin: 0; padding: 0; background: #17191D; }
-    #pornire {
-      color: #8B919C; font-family: system-ui, sans-serif;
-      padding: 60px 20px; font-size: 14px; max-width: 560px; margin: 0 auto;
-    }
-    #pornire b { color: #F5B301; display: block; font-size: 18px; margin-bottom: 14px; }
-    #stare div { padding: 3px 0; font-family: ui-monospace, monospace; font-size: 12px; }
-    #stare .ok { color: #4CAF7D; }
-    #stare .rau { color: #E5564D; }
-    #eroare {
-      margin-top: 18px; padding: 12px; border: 1px solid #E5564D; border-radius: 9px;
-      color: #E5564D; font-family: ui-monospace, monospace; font-size: 12px;
-      white-space: pre-wrap; word-break: break-word; display: none;
-    }
+    #pornire { color:#8B919C; font-family:system-ui,sans-serif; padding:50px 20px;
+      font-size:14px; max-width:560px; margin:0 auto; }
+    #pornire b { color:#F5B301; display:block; font-size:18px; margin-bottom:14px; }
+    #stare div { padding:3px 0; font-family:ui-monospace,monospace; font-size:12px; }
+    #stare .ok { color:#4CAF7D; } #stare .rau { color:#E5564D; }
+    #eroare { margin-top:18px; padding:12px; border:1px solid #E5564D; border-radius:9px;
+      color:#E5564D; font-family:ui-monospace,monospace; font-size:12px;
+      white-space:pre-wrap; word-break:break-word; display:none; }
   </style>
 </head>
 <body>
@@ -42,18 +37,18 @@
   <script>
     var stare = document.getElementById("stare");
     var cutieEroare = document.getElementById("eroare");
-    function pas(text, ok) {
+    function pas(t, ok) {
       var d = document.createElement("div");
       d.className = ok === false ? "rau" : (ok ? "ok" : "");
-      d.textContent = (ok === false ? "X " : ok ? "OK " : ". ") + text;
+      d.textContent = (ok === false ? "X " : ok ? "OK " : ". ") + t;
       stare.appendChild(d);
     }
-    function aratEroare(text) {
+    function aratEroare(t) {
       cutieEroare.style.display = "block";
-      cutieEroare.textContent += text + "\n\n";
+      cutieEroare.textContent += t + "\n\n";
     }
     window.addEventListener("error", function (e) {
-      aratEroare("EROARE: " + (e.message || e) + (e.filename ? "\n" + e.filename + " : linia " + e.lineno : ""));
+      aratEroare("EROARE: " + (e.message || e));
     });
     window.addEventListener("unhandledrejection", function (e) {
       aratEroare("EROARE async: " + (e.reason && e.reason.message ? e.reason.message : e.reason));
@@ -75,21 +70,49 @@
 
   <script>
     pas("React " + (typeof React !== "undefined" ? "OK" : "LIPSESTE"), typeof React !== "undefined");
-    pas("ReactDOM " + (typeof ReactDOM !== "undefined" ? "OK" : "LIPSESTE"), typeof ReactDOM !== "undefined");
     pas("Supabase " + (typeof window.supabase !== "undefined" ? "OK" : "LIPSESTE"), typeof window.supabase !== "undefined");
     pas("Babel " + (typeof Babel !== "undefined" ? "OK" : "LIPSESTE"), typeof Babel !== "undefined");
-    pas("se compileaza aplicatia, poate dura 10-20 secunde...");
-  </script>
 
-  <script type="text/babel" data-presets="react" src="./app.jsx"></script>
+    // aduc app.jsx eu, cu ocolirea memoriei browserului, si il curat de eventuale
+    // linii "import"/"export" ramase din varianta pentru Claude
+    (function () {
+      pas("aduc app.jsx (fara memorie cache)...");
+      fetch("./app.jsx?v=" + Date.now(), { cache: "no-store" })
+        .then(function (r) {
+          if (!r.ok) throw new Error("app.jsx nu s-a putut descarca (cod " + r.status + ")");
+          return r.text();
+        })
+        .then(function (cod) {
+          pas("app.jsx adus: " + Math.round(cod.length / 1024) + " KB", true);
 
-  <script>
+          var areImport = /^\s*import\s/m.test(cod);
+          var areStocare = cod.indexOf("STRAT DE STOCARE") >= 0;
+          if (!areStocare) {
+            pas("FISIER GRESIT: e varianta pentru Claude, nu cea pentru web", false);
+            aratEroare("app.jsx de pe GitHub nu contine stratul de stocare Supabase.\n" +
+                       "Incarca fisierul app.jsx din folderul santier-web.");
+            return;
+          }
+          if (areImport) {
+            cod = cod.replace(/^\s*import[^\n]*\n/gm, "");
+            pas("am scos liniile import ramase", true);
+          }
+          cod = cod.replace(/^\s*export\s+default\s+/gm, "");
+
+          pas("se compileaza, 10-20 secunde...");
+          var iesire = Babel.transform(cod, { presets: ["react"] }).code;
+          pas("compilat", true);
+          (0, eval)(iesire);
+        })
+        .catch(function (e) {
+          pas("a esuat", false);
+          aratEroare(e.message || String(e));
+        });
+    })();
+
     setTimeout(function () {
-      if (document.getElementById("pornire")) {
-        pas("aplicatia nu a pornit in 25 de secunde", false);
-        aratEroare("Daca mai sus nu apare nicio eroare, app.jsx nu s-a incarcat sau are o eroare de sintaxa.");
-      }
-    }, 25000);
+      if (document.getElementById("pornire")) pas("aplicatia tot nu a pornit", false);
+    }, 30000);
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function () {
