@@ -414,9 +414,11 @@ const css = `
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:var(--asfalt)}
 .app{font-family:'Archivo',sans-serif;background:var(--asfalt);color:var(--text);
-  min-height:100vh;max-width:560px;margin:0 auto;padding-bottom:88px}
+  min-height:100vh;max-width:560px;margin:0 auto;
+  padding-bottom:calc(92px + env(safe-area-inset-bottom, 0px))}
 .mono{font-family:'Chivo Mono',monospace}
-.antet{padding:16px 16px 10px;position:sticky;top:0;background:var(--asfalt);z-index:10}
+.antet{padding:calc(env(safe-area-inset-top, 0px) + 14px) 16px 10px;position:sticky;top:0;
+  background:var(--asfalt);z-index:10}
 .antet-rand{display:flex;justify-content:space-between;align-items:center}
 .antet h1{font-size:18px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
 .antet h1 span{color:var(--galben)}
@@ -482,7 +484,8 @@ body{background:var(--asfalt)}
 .subtab button.activ{background:var(--galben-int);border-color:var(--galben);color:var(--galben)}
 .voal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40}
 .foaie{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--beton);
-  border-radius:16px 16px 0 0;border-top:2px solid var(--galben);padding:18px 16px 26px;z-index:50;
+  border-radius:16px 16px 0 0;border-top:2px solid var(--galben);z-index:50;
+  padding:18px 16px calc(26px + env(safe-area-inset-bottom, 0px));
   max-height:88vh;overflow-y:auto}
 .foaie h2{font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
 .camp{margin-bottom:11px}
@@ -492,13 +495,14 @@ body{background:var(--asfalt)}
 .camp input:focus,.camp select:focus,.camp textarea:focus{outline:2px solid var(--galben);outline-offset:-1px}
 .rand2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .nav{position:fixed;bottom:0;left:0;right:0;max-width:560px;margin:0 auto;background:var(--beton);
-  border-top:1px solid var(--linie);display:flex;z-index:30}
+  border-top:1px solid var(--linie);display:flex;z-index:30;
+  padding-bottom:env(safe-area-inset-bottom, 0px)}
 .nav button{flex:1;background:none;border:none;color:var(--mut);font-family:'Archivo',sans-serif;
-  font-size:10px;font-weight:600;padding:9px 2px 12px;cursor:pointer;display:flex;flex-direction:column;
-  align-items:center;gap:3px;position:relative}
+  font-size:10.5px;font-weight:600;padding:11px 2px 9px;cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;gap:4px;position:relative;min-height:58px;justify-content:center}
 .nav button.activ{color:var(--galben)}
-.nav .ico{font-size:18px;line-height:1}
-.bulina{position:absolute;top:5px;right:calc(50% - 16px);background:var(--rosu);color:#fff;
+.nav .ico{font-size:21px;line-height:1}
+.bulina{position:absolute;top:6px;right:calc(50% - 16px);background:var(--rosu);color:#fff;
   font-size:9px;font-weight:800;min-width:15px;height:15px;border-radius:8px;display:flex;
   align-items:center;justify-content:center;padding:0 3px}
 .gol-msg{text-align:center;color:var(--mut);padding:30px 16px;font-size:14px;line-height:1.6}
@@ -506,7 +510,8 @@ body{background:var(--asfalt)}
 .jurnal-rand .cand{font-size:11px;color:var(--mut)}
 .jurnal-rand .ce{font-size:13.5px;margin-top:2px;line-height:1.45}
 .lista-in-card{margin-top:8px;padding-top:8px;border-top:1px dashed var(--linie);font-size:13px;line-height:1.75}
-.intrare{padding:16px;display:flex;flex-direction:column;justify-content:center;min-height:100vh;gap:12px}
+.intrare{display:flex;flex-direction:column;justify-content:center;min-height:100vh;gap:12px;
+  padding:calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 16px)}
 .intrare h1{font-size:24px;font-weight:800;text-transform:uppercase;text-align:center}
 .intrare h1 span{color:var(--galben)}
 .fisa-rand{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--linie);font-size:14px}
@@ -540,7 +545,6 @@ body{background:var(--asfalt)}
   padding:4px 8px;cursor:pointer;flex:none}
 .plan-item{background:var(--asfalt);border-radius:8px;padding:9px 10px;margin-top:8px;cursor:pointer;
   border-left:3px solid var(--galben)}
-.nav button{font-size:9.5px}
 .btn-limba{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;
   background:var(--beton);border:1px solid var(--linie);color:var(--text);font-size:16px;padding:15px}
 .btn-limba span{font-size:22px}
@@ -565,13 +569,17 @@ body{background:var(--asfalt)}
   color:var(--text);font-family:'Archivo',sans-serif;font-weight:700;font-size:14.5px;padding:14px;
   border-radius:11px;cursor:pointer;text-align:left}
 .meniu-set button span{font-size:19px}
+.meniu-iesire{display:flex;align-items:center;gap:11px;background:none;border:1px solid var(--linie);
+  color:var(--rosu);font-family:'Archivo',sans-serif;font-weight:700;font-size:14.5px;padding:14px;
+  border-radius:11px;cursor:pointer;text-align:left;margin-top:6px}
+.meniu-iesire span{font-size:19px}
 .meniu-set button.activ{background:var(--galben-int);border-color:var(--galben);color:var(--galben)}
 .alerta-card{cursor:pointer;border-left:3px solid var(--galben)}
 .alerta-card.expirat{border-left-color:var(--rosu)}
 .bara{height:5px;background:var(--asfalt);border-radius:3px;margin-top:9px;overflow:hidden}
 .bara-fill{height:100%;border-radius:3px}
-.nav button{font-size:8.5px;padding:8px 1px 11px}
-.nav .ico{font-size:16px}
+.nav button{font-size:9.5px;letter-spacing:-.2px}
+.nav .ico{font-size:21px}
 .info-plan{background:#22303E;border:1px solid var(--albastru);border-radius:10px;padding:12px;margin-bottom:12px}
 .info-plan b{color:var(--albastru);font-size:13.5px;display:block;margin-bottom:6px}
 .conflict{background:#2E1B1A;border:1px solid var(--rosu);border-radius:10px;padding:12px;margin-bottom:12px}
@@ -1652,6 +1660,9 @@ function App() {
                 <span>{ico}</span>{lbl}
               </button>
             ))}
+            <button className="meniu-iesire" onClick={() => setIdent(null)}>
+              <span>🚪</span>Ieși din cont
+            </button>
           </div>
         )}
 
