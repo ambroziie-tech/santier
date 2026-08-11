@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Șantier Manager</title>
 
-  <!-- ca să arate a aplicație când e pusă pe ecranul principal -->
   <link rel="manifest" href="./manifest.json" />
   <meta name="theme-color" content="#17191D" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -17,31 +16,85 @@
   <style>
     html, body { margin: 0; padding: 0; background: #17191D; }
     #pornire {
-      color: #8B919C; font-family: system-ui, sans-serif; text-align: center;
-      padding: 80px 20px; font-size: 14px;
+      color: #8B919C; font-family: system-ui, sans-serif;
+      padding: 60px 20px; font-size: 14px; max-width: 560px; margin: 0 auto;
     }
-    #pornire b { color: #F5B301; display: block; font-size: 18px; margin-bottom: 8px; }
+    #pornire b { color: #F5B301; display: block; font-size: 18px; margin-bottom: 14px; }
+    #stare div { padding: 3px 0; font-family: ui-monospace, monospace; font-size: 12px; }
+    #stare .ok { color: #4CAF7D; }
+    #stare .rau { color: #E5564D; }
+    #eroare {
+      margin-top: 18px; padding: 12px; border: 1px solid #E5564D; border-radius: 9px;
+      color: #E5564D; font-family: ui-monospace, monospace; font-size: 12px;
+      white-space: pre-wrap; word-break: break-word; display: none;
+    }
   </style>
 </head>
 <body>
-  <div id="root"><div id="pornire"><b>Șantier Manager</b>Se încarcă…</div></div>
+  <div id="root">
+    <div id="pornire">
+      <b>Șantier Manager</b>
+      <div id="stare"></div>
+      <div id="eroare"></div>
+    </div>
+  </div>
 
-  <!-- datele tale de conectare la Supabase -->
+  <script>
+    var stare = document.getElementById("stare");
+    var cutieEroare = document.getElementById("eroare");
+    function pas(text, ok) {
+      var d = document.createElement("div");
+      d.className = ok === false ? "rau" : (ok ? "ok" : "");
+      d.textContent = (ok === false ? "X " : ok ? "OK " : ". ") + text;
+      stare.appendChild(d);
+    }
+    function aratEroare(text) {
+      cutieEroare.style.display = "block";
+      cutieEroare.textContent += text + "\n\n";
+    }
+    window.addEventListener("error", function (e) {
+      aratEroare("EROARE: " + (e.message || e) + (e.filename ? "\n" + e.filename + " : linia " + e.lineno : ""));
+    });
+    window.addEventListener("unhandledrejection", function (e) {
+      aratEroare("EROARE async: " + (e.reason && e.reason.message ? e.reason.message : e.reason));
+    });
+    pas("pagina incarcata", true);
+  </script>
+
   <script src="./config.js"></script>
+  <script>
+    if (typeof CONFIG === "undefined") pas("config.js LIPSESTE", false);
+    else if (!CONFIG.URL || CONFIG.URL.indexOf("XXXX") >= 0) pas("config.js necompletat", false);
+    else pas("config.js OK", true);
+  </script>
 
-  <!-- biblioteci -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- aplicația -->
+  <script>
+    pas("React " + (typeof React !== "undefined" ? "OK" : "LIPSESTE"), typeof React !== "undefined");
+    pas("ReactDOM " + (typeof ReactDOM !== "undefined" ? "OK" : "LIPSESTE"), typeof ReactDOM !== "undefined");
+    pas("Supabase " + (typeof window.supabase !== "undefined" ? "OK" : "LIPSESTE"), typeof window.supabase !== "undefined");
+    pas("Babel " + (typeof Babel !== "undefined" ? "OK" : "LIPSESTE"), typeof Babel !== "undefined");
+    pas("se compileaza aplicatia, poate dura 10-20 secunde...");
+  </script>
+
   <script type="text/babel" data-presets="react" src="./app.jsx"></script>
 
   <script>
-    // service worker: doar ca să se poată instala pe ecranul principal
+    setTimeout(function () {
+      if (document.getElementById("pornire")) {
+        pas("aplicatia nu a pornit in 25 de secunde", false);
+        aratEroare("Daca mai sus nu apare nicio eroare, app.jsx nu s-a incarcat sau are o eroare de sintaxa.");
+      }
+    }, 25000);
+
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("./sw.js").catch(function () {});
+      });
     }
   </script>
 </body>
