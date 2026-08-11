@@ -100,7 +100,16 @@
           cod = cod.replace(/^\s*export\s+default\s+/gm, "");
 
           pas("se compileaza, 10-20 secunde...");
-          var iesire = Babel.transform(cod, { presets: ["react"] }).code;
+          // "classic" e obligatoriu: modul nou ("automatic") adauga singur
+          // un "import { jsx } from react/jsx-runtime", care nu merge in browser
+          var iesire = Babel.transform(cod, {
+            presets: [["react", { runtime: "classic" }]],
+            sourceType: "script",
+          }).code;
+          if (/^\s*import\s/m.test(iesire)) {
+            iesire = iesire.replace(/^\s*import[^\n]*\n/gm, "");
+            pas("am scos importurile adaugate de Babel", true);
+          }
           pas("compilat", true);
           (0, eval)(iesire);
         })
