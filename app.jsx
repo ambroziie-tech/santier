@@ -420,6 +420,7 @@ body{background:var(--asfalt)}
 .antet-rand{display:flex;justify-content:space-between;align-items:center}
 .antet h1{font-size:18px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
 .antet h1 span{color:var(--galben)}
+.rol-chip.static{color:var(--galben);border-color:var(--linie);cursor:default;background:none}
 .rol-chip{font-size:11px;font-weight:700;color:var(--mut);cursor:pointer;
   border:1px solid var(--linie);border-radius:6px;padding:4px 9px;background:none;font-family:'Archivo',sans-serif}
 .hazard{height:5px;margin-top:9px;border-radius:3px;
@@ -535,6 +536,8 @@ body{background:var(--asfalt)}
 .zi-antet{display:flex;justify-content:space-between;align-items:center;font-size:14px}
 .zi-antet button{padding:4px 12px;font-size:15px;line-height:1}
 .zi-gol{color:var(--linie);font-size:13px;padding:5px 0 2px}
+.btn-sterge-plan{background:none;border:none;color:var(--mut);font-size:17px;line-height:1;
+  padding:4px 8px;cursor:pointer;flex:none}
 .plan-item{background:var(--asfalt);border-radius:8px;padding:9px 10px;margin-top:8px;cursor:pointer;
   border-left:3px solid var(--galben)}
 .nav button{font-size:9.5px}
@@ -584,226 +587,6 @@ body{background:var(--asfalt)}
 }
 `;
 
-/* ------------------------------------------------------------
-   MOD DEMO — date de exemplu, ținute doar în memorie.
-   Nu se scriu niciodată în stocare și nu ating datele reale.
-   ------------------------------------------------------------ */
-const zi = (n) => iso(adaugaZile(new Date(), n));
-const ziRo = (n) => new Date(zi(n)).toLocaleDateString("ro-RO", { day: "2-digit", month: "2-digit", year: "numeric" });
-
-const dateDemo = () => {
-  const E = { z: "e-zid", f: "e-fin", s: "e-str" };
-  const A = {
-    ion: "a-ion", mih: "a-mih", flo: "a-flo", rad: "a-rad", cri: "a-cri", geo: "a-geo", nic: "a-nic",
-  };
-  const S = { casa: "s-casa", hala: "s-hala", apt: "s-apt", ter: "s-ter" };
-
-  const echipe = [
-    { id: E.z, nume: "Echipa 1 — Structură", santier: "Casă P+1 Beaucouzé" },
-    { id: E.f, nume: "Echipa 2 — Finisaje", santier: "Apartament Angers centru" },
-    { id: E.s, nume: "Echipa 3 — Exterior", santier: "Hala Saint-Barthélemy" },
-  ];
-
-  const angajati = [
-    { id: A.ion, nume: "Ionuț Popescu", grad: "Șef de echipă", echipaId: E.z, telefon: "0612345678", dataAngajare: "2019-04-15", tarifOra: 28, tarif: "3100 €/lună", poateStoc: true, note: "Permis C, CACES nacelă. Cel mai bun pe cofraje.", pin: "1111" },
-    { id: A.mih, nume: "Mihai Radu", grad: "Zidar", echipaId: E.z, telefon: "0623456789", dataAngajare: "2021-09-01", tarifOra: 24, tarif: "2500 €/lună", note: "Rapid pe zidărie, mai puțin atent la finisaj.", pin: "2222" },
-    { id: A.flo, nume: "Florin Dinu", grad: "Muncitor calificat", echipaId: E.z, telefon: "0634567890", dataAngajare: "2023-03-20", tarifOra: 21, tarif: "2200 €/lună", note: "" },
-    { id: A.rad, nume: "Radu Ilie", grad: "Finisor", echipaId: E.f, telefon: "0645678901", dataAngajare: "2020-06-10", tarifOra: 26, tarif: "2800 €/lună", poateStoc: true, note: "Foarte bun pe glet și vopsit.", pin: "3333" },
-    { id: A.cri, nume: "Cristi Marin", grad: "Finisor", echipaId: E.f, telefon: "0656789012", dataAngajare: "2022-11-05", tarifOra: 23, tarif: "2400 €/lună", note: "" },
-    { id: A.geo, nume: "George Tudor", grad: "Operator utilaj", echipaId: E.s, telefon: "0667890123", dataAngajare: "2018-02-01", tarifOra: 30, tarif: "3300 €/lună", poateStoc: true, note: "Excavator + manitou. CACES R482 și R486.", pin: "4444" },
-    { id: A.nic, nume: "Nicu Barbu", grad: "Muncitor", echipaId: E.s, telefon: "0678901234", dataAngajare: "2024-05-12", tarifOra: 19, tarif: "2000 €/lună", note: "Nou, învață repede." },
-  ];
-
-  const santiere = [
-    { id: S.casa, nume: "Casă P+1 Beaucouzé", client: "Fam. Martin", adresa: "Beaucouzé", domeniu: "Structură / dulgherie", dataStart: zi(-72), status: "activ", valoare: 84000, orePrev: 1400,
-      materialePrev: [
-        { nume: "Ciment CEM II 42,5", cant: 240, unitate: "saci", pret: 8.4 },
-        { nume: "Fier beton Ø12", cant: 3200, unitate: "kg", pret: 0.95 },
-        { nume: "BCA 25cm", cant: 42, unitate: "palet", pret: 128 },
-        { nume: "Cherestea rășinoase", cant: 14, unitate: "m³", pret: 310 },
-      ] },
-    { id: S.apt, nume: "Apartament Angers centru", client: "SCI Bellevue", adresa: "Angers", domeniu: "Finisaje", dataStart: zi(-38), status: "activ", valoare: 26500, orePrev: 520,
-      materialePrev: [
-        { nume: "Gips-carton 12,5mm", cant: 120, unitate: "buc", pret: 9.2 },
-        { nume: "Glet finisaj", cant: 60, unitate: "saci", pret: 14 },
-        { nume: "Vopsea lavabilă", cant: 180, unitate: "l", pret: 4.6 },
-      ] },
-    { id: S.hala, nume: "Hala Saint-Barthélemy", client: "Transport Leblanc", adresa: "Saint-Barthélemy-d'Anjou", domeniu: "Fundații / terasamente", dataStart: zi(-20), status: "activ", valoare: 41000, orePrev: 640,
-      materialePrev: [
-        { nume: "Beton C25/30", cant: 96, unitate: "m³", pret: 118 },
-        { nume: "Balast", cant: 140, unitate: "t", pret: 21 },
-        { nume: "Plasă sudată", cant: 62, unitate: "buc", pret: 34 },
-      ] },
-    { id: S.ter, nume: "Terasă + împrejmuire Trélazé", client: "Fam. Dubois", adresa: "Trélazé", domeniu: "Amenajări exterioare", dataStart: zi(-120), status: "finalizat", valoare: 12400, orePrev: 190,
-      materialePrev: [
-        { nume: "Pavaj beton", cant: 88, unitate: "m²", pret: 27 },
-        { nume: "Panou gard rigid", cant: 34, unitate: "buc", pret: 41 },
-      ] },
-  ];
-
-  /* pontaj: generat pe zilele lucrătoare din ultimele 8 săptămâni */
-  const pontaj = [];
-  const tarif = Object.fromEntries(angajati.map((a) => [a.id, a.tarifOra]));
-  const nume = Object.fromEntries(angajati.map((a) => [a.id, a.nume]));
-  const pontez = (angajatId, santierId, data, ore, tipMunca) =>
-    pontaj.push({ id: uid(), santierId, angajatId, nume: nume[angajatId], ore, tarifOra: tarif[angajatId], tipMunca, data });
-
-  for (let d = -56; d <= -1; d++) {
-    const dow = new Date(zi(d)).getDay();
-    if (dow === 0 || dow === 6) continue;
-    const data = zi(d);
-    /* echipa de structură pe casă */
-    if (d > -60) {
-      const tip = d < -30 ? "Fundații / terasamente" : d < -12 ? "Zidărie" : "Structură / dulgherie";
-      pontez(A.ion, S.casa, data, 8, tip);
-      pontez(A.mih, S.casa, data, 8, d < -12 ? "Zidărie" : tip);
-      if (d % 3 !== 0) pontez(A.flo, S.casa, data, 8, tip);
-    }
-    /* finisaje pe apartament */
-    if (d > -34) {
-      pontez(A.rad, S.apt, data, 8, "Finisaje");
-      pontez(A.cri, S.apt, data, d % 5 === 0 ? 6 : 8, d % 7 === 0 ? "Izolații" : "Finisaje");
-    }
-    /* hala */
-    if (d > -18) {
-      pontez(A.geo, S.hala, data, 9, "Fundații / terasamente");
-      pontez(A.nic, S.hala, data, 8, d % 4 === 0 ? "Demolări" : "Fundații / terasamente");
-      if (d % 6 === 0) pontez(A.flo, S.hala, data, 8, "Fundații / terasamente");
-    }
-  }
-  /* lucrarea finalizată */
-  for (let d = -118; d <= -96; d++) {
-    const dow = new Date(zi(d)).getDay();
-    if (dow === 0 || dow === 6) continue;
-    pontez(A.geo, S.ter, zi(d), 8, "Amenajări exterioare");
-    pontez(A.nic, S.ter, zi(d), 8, "Amenajări exterioare");
-  }
-
-  const materiale = [
-    { id: "m1", nume: "Ciment CEM II 42,5", categorie: "Zidărie", cant: 46, unitate: "saci", minim: 40, pret: 8.4, locatie: "Depozit Angers" },
-    { id: "m2", nume: "Fier beton Ø12", categorie: "Structură", cant: 820, unitate: "kg", minim: 300, pret: 0.95, locatie: "Depozit Angers" },
-    { id: "m3", nume: "BCA 25cm", categorie: "Zidărie", cant: 6, unitate: "palet", minim: 8, pret: 128, locatie: "Șantier Beaucouzé" },
-    { id: "m4", nume: "Gips-carton 12,5mm", categorie: "Finisaje", cant: 34, unitate: "buc", minim: 20, pret: 9.2, locatie: "Depozit Angers" },
-    { id: "m5", nume: "Glet finisaj", categorie: "Finisaje", cant: 12, unitate: "saci", minim: 15, pret: 14, locatie: "Depozit Angers" },
-    { id: "m6", nume: "Vopsea lavabilă", categorie: "Finisaje", cant: 95, unitate: "l", minim: 40, pret: 4.6, locatie: "Depozit Angers" },
-    { id: "m7", nume: "Plasă sudată", categorie: "Structură", cant: 18, unitate: "buc", minim: 10, pret: 34, locatie: "Șantier Saint-Barthélemy" },
-    { id: "m8", nume: "Discuri flex 230mm", categorie: "Consumabile", cant: 9, unitate: "buc", minim: 12, pret: 3.8, locatie: "Depozit Angers" },
-    { id: "m9", nume: "Cherestea rășinoase", categorie: "Structură", cant: 3.2, unitate: "m³", minim: 2, pret: 310, locatie: "Depozit Angers" },
-  ];
-
-  const consum = [
-    { id: "c1", santierId: S.casa, materialId: "m1", nume: "Ciment CEM II 42,5", cant: 186, unitate: "saci", pret: 8.4, data: zi(-40) },
-    { id: "c2", santierId: S.casa, materialId: "m2", nume: "Fier beton Ø12", cant: 2980, unitate: "kg", pret: 0.95, data: zi(-52) },
-    { id: "c3", santierId: S.casa, materialId: "m3", nume: "BCA 25cm", cant: 39, unitate: "palet", pret: 128, inregistratDe: "Ionuț Popescu", data: zi(-24) },
-    { id: "c4", santierId: S.casa, materialId: "m9", nume: "Cherestea rășinoase", cant: 11.5, unitate: "m³", pret: 310, inregistratDe: "Ionuț Popescu", data: zi(-9) },
-    { id: "c5", santierId: S.apt, materialId: "m4", nume: "Gips-carton 12,5mm", cant: 104, unitate: "buc", pret: 9.2, data: zi(-30) },
-    { id: "c6", santierId: S.apt, materialId: "m5", nume: "Glet finisaj", cant: 68, unitate: "saci", pret: 14, data: zi(-14) },
-    { id: "c7", santierId: S.apt, materialId: "m6", nume: "Vopsea lavabilă", cant: 92, unitate: "l", pret: 4.6, data: zi(-6) },
-    { id: "c8", santierId: S.hala, nume: "Beton C25/30", cant: 88, unitate: "m³", pret: 118, data: zi(-11) },
-    { id: "c9", santierId: S.hala, nume: "Balast", cant: 132, unitate: "t", pret: 21, data: zi(-16) },
-    { id: "c10", santierId: S.hala, materialId: "m7", nume: "Plasă sudată", cant: 44, unitate: "buc", pret: 34, data: zi(-8) },
-    { id: "c11", santierId: S.ter, nume: "Pavaj beton", cant: 91, unitate: "m²", pret: 27, data: zi(-110) },
-    { id: "c12", santierId: S.ter, nume: "Panou gard rigid", cant: 34, unitate: "buc", pret: 41, data: zi(-104) },
-    /* fără destinație — scurgerea */
-    { id: "c13", santierId: null, materialId: "m8", nume: "Discuri flex 230mm", cant: 34, unitate: "buc", pret: 3.8, motiv: "consum curent, nenotate pe șantier", data: zi(-25) },
-    { id: "c14", santierId: null, materialId: "m1", nume: "Ciment CEM II 42,5", cant: 8, unitate: "saci", pret: 8.4, motiv: "întăriți în depozit, aruncați", data: zi(-19) },
-    { id: "c15", santierId: null, materialId: "m6", nume: "Vopsea lavabilă", cant: 14, unitate: "l", pret: 4.6, motiv: "lipsă la inventar", data: zi(-5) },
-    { id: "c16", santierId: null, materialId: "m4", nume: "Gips-carton 12,5mm", cant: 11, unitate: "buc", pret: 9.2, motiv: "spart la transport", data: zi(-12) },
-  ];
-
-  const scule = [
-    { id: "t1", nume: "Flex Makita 230mm", cod: "SC-014", pret: 245, stare: "alocat", echipaId: E.z, dataAlocare: ziRo(-30) },
-    { id: "t2", nume: "Bormașină Hilti TE-30", cod: "SC-007", pret: 890, stare: "alocat", echipaId: E.z, dataAlocare: ziRo(-45) },
-    { id: "t3", nume: "Nivelă laser Bosch GLL", cod: "SC-021", pret: 410, stare: "problema", echipaId: E.f, dataAlocare: ziRo(-18),
-      problema: { tip: "Stricată", note: "nu mai ține linia, cade calibrarea", cand: ziRo(-2), de: "Radu Ilie" } },
-    { id: "t4", nume: "Mașină de glet Knauf", cod: "SC-033", pret: 1250, stare: "alocat", echipaId: E.f, dataAlocare: ziRo(-22) },
-    { id: "t5", nume: "Placă compactoare Wacker", cod: "SC-002", pret: 2100, stare: "alocat", echipaId: E.s, dataAlocare: ziRo(-14) },
-    { id: "t6", nume: "Generator Honda 5kW", cod: "SC-011", pret: 1450, stare: "depozit", echipaId: null, dataAlocare: null },
-    { id: "t7", nume: "Ciocan demolator Bosch", cod: "SC-018", pret: 720, stare: "service", echipaId: null, dataAlocare: null },
-    { id: "t8", nume: "Betonieră 190L", cod: "SC-005", pret: 380, stare: "depozit", echipaId: null, dataAlocare: null },
-    { id: "t9", nume: "Schelă modulară 60m²", cod: "SC-040", pret: 3200, stare: "alocat", echipaId: E.z, dataAlocare: ziRo(-60) },
-  ];
-
-  const camioane = [
-    { id: "v1", nume: "Iveco Daily basculabil", numar: "AB-123-CD", km: 187400, itp: zi(11), asigurare: zi(84), revizie: zi(6) },
-    { id: "v2", nume: "Renault Master furgon", numar: "EF-456-GH", km: 96200, itp: zi(140), asigurare: zi(-4), revizie: zi(52) },
-    { id: "v3", nume: "Manitou MT 625", numar: "utilaj", km: 3180, itp: zi(210), asigurare: zi(190), revizie: zi(9) },
-    { id: "v4", nume: "Excavator Kubota KX080", numar: "utilaj", km: 4720, itp: "", asigurare: zi(120), revizie: zi(75) },
-  ];
-
-  const intretinere = [
-    { id: "i1", camionId: "v1", data: ziRo(-42), tip: "Schimb ulei + filtre", cost: 320, km: 184900, note: "Garaj Renault Angers" },
-    { id: "i2", camionId: "v1", data: ziRo(-140), tip: "Plăcuțe și discuri față", cost: 480, km: 176300, note: "" },
-    { id: "i3", camionId: "v2", data: ziRo(-70), tip: "Ambreiaj complet", cost: 1250, km: 92800, note: "Garanție 1 an" },
-    { id: "i4", camionId: "v3", data: ziRo(-30), tip: "Revizie 500h + furtunuri hidraulice", cost: 890, km: 3050, note: "" },
-    { id: "i5", camionId: "v4", data: ziRo(-88), tip: "Șenile noi", cost: 2400, km: 4200, note: "Cauciuc, nu metal" },
-  ];
-
-  /* planing pe săptămâna curentă și cea viitoare */
-  const planificare = [];
-  for (let sapt = 0; sapt <= 1; sapt++) {
-    for (let d = 0; d < 5; d++) {
-      const data = iso(adaugaZile(luniaSaptamanii(sapt), d));
-      planificare.push({ id: uid(), data, santierId: S.casa, echipaId: E.z, angajatIds: [], oraStart: "07:30", oraFinal: "16:00", note: d === 2 ? "Vine betoniera la 9, pregătiți cofrajul" : "" });
-      planificare.push({ id: uid(), data, santierId: S.apt, echipaId: E.f, angajatIds: [], oraStart: "08:00", oraFinal: "17:00", note: "" });
-      /* echipa de exterior: dimineața hala, după-amiaza casă (fără suprapunere) */
-      planificare.push({ id: uid(), data, santierId: S.hala, echipaId: E.s, angajatIds: [], oraStart: "07:00", oraFinal: "12:00", note: d === 0 ? "Turnare platformă" : "" });
-      if (d === 3)
-        planificare.push({ id: uid(), data, santierId: S.casa, echipaId: E.s, angajatIds: [], oraStart: "13:00", oraFinal: "17:00", note: "Manitou pentru ridicat șarpanta" });
-    }
-  }
-
-  const sarcini = [
-    { id: "sa1", santierId: S.casa, titlu: "Refăcut colțul de la baie", descriere: "Nu e la plumb, se vede de la ușă. De reparat înainte de gletuit.", fotoId: null, status: "deschis", cand: ziRo(-3) },
-    { id: "sa2", santierId: S.casa, titlu: "Curățat molozul din spate", descriere: "Blochează accesul pentru manitou.", fotoId: null, status: "deschis", cand: ziRo(-1) },
-    { id: "sa3", santierId: S.apt, titlu: "Reluat gletul pe peretele de la sud", descriere: "Se văd urmele de la șpaclu în lumină.", fotoId: null, status: "rezolvat", cand: ziRo(-8), rezolvatDe: "Radu Ilie", dataRezolvare: ziRo(-5) },
-    { id: "sa4", santierId: S.hala, titlu: "Verificat cota la colțul nord-est", descriere: "Pare cu 3cm sub nivel. Măsurați cu laserul înainte de turnare.", fotoId: null, status: "deschis", cand: ziRo(-2) },
-  ];
-
-  const cereri = [
-    { id: "ce1", tip: "necesar", text: "Ne trebuie 20 saci ciment și discuri de 230, am rămas fără.", autorId: A.ion, autorNume: "Ionuț Popescu", cand: ziRo(-1), status: "nou" },
-    { id: "ce2", tip: "problema", text: "S-a stricat ciocanul demolator, nu mai pornește deloc.", autorId: A.geo, autorNume: "George Tudor", cand: ziRo(-4), status: "nou" },
-    { id: "ce3", tip: "necesar", text: "Mai trebuie glet, ne ajunge doar până joi.", autorId: A.rad, autorNume: "Radu Ilie", cand: ziRo(-6), status: "rezolvat" },
-    { id: "ce4", tip: "problema", text: "Nu avem apă curentă pe șantier de ieri, am adus bidoane.", autorId: A.mih, autorNume: "Mihai Radu", cand: ziRo(-9), status: "rezolvat" },
-  ];
-
-  const jurnal = [
-    { id: "j1", cand: ziRo(-1), text: "Pontaj Casă P+1 Beaucouzé: 3 oameni · 24h" },
-    { id: "j2", cand: ziRo(-2), text: "Hala Saint-Barthélemy: consum 44 buc Plasă sudată" },
-    { id: "j3", cand: ziRo(-5), text: "Ieșire fără șantier: 14 l Vopsea lavabilă (lipsă la inventar)" },
-    { id: "j4", cand: ziRo(-7), text: "Ciocan demolator Bosch → trimisă la service" },
-    { id: "j5", cand: ziRo(-9), text: "Echipa 3 — Exterior: 2 membri actualizați" },
-  ];
-
-  const dotare = [
-    { id: "d1", nume: "Flex 230mm", cant: 1 },
-    { id: "d2", nume: "Bormașină cu percuție", cant: 1 },
-    { id: "d3", nume: "Nivelă laser", cant: 1 },
-    { id: "d4", nume: "Prelungitor 25m", cant: 2 },
-    { id: "d5", nume: "Trusă chei și șurubelnițe", cant: 1 },
-    { id: "d6", nume: "Căști și veste reflectorizante", cant: 4 },
-    { id: "d7", nume: "Ruletă 8m", cant: 2 },
-    { id: "d8", nume: "Găleată și mistrie", cant: 2 },
-  ];
-
-  const verificari = [
-    { id: "v1", echipaId: E.z, cand: new Date(zi(-12)).toISOString(), de: "Andrei",
-      randuri: dotare.map((d) => ({ dotareId: d.id, nume: d.nume, cant: d.cant, ok: true, note: "" })) },
-    { id: "v2", echipaId: E.f, cand: new Date(zi(-40)).toISOString(), de: "Andrei",
-      randuri: dotare.map((d) => ({
-        dotareId: d.id, nume: d.nume, cant: d.cant,
-        ok: !["d1", "d7"].includes(d.id),
-        note: d.id === "d1" ? "s-a stricat, dus la service" : d.id === "d7" ? "pierdută pe șantier" : "",
-      })) },
-  ];
-
-  return {
-    materiale, scule, echipe, angajati, camioane, intretinere, cereri, jurnal,
-    santiere, pontaj, consum, planificare, sarcini, dotare, verificari,
-    setari: { pin: "1234" },
-  };
-};
-
 function Foaie({ titlu, onClose, children }) {
   return (
     <>
@@ -822,13 +605,10 @@ function App() {
   const [identitate, setIdentitate] = useState(null); // {rol:'admin'} sau {rol:'muncitor', angajatId}
   const [limba, setLimbaStare] = useState(null); // null = încă nu a ales
   const setLimba = async (cod) => {
-    LIMBA = cod || "ro";
+    LIMBA = cod;
     setLimbaStare(cod);
-    if (!cod) { try { await stocare.delete(LIMBA_KEY); } catch (e) {} return; }
     try { await stocare.set(LIMBA_KEY, cod); } catch (e) {}
   };
-  const [demo, setDemo] = useState(false);
-  const demoRef = useRef(false); // citit sincron în salveaza
   const [incarcat, setIncarcat] = useState(false);
   const [tab, setTab] = useState("panou");
   const [subInv, setSubInv] = useState("materiale");
@@ -866,7 +646,6 @@ function App() {
   const [eroareSalvare, setEroareSalvare] = useState("");
   const salveaza = useCallback(async (nou) => {
     setDb(nou);
-    if (demoRef.current) return true; // în demo nu se scrie nimic pe disc
     try {
       const r = await stocare.set(DB_KEY, JSON.stringify(nou), true);
       if (!r) throw new Error("Stocarea a refuzat scrierea.");
@@ -881,158 +660,10 @@ function App() {
 
   const setIdent = async (id) => {
     setIdentitate(id);
-    if (demoRef.current) return;
     try {
       if (id) await stocare.set(ID_KEY, JSON.stringify(id));
       else await stocare.delete(ID_KEY);
     } catch (e) {}
-  };
-
-  /* mod demo: date de exemplu doar în memorie */
-  const intraDemo = (rol, angajatId) => {
-    demoRef.current = true;
-    setDemo(true);
-    setDb(dateDemo());
-    setIdentitate(rol === "admin" ? { rol: "admin" } : { rol: "muncitor", angajatId });
-    setTab("panou");
-  };
-  const iesiDinDemo = async () => {
-    demoRef.current = false;
-    setDemo(false);
-    setIdentitate(null);
-    setDb(gol);
-    try {
-      const r = await stocare.get(DB_KEY, true);
-      if (r?.value) {
-        const d = JSON.parse(r.value);
-        setDb({ ...gol, ...d, setari: { ...gol.setari, ...(d.setari || {}) } });
-      }
-    } catch (e) {}
-  };
-
-  /* ---------- backup ---------- */
-  const [lucruBackup, setLucruBackup] = useState("");   // mesaj de progres
-  const [copiiSalvate, setCopiiSalvate] = useState([]); // copii rapide din stocare
-
-  const incarcaCopii = useCallback(async () => {
-    try {
-      const r = await stocare.list("copie:", true);
-      const lista = [];
-      for (const cheie of r?.keys || []) {
-        try {
-          const v = await stocare.get(cheie, true);
-          if (v?.value) {
-            const d = JSON.parse(v.value);
-            lista.push({ cheie, cand: d.cand, rezumat: d.rezumat });
-          }
-        } catch (e) {}
-      }
-      setCopiiSalvate(lista.sort((a, b) => (b.cand || "").localeCompare(a.cand || "")));
-    } catch (e) { setCopiiSalvate([]); }
-  }, []);
-
-  useEffect(() => {
-    if (tab === "setari" && subSet === "backup" && !demoRef.current) incarcaCopii();
-  }, [tab, subSet, incarcaCopii]);
-
-  const rezumatDate = (d) =>
-    `${d.santiere?.length || 0} șantiere · ${d.angajati?.length || 0} angajați · ${d.pontaj?.length || 0} pontaje · ${d.materiale?.length || 0} materiale`;
-
-  /* copie rapidă în stocare (fără poze — ca să nu umple) */
-  const faCopieRapida = async () => {
-    if (demoRef.current) return cere("În demo nu se fac copii — datele nu se salvează nicăieri.", () => {}, "Am înțeles");
-    setLucruBackup("Se face copia…");
-    try {
-      const cand = new Date().toISOString();
-      const pachet = { versiune: VERSIUNE_BACKUP, cand, rezumat: rezumatDate(db), date: db };
-      const ok = await stocare.set(`copie:${cand}`, JSON.stringify(pachet), true);
-      if (!ok) throw new Error("Stocarea a refuzat copia.");
-      /* păstrez doar ultimele MAX_COPII */
-      const r = await stocare.list("copie:", true);
-      const chei = (r?.keys || []).sort();
-      for (const c of chei.slice(0, Math.max(0, chei.length - MAX_COPII))) {
-        try { await stocare.delete(c, true); } catch (e) {}
-      }
-      await incarcaCopii();
-      setLucruBackup("Copie făcută.");
-    } catch (e) {
-      setLucruBackup("Copia a eșuat: " + (e.message || "eroare necunoscută"));
-    }
-    setTimeout(() => setLucruBackup(""), 4000);
-  };
-
-  const restaureazaCopie = async (cheie) => {
-    cere("Restaurezi această copie? Tot ce e acum în aplicație se înlocuiește. Pozele nu se ating.", async () => {
-    setLucruBackup("Se restaurează…");
-    try {
-      const v = await stocare.get(cheie, true);
-      const pachet = JSON.parse(v.value);
-      const d = pachet.date || pachet;
-      await salveaza({ ...gol, ...d, setari: { ...gol.setari, ...(d.setari || {}) } });
-      setLucruBackup("Restaurat.");
-    } catch (e) {
-      setLucruBackup("Restaurarea a eșuat: " + (e.message || "fișier deteriorat"));
-    }
-    setTimeout(() => setLucruBackup(""), 4000);
-    }, "Restaurează");
-  };
-
-  const stergeCopie = (cheie) => cere("Ștergi această copie?", async () => {
-    try { await stocare.delete(cheie, true); await incarcaCopii(); } catch (e) {}
-  }, "Șterge");
-
-  /* export în fișier */
-  const exporta = async (cuPoze) => {
-    setLucruBackup(cuPoze ? "Se adună pozele…" : "Se pregătește fișierul…");
-    try {
-      const poze = cuPoze ? await adunaPoze() : {};
-      const pachet = {
-        versiune: VERSIUNE_BACKUP,
-        cand: new Date().toISOString(),
-        rezumat: rezumatDate(db),
-        continePoze: cuPoze,
-        poze,
-        date: db,
-      };
-      descarca(JSON.stringify(pachet), numeFisier());
-      setLucruBackup("Fișier descărcat.");
-    } catch (e) {
-      setLucruBackup("Exportul a eșuat: " + (e.message || "eroare necunoscută"));
-    }
-    setTimeout(() => setLucruBackup(""), 4000);
-  };
-
-  /* import din fișier */
-  const importa = async (fisier) => {
-    if (demoRef.current) return cere("Ieși din demo înainte de a importa un backup.", () => {}, "Am înțeles");
-    setLucruBackup("Se citește fișierul…");
-    try {
-      const text = await fisier.text();
-      const pachet = JSON.parse(text);
-      const d = pachet.date || pachet;
-      if (!d || typeof d !== "object" || !Array.isArray(d.santiere))
-        throw new Error("Fișierul nu pare un backup al acestei aplicații.");
-      const rez = rezumatDate(d);
-      const candS = pachet.cand ? new Date(pachet.cand).toLocaleString("ro-RO") : "necunoscut";
-      const daBac = await new Promise((rez2) =>
-        cere(`Backup din ${candS} · ${rez}. Se înlocuiește TOT ce e acum în aplicație. Continui?`,
-          () => rez2(true), "Importă", () => rez2(false)));
-      if (!daBac) { setLucruBackup(""); return; }
-      /* mai întâi pozele, ca să nu rămână sarcini fără imagine */
-      const poze = pachet.poze || {};
-      const nrPoze = Object.keys(poze).length;
-      if (nrPoze) {
-        setLucruBackup(`Se pun la loc ${nrPoze} poze…`);
-        for (const [id, dataUrl] of Object.entries(poze)) {
-          try { await stocare.set(`foto:${id}`, dataUrl, true); } catch (e) {}
-        }
-      }
-      await salveaza({ ...gol, ...d, setari: { ...gol.setari, ...(d.setari || {}) } });
-      setLucruBackup("Import reușit.");
-    } catch (e) {
-      setLucruBackup("Importul a eșuat: " + (e.message || "fișier invalid"));
-    }
-    setTimeout(() => setLucruBackup(""), 5000);
   };
 
   const log = (text) => ({ id: uid(), cand: azi(), text });
@@ -1435,8 +1066,10 @@ function App() {
               <span>{l.steag}</span>{l.nume}
             </button>
           ))}
-          <div className="sub" style={{ textAlign: "center", marginTop: 6 }}>
+          <div className="sub" style={{ textAlign: "center", marginTop: 10, lineHeight: 1.6 }}>
             Choose your language · Choisis ta langue
+            <br />
+            <span style={{ fontSize: 11 }}>O poți schimba oricând din Setări.</span>
           </div>
         </div>
       </div>
@@ -1446,7 +1079,7 @@ function App() {
   if (!identitate)
     return (
       <div className="app"><style>{css}</style>
-        <EcranIntrare db={db} onIntra={setIdent} onDemo={intraDemo} limba={limba} onLimba={setLimba}
+        <EcranIntrare db={db} onIntra={setIdent}
           onSeteazaPin={(id, pin) => {
             const nou = { ...db, angajati: db.angajati.map((a) => (a.id === id ? { ...a, pin } : a)) };
             salveaza(nou);
@@ -1545,15 +1178,12 @@ function App() {
         <div className="antet">
           <div className="antet-rand">
             <h1>Șantier <span>Manager</span></h1>
-            <button className="rol-chip" onClick={() => (demo ? iesiDinDemo() : setIdent(null))}>
-              {t(demo ? "DEMO · Ieși" : "Ieși")}
-            </button>
+            <span className="rol-chip static">{eu?.nume?.split(" ")[0] || "👷"}</span>
           </div>
           <div className="hazard" />
         </div>
 
         <div className="continut">
-          {demo && <BandaDemo onIesi={iesiDinDemo} />}
 
           {/* ---------- AZI ---------- */}
           {tabM === "azi" && (
@@ -1686,6 +1316,22 @@ function App() {
               <button className="btn btn-galben" onClick={() => setFoaie({ tip: "cerere" })}>
                 {t("+ Raportează o problemă / cere ceva")}
               </button>
+              <div className="card" style={{ marginTop: 12 }}>
+                <div className="titlu" style={{ fontSize: 14 }}>🌐 {t("Alege limba")}</div>
+                <div className="actiuni">
+                  {LIMBI.map((l) => (
+                    <button key={l.cod}
+                      className={"btn btn-mic" + (limba === l.cod ? " principal" : "")}
+                      onClick={() => setLimba(l.cod)}>
+                      {l.steag} {l.nume}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button className="btn btn-mic" style={{ width: "100%", marginTop: 9 }}
+                onClick={() => setIdent(null)}>
+                {t("Ieși")} din cont
+              </button>
               <div style={{ height: 12 }} />
               {cererileMele.length === 0 ? (
                 <div className="gol-msg">
@@ -1750,15 +1396,12 @@ function App() {
       <div className="antet">
         <div className="antet-rand">
           <h1>Șantier <span>Manager</span></h1>
-          <button className="rol-chip" onClick={() => (demo ? iesiDinDemo() : setIdent(null))}>
-            {t(demo ? "DEMO · Ieși" : "Admin · Ieși")}
-          </button>
+          <span className="rol-chip static">Admin</span>
         </div>
         <div className="hazard" />
       </div>
 
       <div className="continut">
-        {demo && <BandaDemo onIesi={iesiDinDemo} />}
         {eroareSalvare && <div className="conflict" style={{ marginBottom: 12 }}><b>⚠ {eroareSalvare}</b></div>}
 
         {/* ---------- PANOU ---------- */}
@@ -2183,6 +1826,19 @@ function App() {
               <div className="actiuni" style={{ marginTop: 0, marginBottom: 12 }}>
                 {saptamana !== 0 && <button className="btn btn-mic" onClick={() => setSaptamana(0)}>Azi</button>}
                 <button className="btn btn-mic" onClick={() => copiazaSaptamana(luni)}>Copiază în săptămâna următoare</button>
+                {(() => {
+                  const zileSapt = [...Array(7)].map((_, k) => iso(adaugaZile(luni, k)));
+                  const cate = db.planificare.filter((p) => zileSapt.includes(p.data)).length;
+                  if (cate === 0) return null;
+                  return (
+                    <button className="btn btn-mic pericol"
+                      onClick={() => cere(`Golești toată săptămâna? Se șterg ${cate} intrări.`,
+                        () => salveaza({ ...db, planificare: db.planificare.filter((p) => !zileSapt.includes(p.data)) }),
+                        "Golește săptămâna")}>
+                      Golește săptămâna ({cate})
+                    </button>
+                  );
+                })()}
               </div>
 
               {zile.map((d, i) => {
@@ -2199,7 +1855,18 @@ function App() {
                         <b style={{ color: eAzi ? "var(--galben)" : weekend ? "var(--mut)" : "var(--text)" }}>{zileTrad()[i]}</b>
                         <span className="mono" style={{ color: "var(--mut)", fontSize: 12, marginLeft: 7 }}>{d.getDate()}.{String(d.getMonth() + 1).padStart(2, "0")}</span>
                       </div>
-                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "plan", data: zi })}>+</button>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {intrari.length > 0 && (
+                          <button className="btn btn-mic pericol"
+                            onClick={() => cere(
+                              `Golești ziua de ${ZILE[i]} ${dataRo(zi)}? Se șterg ${intrari.length} ${intrari.length === 1 ? "intrare" : "intrări"}.`,
+                              () => salveaza({ ...db, planificare: db.planificare.filter((p) => p.data !== zi) }),
+                              "Golește ziua")}>
+                            Golește
+                          </button>
+                        )}
+                        <button className="btn btn-mic" onClick={() => setFoaie({ tip: "plan", data: zi })}>+</button>
+                      </div>
                     </div>
                     {intrari.length === 0 ? (
                       <div className="zi-gol">—</div>
@@ -2211,7 +1878,16 @@ function App() {
                         <div className="plan-item" key={p.id} onClick={() => setFoaie({ tip: "plan", item: p, data: zi })}>
                           <div className="pi-cap">
                             <div className="titlu" style={{ fontSize: 14 }}>🏗 {s ? s.nume : "Șantier șters"}</div>
-                            <span className="chip alocat mono">{interval(p)}</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                              <span className="chip alocat mono">{interval(p)}</span>
+                              <button className="btn-sterge-plan"
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  cere(`Ștergi ${s ? s.nume : "intrarea"} de ${interval(p)} din ${dataRo(zi)}?`,
+                                    () => salveaza({ ...db, planificare: db.planificare.filter((x) => x.id !== p.id) }),
+                                    "Șterge");
+                                }}>✕</button>
+                            </div>
                           </div>
                           <div className="sub">
                             {ech && <>Echipa {ech.nume}</>}
@@ -2494,6 +2170,30 @@ function App() {
                 Le resetezi individual din fișa fiecăruia, la Oameni.
               </div>
             </div>
+            <div className="card">
+              <div className="titlu">Limba aplicației</div>
+              <div className="sub">
+                Se aplică doar pe telefonul ăsta. Fiecare om își alege limba lui.
+              </div>
+              <div className="actiuni">
+                {LIMBI.map((l) => (
+                  <button key={l.cod}
+                    className={"btn btn-mic" + (limba === l.cod ? " principal" : "")}
+                    onClick={() => setLimba(l.cod)}>
+                    {l.steag} {l.nume}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="titlu">Ieșire din cont</div>
+              <div className="sub">Te întorci la ecranul de intrare. Datele rămân salvate.</div>
+              <div className="actiuni">
+                <button className="btn btn-mic pericol" onClick={() => setIdent(null)}>Ieși din contul de admin</button>
+              </div>
+            </div>
+
             <div className="card">
               <div className="titlu">Date în aplicație</div>
               <div className="sub">
@@ -3385,19 +3085,7 @@ function Confirmare({ intrebare, onInchide }) {
   );
 }
 
-function BandaDemo({ onIesi }) {
-  return (
-    <div className="banda-demo">
-      <div>
-        <b>{t("MOD DEMO")}</b>
-        <span>{t("Date de exemplu. Nimic nu se salvează și nu-ți atinge datele reale.")}</span>
-      </div>
-      <button className="btn btn-mic" onClick={onIesi}>{t("Ieși")}</button>
-    </div>
-  );
-}
-
-function EcranIntrare({ db, onIntra, onSeteazaPin, onDemo, limba, onLimba }) {
+function EcranIntrare({ db, onIntra, onSeteazaPin }) {
   const [mod, setMod] = useState(null); // 'admin' | 'muncitor'
   const [pin, setPin] = useState("");
   const [eroare, setEroare] = useState("");
@@ -3406,41 +3094,15 @@ function EcranIntrare({ db, onIntra, onSeteazaPin, onDemo, limba, onLimba }) {
 
   return (
     <div className="intrare">
-      <button className="chip-limba" onClick={() => onLimba(null)}>
-        {LIMBI.find((l) => l.cod === limba)?.steag} {limba.toUpperCase()}
-      </button>
       <h1>Șantier <span>Manager</span></h1>
       <div className="hazard" />
       {!mod && (
         <>
           <button className="btn btn-galben" onClick={() => setMod("admin")}>{t("🔑 Intru ca Admin")}</button>
           <button className="btn btn-mic" style={{ padding: "13px" }} onClick={() => setMod("muncitor")}>{t("👷 Intru ca Muncitor")}</button>
-          <div className="separator"><span>{t("sau")}</span></div>
-          <button className="btn btn-mic" style={{ padding: "13px" }} onClick={() => setMod("demo")}>{t("🧪 Vezi un exemplu (demo)")}</button>
-        </>
-      )}
-      {mod === "demo" && (
-        <>
-          <div className="card" style={{ marginBottom: 4 }}>
-            <div className="titlu">{t("Ce e modul demo")}</div>
-            <div className="sub">
-              O firmă inventată, cu 4 șantiere, 7 angajați, pontaje pe două luni, stoc, camioane și planing —
-              ca să vezi cum arată aplicația plină înainte să-ți bagi datele tale.
-              <br /><br />
-              Nimic din ce faci în demo nu se salvează și nu-ți atinge datele reale. Când ieși, dispare tot.
-            </div>
-          </div>
-          <button className="btn btn-galben" onClick={() => onDemo("admin")}>{t("🔑 Intră ca Admin")}</button>
-          <button className="btn btn-mic" style={{ padding: "13px" }} onClick={() => onDemo("muncitor", "a-ion")}>
-            👷 Intră ca Ionuț (șef de echipă)
-          </button>
-          <button className="btn btn-mic" style={{ padding: "13px" }} onClick={() => onDemo("muncitor", "a-nic")}>
-            👷 Intră ca Nicu (muncitor nou)
-          </button>
-          <button className="btn btn-mic" onClick={() => setMod(null)}>{t("← Înapoi")}</button>
-        </>
-      )}
 
+        </>
+      )}
       {mod === "admin" && (
         <>
           <div className="camp">
