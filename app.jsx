@@ -66,6 +66,7 @@ const gol = {
   camioane: [], intretinere: [], cereri: [], jurnal: [],
   santiere: [], pontaj: [], consum: [], planificare: [], sarcini: [],
   dotare: [], verificari: [],
+  firma: null,
   setari: { pin: PIN_IMPLICIT },
 };
 
@@ -388,7 +389,9 @@ const seSuprapun = (a, b) => {
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const azi = () => new Date().toLocaleDateString("ro-RO", { day: "2-digit", month: "2-digit", year: "numeric" });
-const bani = (n) => (Number(n) || 0).toLocaleString("ro-RO", { maximumFractionDigits: 0 }) + " €";
+let SIMBOL = "€";
+const bani = (n) =>
+  (Number(n) || 0).toLocaleString("ro-RO", { maximumFractionDigits: 0 }) + " " + SIMBOL;
 
 const DOMENII = ["Zidărie", "Fundații / terasamente", "Structură / dulgherie", "Acoperiș", "Finisaje", "Instalații", "Izolații", "Amenajări exterioare", "Demolări", "Diverse"];
 
@@ -636,6 +639,7 @@ function App() {
         const r = await stocare.get(DB_KEY, true);
         if (r?.value) {
           const d = JSON.parse(r.value);
+          if (d.firma?.moneda) SIMBOL = d.firma.moneda.indexOf("lei") >= 0 ? "lei" : "€";
           setDb({ ...gol, ...d, setari: { ...gol.setari, ...(d.setari || {}) } });
         }
       } catch (e) {}
@@ -653,6 +657,7 @@ function App() {
 
   const [eroareSalvare, setEroareSalvare] = useState("");
   const salveaza = useCallback(async (nou) => {
+    if (nou.firma?.moneda) SIMBOL = nou.firma.moneda.indexOf("lei") >= 0 ? "lei" : "€";
     setDb(nou);
     try {
       const r = await stocare.set(DB_KEY, JSON.stringify(nou), true);
@@ -672,6 +677,123 @@ function App() {
       if (id) await stocare.set(ID_KEY, JSON.stringify(id));
       else await stocare.delete(ID_KEY);
     } catch (e) {}
+  };
+
+  /* ---------- backup ---------- */
+  const [lucruBackup, setLucruBackup] = useState("");
+  const [copiiSalvate, setCopiiSalvate] = useState([]);
+
+  const incarcaCopii = useCallback(async () => {
+    try {
+      const r = await stocare.list("copie:", true);
+      const lista = [];
+      for (const cheie of r?.keys || []) {
+        try {
+          const v = await stocare.get(cheie, true);
+          if (v?.value) {
+            const d = JSON.parse(v.value);
+            lista.push({ cheie, cand: d.cand, rezumat: d.rezumat });
+          }
+        } catch (e) {}
+      }
+      setCopiiSalvate(lista.sort((a, b) => (b.cand || "").localeCompare(a.cand || "")));
+    } catch (e) { setCopiiSalvate([]); }
+  }, []);
+
+  useEffect(() => {
+    if (tab === "setari" && subSet === "backup") incarcaCopii();
+  }, [tab, subSet, incarcaCopii]);
+
+  const rezumatDate = (d) =>
+    `${d.santiere?.length || 0} șantiere · ${d.angajati?.length || 0} angajați · ${d.pontaj?.length || 0} pontaje · ${d.materiale?.length || 0} materiale`;
+
+  const faCopieRapida = async () => {
+    setLucruBackup("Se face copia…");
+    try {
+      const cand = new Date().toISOString();
+      const pachet = { versiune: VERSIUNE_BACKUP, cand, rezumat: rezumatDate(db), date: db };
+      const ok = await stocare.set(`copie:${cand}`, JSON.stringify(pachet), true);
+      if (!ok) throw new Error("Stocarea a refuzat copia.");
+      const r = await stocare.list("copie:", true);
+      const chei = (r?.keys || []).sort();
+      for (const c of chei.slice(0, Math.max(0, chei.length - MAX_COPII))) {
+        try { await stocare.delete(c, true); } catch (e) {}
+      }
+      await incarcaCopii();
+      setLucruBackup("Copie făcută.");
+    } catch (e) {
+      setLucruBackup("Copia a eșuat: " + (e.message || "eroare necunoscută"));
+    }
+    setTimeout(() => setLucruBackup(""), 4000);
+  };
+
+  const restaureazaCopie = (cheie) =>
+    cere("Restaurezi această copie? Tot ce e acum în aplicație se înlocuiește. Pozele nu se ating.", async () => {
+      setLucruBackup("Se restaurează…");
+      try {
+        const v = await stocare.get(cheie, true);
+        const pachet = JSON.parse(v.value);
+        const d = pachet.date || pachet;
+        await salveaza({ ...gol, ...d, setari: { ...gol.setari, ...(d.setari || {}) } });
+        setLucruBackup("Restaurat.");
+      } catch (e) {
+        setLucruBackup("Restaurarea a eșuat: " + (e.message || "fișier deteriorat"));
+      }
+      setTimeout(() => setLucruBackup(""), 4000);
+    }, "Restaurează");
+
+  const stergeCopie = (cheie) => cere("Ștergi această copie?", async () => {
+    try { await stocare.delete(cheie, true); await incarcaCopii(); } catch (e) {}
+  }, "Șterge");
+
+  const exporta = async (cuPoze) => {
+    setLucruBackup(cuPoze ? "Se adună pozele…" : "Se pregătește fișierul…");
+    try {
+      const poze = cuPoze ? await adunaPoze() : {};
+      const pachet = {
+        versiune: VERSIUNE_BACKUP, cand: new Date().toISOString(),
+        rezumat: rezumatDate(db), continePoze: cuPoze, poze, date: db,
+      };
+      const text = JSON.stringify(pachet);
+      const nume = numeFisier();
+      const rezultat = await descarca(text, nume);
+      setLucruBackup(rezultat === "partajat" ? "Trimis prin partajare."
+        : rezultat === "descarcat" ? "Fișier descărcat."
+        : "Nu s-a putut descărca — folosește copia rapidă de mai sus.");
+    } catch (e) {
+      setLucruBackup("Exportul a eșuat: " + (e.message || "eroare necunoscută"));
+    }
+    setTimeout(() => setLucruBackup(""), 6000);
+  };
+
+  const importa = async (fisier) => {
+    setLucruBackup("Se citește fișierul…");
+    try {
+      const text = await fisier.text();
+      const pachet = JSON.parse(text);
+      const d = pachet.date || pachet;
+      if (!d || typeof d !== "object" || !Array.isArray(d.santiere))
+        throw new Error("Fișierul nu pare un backup al acestei aplicații.");
+      const candS = pachet.cand ? new Date(pachet.cand).toLocaleString("ro-RO") : "necunoscut";
+      cere(`Backup din ${candS} · ${rezumatDate(d)}. Se înlocuiește TOT ce e acum în aplicație. Continui?`,
+        async () => {
+          const poze = pachet.poze || {};
+          const nrPoze = Object.keys(poze).length;
+          if (nrPoze) {
+            setLucruBackup(`Se pun la loc ${nrPoze} poze…`);
+            for (const [id, dataUrl] of Object.entries(poze)) {
+              try { await stocare.set(`foto:${id}`, dataUrl, true); } catch (e) {}
+            }
+          }
+          await salveaza({ ...gol, ...d, setari: { ...gol.setari, ...(d.setari || {}) } });
+          setLucruBackup("Import reușit.");
+          setTimeout(() => setLucruBackup(""), 5000);
+        }, "Importă",
+        () => setLucruBackup(""));
+    } catch (e) {
+      setLucruBackup("Importul a eșuat: " + (e.message || "fișier invalid"));
+      setTimeout(() => setLucruBackup(""), 5000);
+    }
   };
 
   const log = (text) => ({ id: uid(), cand: azi(), text });
@@ -1098,6 +1220,16 @@ function App() {
   const esteAdmin = identitate.rol === "admin";
   const eu = db.angajati.find((a) => a.id === identitate.angajatId);
 
+  /* ==================== PRIMA CONFIGURARE ==================== */
+  if (esteAdmin && !db.firma?.nume)
+    return (
+      <div className="app"><style>{css}</style>
+        <ConfigurareFirma
+          onSalveaza={(firma) => salveaza(cuJurnal({ ...db, firma }, `Firmă configurată: ${firma.nume}`))}
+          onIesi={() => setIdent(null)} />
+      </div>
+    );
+
   /* ==================== VEDEREA MUNCITORULUI ==================== */
   if (!esteAdmin) {
     const echipaMea = db.echipe.find((e) => e.id === eu?.echipaId);
@@ -1185,7 +1317,7 @@ function App() {
       <div className="app"><style>{css}</style>
         <div className="antet">
           <div className="antet-rand">
-            <h1>Șantier <span>Manager</span></h1>
+            <h1>{db.firma?.nume || <>Șantier <span>Manager</span></>}</h1>
             <span className="rol-chip static">{eu?.nume?.split(" ")[0] || "👷"}</span>
           </div>
           <div className="hazard" />
@@ -1403,7 +1535,7 @@ function App() {
     <div className="app"><style>{css}</style>
       <div className="antet">
         <div className="antet-rand">
-          <h1>Șantier <span>Manager</span></h1>
+          <h1>{db.firma?.nume || <>Șantier <span>Manager</span></>}</h1>
           <span className="rol-chip static">Admin</span>
         </div>
         <div className="hazard" />
@@ -2182,6 +2314,22 @@ function App() {
               </div>
             </div>
             <div className="card">
+              <div className="titlu">🏢 {db.firma?.nume || "Firma"}</div>
+              <div className="sub">
+                {db.firma?.forma && <>{db.firma.forma} · </>}
+                {db.firma?.oras || "—"}
+                {db.firma?.siret && <><br />SIRET/CUI: <span className="mono">{db.firma.siret}</span></>}
+                {db.firma?.telefon && <><br />{db.firma.telefon}</>}
+                {db.firma?.moneda && <><br />Monedă: {db.firma.moneda}</>}
+              </div>
+              <div className="actiuni">
+                <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "firma" })}>
+                  Modifică datele firmei
+                </button>
+              </div>
+            </div>
+
+            <div className="card">
               <div className="titlu">Limba aplicației</div>
               <div className="sub">
                 Se aplică doar pe telefonul ăsta. Fiecare om își alege limba lui.
@@ -2470,6 +2618,12 @@ function App() {
           ))}
         </Foaie>
       )}
+      {foaie?.tip === "firma" && (
+        <Foaie titlu="Datele firmei" onClose={() => setFoaie(null)}>
+          <CampuriFirma valoare={db.firma || {}}
+            onSalveaza={(firma) => { salveaza({ ...db, firma }); setFoaie(null); }} />
+        </Foaie>
+      )}
       {foaie?.tip === "pin" && (
         <FormPin actual={db.setari.pin} onSalveaza={(pin) => { salveaza({ ...db, setari: { ...db.setari, pin } }); setFoaie(null); }} onClose={() => setFoaie(null)} />
       )}
@@ -2522,16 +2676,37 @@ const adunaPoze = async () => {
   return poze;
 };
 
-const descarca = (text, nume) => {
+/* Pe iPhone descărcarea clasică nu merge în aplicația instalată pe ecran,
+   așa că încerc întâi partajarea (Salvează în Fișiere, trimite pe mail etc.) */
+const descarca = async (text, nume) => {
   const blob = new Blob([text], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = nume;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+  try {
+    if (navigator.canShare && window.File) {
+      const fis = new File([blob], nume, { type: "application/json" });
+      if (navigator.canShare({ files: [fis] })) {
+        await navigator.share({ files: [fis], title: nume });
+        return "partajat";
+      }
+    }
+  } catch (e) {
+    if (e && e.name === "AbortError") return "anulat";
+  }
+
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nume;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    return "descarcat";
+  } catch (e) {
+    return "esuat";
+  }
 };
 
 /* Consum pentru șefii de echipă: trei pași mari, fără cifre inutile.
@@ -3071,6 +3246,84 @@ function Invitatii({ db, onSeteazaPin }) {
         </div>
       </div>
     </>
+  );
+}
+
+const FORME = ["SAS", "SASU", "SARL", "EURL", "Micro-entreprise", "Auto-entrepreneur", "SRL", "PFA", "Alta"];
+const MONEDE = ["€ EUR", "lei RON"];
+
+function CampuriFirma({ valoare, onSalveaza, butonText = "Salvează" }) {
+  const [f, setF] = useState({
+    nume: "", forma: FORME[0], siret: "", oras: "", adresa: "",
+    telefon: "", email: "", moneda: MONEDE[0], ...valoare,
+  });
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  return (
+    <>
+      <div className="camp">
+        <label>Numele firmei *</label>
+        <input value={f.nume} onChange={set("nume")} placeholder="ex. Boring Construct" />
+      </div>
+      <div className="rand2">
+        <div className="camp">
+          <label>Forma juridică</label>
+          <select value={f.forma} onChange={set("forma")}>
+            {FORME.map((x) => <option key={x}>{x}</option>)}
+          </select>
+        </div>
+        <div className="camp">
+          <label>Monedă</label>
+          <select value={f.moneda} onChange={set("moneda")}>
+            {MONEDE.map((x) => <option key={x}>{x}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="camp">
+        <label>SIRET / CUI</label>
+        <input value={f.siret} onChange={set("siret")} placeholder="ex. 812 345 678 00012" />
+      </div>
+      <div className="rand2">
+        <div className="camp">
+          <label>Oraș</label>
+          <input value={f.oras} onChange={set("oras")} placeholder="ex. Angers" />
+        </div>
+        <div className="camp">
+          <label>Telefon</label>
+          <input value={f.telefon} onChange={set("telefon")} placeholder="ex. 06 12 34 56 78" />
+        </div>
+      </div>
+      <div className="camp">
+        <label>Adresă</label>
+        <input value={f.adresa} onChange={set("adresa")} placeholder="strada, număr, cod poștal" />
+      </div>
+      <div className="camp">
+        <label>Email</label>
+        <input value={f.email} onChange={set("email")} placeholder="contact@firma.fr" />
+      </div>
+      <button className="btn btn-galben" disabled={!f.nume.trim()}
+        onClick={() => f.nume.trim() && onSalveaza({ ...f, nume: f.nume.trim() })}>
+        {butonText}
+      </button>
+    </>
+  );
+}
+
+function ConfigurareFirma({ onSalveaza, onIesi }) {
+  return (
+    <div className="continut" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 24px)" }}>
+      <div className="hazard" style={{ marginBottom: 18 }} />
+      <h1 style={{ fontSize: 20, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".5px" }}>
+        Bun venit
+      </h1>
+      <div className="sub" style={{ margin: "8px 0 18px", lineHeight: 1.6 }}>
+        Spune-mi câteva lucruri despre firma ta. Numele apare în capul aplicației, la tine
+        și la oamenii tăi. Restul îl completezi acum sau mai târziu, din Setări.
+      </div>
+      <CampuriFirma valoare={{}} onSalveaza={onSalveaza} butonText="Gata, intru în aplicație" />
+      <button className="btn btn-mic" style={{ width: "100%", marginTop: 10 }} onClick={onIesi}>
+        Ieși din cont
+      </button>
+    </div>
   );
 }
 
