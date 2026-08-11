@@ -895,7 +895,7 @@ function App() {
     const intrari = randuri.map((r) => ({
       id: uid(), santierId, angajatId: r.angajatId, nume: r.nume,
       ore: Number(r.ore) || 0, tarifOra: Number(r.tarifOra) || 0,
-      tipMunca: r.tipMunca || null, data,
+      tipMunca: r.tipMunca || null, fazaId: r.fazaId || null, data,
     }));
     const totalOre = intrari.reduce((s, i) => s + i.ore, 0);
     salveaza(cuJurnal({ ...db, pontaj: [...intrari, ...db.pontaj] },
@@ -918,6 +918,7 @@ function App() {
       unitate: mat ? mat.unitate : c.unitate,
       pret: Number(c.pret) || 0,
       motiv: c.motiv || "",
+      fazaId: c.fazaId || null,
       inregistratDe: c.inregistratDe || null,
       data: c.data || aziISO(),
     };
@@ -1154,13 +1155,40 @@ function App() {
   const consumSantier = (sid) => db.consum.filter((c) => c.santierId === sid);
   const costMaterialeSantier = (sid) =>
     consumSantier(sid).reduce((s, c) => s + (Number(c.cant) || 0) * (Number(c.pret) || 0), 0);
+  const sumaMat = (lista) =>
+    (lista || []).reduce((t, m) => t + (Number(m.cant) || 0) * (Number(m.pret) || 0), 0);
+
+  /* un șantier poate avea faze cu deviz propriu (demolare, zidărie, tencuială…).
+     Dacă are, cifratul și prevederile se adună din faze; dacă nu, rămân cele
+     de pe șantier, ca înainte. */
+  const areFaze = (s) => Array.isArray(s.faze) && s.faze.length > 0;
+  const valoareSantier = (s) =>
+    areFaze(s) ? s.faze.reduce((t, f) => t + (Number(f.valoare) || 0), 0) : Number(s.valoare) || 0;
+  const orePrevSantier = (s) =>
+    areFaze(s) ? s.faze.reduce((t, f) => t + (Number(f.orePrev) || 0), 0) : Number(s.orePrev) || 0;
   const prevMateriale = (s) =>
-    (s.materialePrev || []).reduce((t, m) => t + (Number(m.cant) || 0) * (Number(m.pret) || 0), 0);
+    areFaze(s) ? s.faze.reduce((t, f) => t + sumaMat(f.materialePrev), 0) : sumaMat(s.materialePrev);
+
+  const pontajFaza = (sid, fid) => pontajSantier(sid).filter((p) => p.fazaId === fid);
+  const consumFaza = (sid, fid) => consumSantier(sid).filter((c) => c.fazaId === fid);
+
+  const bilantFaza = (s, f) => {
+    const pont = pontajFaza(s.id, f.id);
+    const ore = pont.reduce((t, p) => t + (Number(p.ore) || 0), 0);
+    const manopera = pont.reduce((t, p) => t + (Number(p.ore) || 0) * (Number(p.tarifOra) || 0), 0);
+    const materiale = consumFaza(s.id, f.id).reduce((t, c) => t + (Number(c.cant) || 0) * (Number(c.pret) || 0), 0);
+    const incasat = Number(f.valoare) || 0;
+    const cost = manopera + materiale;
+    return { ore, manopera, materiale, cost, incasat, marja: incasat - cost,
+      procent: incasat > 0 ? Math.round(((incasat - cost) / incasat) * 100) : null,
+      orePrev: Number(f.orePrev) || 0, matPrev: sumaMat(f.materialePrev) };
+  };
+
   const bilant = (s) => {
     const manopera = costSantier(s.id);
     const materiale = costMaterialeSantier(s.id);
     const cost = manopera + materiale;
-    const incasat = Number(s.valoare) || 0;
+    const incasat = valoareSantier(s);
     return { manopera, materiale, cost, incasat, marja: incasat - cost,
       procent: incasat > 0 ? Math.round(((incasat - cost) / incasat) * 100) : null };
   };
@@ -1168,7 +1196,7 @@ function App() {
   const pierderiTotal = consumNealocat.reduce((s, c) => s + (Number(c.cant) || 0) * (Number(c.pret) || 0), 0);
   const santiereActive = db.santiere.filter((s) => s.status !== "finalizat");
   const costManoperaTotal = db.santiere.reduce((s, x) => s + costSantier(x.id), 0);
-  const cifratTotal = db.santiere.reduce((s, x) => s + (Number(x.valoare) || 0), 0);
+  const cifratTotal = db.santiere.reduce((s, x) => s + valoareSantier(x), 0);
   const materialeAlocateTotal = db.santiere.reduce((s, x) => s + costMaterialeSantier(x.id), 0);
   const marjaBruta = cifratTotal - costManoperaTotal - materialeAlocateTotal;
   const marjaTotala = marjaBruta - pierderiTotal;
@@ -1871,8 +1899,9 @@ function App() {
               const oameni = new Set(pontajSantier(s.id).map((p) => p.angajatId || p.nume)).size;
               const finalizat = s.status === "finalizat";
               const b = bilant(s);
-              const orePrev = Number(s.orePrev) || 0;
+              const orePrev = orePrevSantier(s);
               const matPrev = prevMateriale(s);
+              const nrFaze = areFaze(s) ? s.faze.length : 0;
               const procOre = orePrev > 0 ? Math.round((ore / orePrev) * 100) : null;
               const procMat = matPrev > 0 ? Math.round((b.materiale / matPrev) * 100) : null;
               const culoare = (p) => (p === null ? "var(--mut)" : p > 100 ? "var(--rosu)" : p > 85 ? "var(--galben)" : "var(--verde)");
@@ -1885,6 +1914,7 @@ function App() {
                         {s.client && <>{s.client} · </>}
                         {s.adresa && <>{s.adresa}</>}
                         {s.dataStart && <> · din {dataRo(s.dataStart)}</>}
+                        {nrFaze > 0 && <> · <span style={{ color: "var(--galben)" }}>{nrFaze} faze</span></>}
                       </div>
                     </div>
                     <span className={"chip " + (finalizat ? "gri" : "ok")}>{finalizat ? "Finalizat" : "Activ"}</span>
@@ -2100,15 +2130,44 @@ function App() {
             ? Math.round((pierderiTotal / (materialeAlocateTotal + pierderiTotal)) * 100) : 0;
 
           /* ---- pe domeniu ---- */
+          /* împart fiecare șantier pe tipurile de muncă chiar pontate acolo,
+             proporțional cu orele — așa o casă cu demolare + zidărie + finisaje
+             se împarte corect, nu intră toată la o singură categorie */
           const peDomeniu = {};
           db.santiere.forEach((s) => {
-            const d = s.domeniu || "Diverse";
             const b = bilant(s);
-            if (!peDomeniu[d]) peDomeniu[d] = { cifrat: 0, marja: 0, nr: 0, ore: 0 };
-            peDomeniu[d].cifrat += b.incasat;
-            peDomeniu[d].marja += b.marja;
-            peDomeniu[d].nr += 1;
-            peDomeniu[d].ore += oreSantier(s.id);
+            const pontajele = pontajSantier(s.id);
+            const oreTot = pontajele.reduce((x, p) => x + (Number(p.ore) || 0), 0);
+            const adauga = (d, cota, ore, nrLucrari) => {
+              if (!peDomeniu[d]) peDomeniu[d] = { cifrat: 0, marja: 0, nr: 0, ore: 0 };
+              peDomeniu[d].cifrat += b.incasat * cota;
+              peDomeniu[d].marja += b.marja * cota;
+              peDomeniu[d].ore += ore;
+              peDomeniu[d].nr += nrLucrari;
+            };
+            /* dacă șantierul e cifrat pe faze, folosesc marja exactă a fiecărei faze */
+            if (areFaze(s)) {
+              s.faze.forEach((fz) => {
+                const bf = bilantFaza(s, fz);
+                const d = fz.domeniu || "Diverse";
+                if (!peDomeniu[d]) peDomeniu[d] = { cifrat: 0, marja: 0, nr: 0, ore: 0 };
+                peDomeniu[d].cifrat += bf.incasat;
+                peDomeniu[d].marja += bf.marja;
+                peDomeniu[d].ore += bf.ore;
+                peDomeniu[d].nr += 1;
+              });
+              return;
+            }
+            if (oreTot === 0) {
+              adauga(s.domeniu || "Diverse", 1, 0, 1);
+              return;
+            }
+            const oreTip = {};
+            pontajele.forEach((p) => {
+              const d = p.tipMunca || s.domeniu || "Diverse";
+              oreTip[d] = (oreTip[d] || 0) + (Number(p.ore) || 0);
+            });
+            Object.entries(oreTip).forEach(([d, ore]) => adauga(d, ore / oreTot, ore, 1));
           });
           const domeniiSortate = Object.entries(peDomeniu)
             .map(([d, v]) => ({ d, ...v, proc: v.cifrat > 0 ? Math.round((v.marja / v.cifrat) * 100) : null }))
@@ -2225,6 +2284,11 @@ function App() {
               })}
 
               <div className="sectiune">Ce tip de lucrare îți iese mai bine</div>
+              <div className="sub" style={{ marginBottom: 10 }}>
+                Șantierele cifrate pe faze intră aici cu marja exactă a fiecărei faze.
+                Cele cifrate cu o singură sumă se împart după orele pontate — mai puțin exact,
+                dar orientativ.
+              </div>
               {domeniiSortate.length === 0 ? (
                 <div className="gol-msg">Adaugă șantiere cu tip de lucrare ca să vezi comparația.</div>
               ) : domeniiSortate.map((d) => (
@@ -2232,7 +2296,10 @@ function App() {
                   <div className="card-rand">
                     <div>
                       <div className="titlu" style={{ fontSize: 14 }}>{d.d}</div>
-                      <div className="sub">{d.nr} {d.nr === 1 ? "lucrare" : "lucrări"} · <span className="mono">{d.ore}h</span> · cifrat {bani(d.cifrat)}</div>
+                      <div className="sub">
+                        {d.nr} {d.nr === 1 ? "șantier" : "șantiere"} · <span className="mono">{d.ore}h</span> ·
+                        partea din cifrat {bani(d.cifrat)}
+                      </div>
                     </div>
                     <b className="mono" style={{ color: d.marja >= 0 ? "var(--verde)" : "var(--rosu)", whiteSpace: "nowrap" }}>
                       {d.marja < 0 ? "−" : ""}{bani(Math.abs(d.marja))}{d.proc !== null && <span style={{ fontSize: 11, color: "var(--mut)" }}> · {d.proc}%</span>}
@@ -2591,6 +2658,11 @@ function App() {
           consum={consumSantier(foaie.item.id)}
           bilant={bilant(db.santiere.find((x) => x.id === foaie.item.id) || foaie.item)}
           matPrev={prevMateriale(db.santiere.find((x) => x.id === foaie.item.id) || foaie.item)}
+          orePrevTot={orePrevSantier(db.santiere.find((x) => x.id === foaie.item.id) || foaie.item)}
+          bilanturiFaze={(() => {
+            const sn = db.santiere.find((x) => x.id === foaie.item.id) || foaie.item;
+            return areFaze(sn) ? sn.faze.map((fz) => ({ faza: fz, b: bilantFaza(sn, fz) })) : [];
+          })()}
           onStergePontaj={stergePontaj} onStergeConsum={stergeConsum} onClose={() => setFoaie(null)} />
       )}
       {foaie?.tip === "camion" && <FormCamion item={foaie.item} onSalveaza={salvCamion} onClose={() => setFoaie(null)} />}
@@ -3001,8 +3073,15 @@ function RaportScula({ scula, onSalveaza, onClose }) {
 }
 
 function ConsumSimplu({ santiere, materiale, numeleMeu, onSalveaza, onClose }) {
-  const [pas, setPas] = useState(santiere.length === 1 ? 2 : 1);
   const [santierId, setSantierId] = useState(santiere.length === 1 ? santiere[0].id : "");
+  const [fazaId, setFazaId] = useState("");
+  const fazeleLui = (sid) => {
+    const s = santiere.find((x) => x.id === sid);
+    return Array.isArray(s?.faze) ? s.faze : [];
+  };
+  const [pas, setPas] = useState(
+    santiere.length === 1 ? (fazeleLui(santiere[0].id).length > 0 ? 1.5 : 2) : 1
+  );
   const [mat, setMat] = useState(null);
   const [cant, setCant] = useState(1);
   const [cauta, setCauta] = useState("");
@@ -3016,7 +3095,7 @@ function ConsumSimplu({ santiere, materiale, numeleMeu, onSalveaza, onClose }) {
   const trimite = () => {
     onSalveaza(santierId, {
       materialId: mat.id, cant, pret: mat.pret, unitate: mat.unitate,
-      data: aziISO(), scadeDinStoc: true, inregistratDe: numeleMeu,
+      data: aziISO(), scadeDinStoc: true, inregistratDe: numeleMeu, fazaId: fazaId || null,
     });
     setGata(true);
   };
@@ -3033,7 +3112,7 @@ function ConsumSimplu({ santiere, materiale, numeleMeu, onSalveaza, onClose }) {
         </div>
         <button className="btn btn-galben" onClick={() => {
           setGata(false); setMat(null); setCant(1); setCauta("");
-          setPas(santiere.length === 1 ? 2 : 1);
+          setPas(2);
         }}>
           Mai adaug ceva
         </button>
@@ -3050,11 +3129,32 @@ function ConsumSimplu({ santiere, materiale, numeleMeu, onSalveaza, onClose }) {
         ) : (
           santiere.map((s) => (
             <button key={s.id} className="btn btn-mare"
-              onClick={() => { setSantierId(s.id); setPas(2); }}>
+              onClick={() => {
+                setSantierId(s.id);
+                setFazaId("");
+                setPas(fazeleLui(s.id).length > 0 ? 1.5 : 2);
+              }}>
               🏗 {s.nume}
             </button>
           ))
         )}
+      </Foaie>
+    );
+
+  /* pasul intermediar — pe ce fază, dacă șantierul are faze */
+  if (pas === 1.5)
+    return (
+      <Foaie titlu="La ce fază?" onClose={onClose}>
+        <div className="sub" style={{ marginBottom: 12 }}>Pe {santier?.nume}</div>
+        {fazeleLui(santierId).map((fz) => (
+          <button key={fz.id} className="btn btn-mare" onClick={() => { setFazaId(fz.id); setPas(2); }}>
+            <span>🧱 {fz.nume}</span>
+          </button>
+        ))}
+        <button className="btn btn-mic" style={{ width: "100%", marginTop: 4 }}
+          onClick={() => { setFazaId(""); setPas(2); }}>
+          Nu știu / altceva
+        </button>
       </Foaie>
     );
 
@@ -3678,11 +3778,124 @@ function FormCerere({ eu, onTrimite, onClose }) {
   );
 }
 
+function EditorFaze({ faze, onSchimba }) {
+  const [deschis, setDeschis] = useState(null);
+
+  const seteaza = (i, k, v) => {
+    const l = [...faze]; l[i] = { ...l[i], [k]: v }; onSchimba(l);
+  };
+  const adauga = () => {
+    onSchimba([...faze, { id: uid(), nume: "", domeniu: DOMENII[0], valoare: "", orePrev: "", materialePrev: [] }]);
+    setDeschis(faze.length);
+  };
+  const scoate = (i) => { onSchimba(faze.filter((_, j) => j !== i)); setDeschis(null); };
+
+  const setMat = (i, j, k, v) => {
+    const mats = [...(faze[i].materialePrev || [])];
+    mats[j] = { ...mats[j], [k]: v };
+    seteaza(i, "materialePrev", mats);
+  };
+  const adaugaMat = (i) =>
+    seteaza(i, "materialePrev", [...(faze[i].materialePrev || []), { nume: "", cant: "", unitate: "buc", pret: "" }]);
+  const scoateMat = (i, j) =>
+    seteaza(i, "materialePrev", (faze[i].materialePrev || []).filter((_, k) => k !== j));
+
+  const totalMat = (f) =>
+    (f.materialePrev || []).reduce((t, m) => t + (Number(m.cant) || 0) * (Number(m.pret) || 0), 0);
+  const totalCifrat = faze.reduce((t, f) => t + (Number(f.valoare) || 0), 0);
+  const totalOre = faze.reduce((t, f) => t + (Number(f.orePrev) || 0), 0);
+
+  return (
+    <>
+      {faze.map((f, i) => (
+        <div className="card" key={f.id || i} style={{ padding: "12px 13px" }}>
+          <div className="card-rand" onClick={() => setDeschis(deschis === i ? null : i)} style={{ cursor: "pointer" }}>
+            <div>
+              <div className="titlu" style={{ fontSize: 14.5 }}>
+                {f.nume || <span style={{ color: "var(--mut)" }}>Fază fără nume</span>}
+              </div>
+              <div className="sub">
+                {f.domeniu} · <b className="mono">{bani(f.valoare)}</b>
+                {Number(f.orePrev) > 0 && <> · {f.orePrev}h</>}
+                {totalMat(f) > 0 && <> · materiale {bani(totalMat(f))}</>}
+              </div>
+            </div>
+            <span className="chip gri">{deschis === i ? "▲" : "▼"}</span>
+          </div>
+
+          {deschis === i && (
+            <div style={{ marginTop: 12 }}>
+              <div className="camp">
+                <label>Numele fazei *</label>
+                <input value={f.nume} onChange={(e) => seteaza(i, "nume", e.target.value)}
+                  placeholder="ex. Demolare interioară" />
+              </div>
+              <div className="camp">
+                <label>Tip de lucrare</label>
+                <select value={f.domeniu} onChange={(e) => seteaza(i, "domeniu", e.target.value)}>
+                  {DOMENII.map((d) => <option key={d}>{d}</option>)}
+                </select>
+              </div>
+              <div className="rand2">
+                <div className="camp">
+                  <label>Cifrat pe fază</label>
+                  <input type="number" step="0.01" value={f.valoare}
+                    onChange={(e) => seteaza(i, "valoare", e.target.value)} placeholder="ex. 6200" />
+                </div>
+                <div className="camp">
+                  <label>Ore prevăzute</label>
+                  <input type="number" value={f.orePrev}
+                    onChange={(e) => seteaza(i, "orePrev", e.target.value)} placeholder="ex. 120" />
+                </div>
+              </div>
+
+              <div className="camp">
+                <label>Materiale prevăzute pe fază
+                  {totalMat(f) > 0 && <span style={{ color: "var(--galben)" }}> · {bani(totalMat(f))}</span>}
+                </label>
+                {(f.materialePrev || []).map((m, j) => (
+                  <div key={j} className="rand-prev">
+                    <input value={m.nume} onChange={(e) => setMat(i, j, "nume", e.target.value)} placeholder="Material" />
+                    <input type="number" value={m.cant} onChange={(e) => setMat(i, j, "cant", e.target.value)} placeholder="Cant." />
+                    <input value={m.unitate} onChange={(e) => setMat(i, j, "unitate", e.target.value)} placeholder="u.m." />
+                    <input type="number" step="0.01" value={m.pret} onChange={(e) => setMat(i, j, "pret", e.target.value)} placeholder="€/u" />
+                    <button className="btn btn-mic pericol" onClick={() => scoateMat(i, j)}>✕</button>
+                  </div>
+                ))}
+                <button className="btn btn-mic" style={{ marginTop: 8 }} onClick={() => adaugaMat(i)}>+ Adaugă linie</button>
+              </div>
+
+              <button className="btn btn-mic pericol" style={{ width: "100%" }} onClick={() => scoate(i)}>
+                Șterge faza
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+
+      <button className="btn btn-mic" style={{ width: "100%", marginBottom: 12 }} onClick={adauga}>
+        + Adaugă fază
+      </button>
+
+      {faze.length > 0 && (
+        <div className="rezumat" style={{ marginBottom: 14 }}>
+          <div>
+            <div className="rz-nr mono">{bani(totalCifrat)}</div>
+            <div className="rz-lbl">total cifrat · {faze.length} {faze.length === 1 ? "fază" : "faze"}</div>
+          </div>
+          {totalOre > 0 && <span className="chip alocat mono">{totalOre}h</span>}
+        </div>
+      )}
+    </>
+  );
+}
+
 function FormSantier({ item, onSalveaza, onClose }) {
   const [f, setF] = useState(
     item || { nume: "", client: "", adresa: "", dataStart: "", status: "activ",
-      domeniu: DOMENII[0], valoare: "", orePrev: "", materialePrev: [] }
+      domeniu: DOMENII[0], valoare: "", orePrev: "", materialePrev: [], faze: [] }
   );
+  const [peFaze, setPeFaze] = useState(Array.isArray(item?.faze) && item.faze.length > 0);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const prev = f.materialePrev || [];
   const setRand = (i, k, v) => {
@@ -3712,14 +3925,25 @@ function FormSantier({ item, onSalveaza, onClose }) {
       </div>
 
       <div className="sectiune">Devizul — ce ai prevăzut</div>
-      <div className="rand2">
+      <div className="subtab" style={{ marginBottom: 12 }}>
+        <button className={!peFaze ? "activ" : ""} onClick={() => setPeFaze(false)}>O sumă</button>
+        <button className={peFaze ? "activ" : ""} onClick={() => setPeFaze(true)}>Pe faze</button>
+      </div>
+      <div className="sub" style={{ marginBottom: 12 }}>
+        {peFaze
+          ? "Fiecare fază cu prețul ei — demolare, zidărie, tencuială. La pontaj alegi faza, iar marja se calculează separat pe fiecare."
+          : "O singură sumă pentru toată lucrarea. Simplu, dar nu vezi care fază te-a costat."}
+      </div>
+      {peFaze && <EditorFaze faze={f.faze || []} onSchimba={(faze) => setF({ ...f, faze })} />}
+
+      {!peFaze && <div className="rand2">
         <div className="camp"><label>La cât ai cifrat lucrarea (€)</label>
           <input type="number" step="0.01" value={f.valoare} onChange={set("valoare")} placeholder="ex. 18500" /></div>
         <div className="camp"><label>Ore prevăzute</label>
           <input type="number" value={f.orePrev} onChange={set("orePrev")} placeholder="ex. 320" /></div>
-      </div>
+      </div>}
 
-      <div className="camp">
+      {!peFaze && <div className="camp">
         <label>Materiale prevăzute {totalPrev > 0 && <span style={{ color: "var(--galben)" }}>· total {bani(totalPrev)}</span>}</label>
         {prev.map((m, i) => (
           <div key={i} className="rand-prev">
@@ -3731,10 +3955,14 @@ function FormSantier({ item, onSalveaza, onClose }) {
           </div>
         ))}
         <button className="btn btn-mic" style={{ marginTop: 8 }} onClick={adaugaRand}>+ Adaugă linie</button>
-      </div>
+      </div>}
 
       <button className="btn btn-galben" style={{ marginTop: 8 }}
-        onClick={() => f.nume.trim() && onSalveaza({ ...f, valoare: Number(f.valoare) || 0, orePrev: Number(f.orePrev) || 0 })}>
+        onClick={() => f.nume.trim() && onSalveaza(
+          peFaze
+            ? { ...f, faze: (f.faze || []).filter((x) => x.nume.trim()),
+                valoare: 0, orePrev: 0, materialePrev: [] }
+            : { ...f, faze: [], valoare: Number(f.valoare) || 0, orePrev: Number(f.orePrev) || 0 })}>
         Salvează
       </button>
     </Foaie>
@@ -3742,7 +3970,9 @@ function FormSantier({ item, onSalveaza, onClose }) {
 }
 
 function FormConsum({ santier, materiale, onSalveaza, onClose }) {
-  const [f, setF] = useState({ materialId: "", nume: "", cant: "", unitate: "buc", pret: "", data: aziISO(), scadeDinStoc: true });
+  const faze = Array.isArray(santier.faze) ? santier.faze : [];
+  const [f, setF] = useState({ materialId: "", nume: "", cant: "", unitate: "buc", pret: "",
+    data: aziISO(), scadeDinStoc: true, fazaId: faze[0]?.id || "" });
   const mat = materiale.find((m) => m.id === f.materialId);
   const alegeMaterial = (id) => {
     const m = materiale.find((x) => x.id === id);
@@ -3752,6 +3982,15 @@ function FormConsum({ santier, materiale, onSalveaza, onClose }) {
   const valid = (f.materialId || f.nume.trim()) && Number(f.cant) > 0;
   return (
     <Foaie titlu={`Material folosit: ${santier.nume}`} onClose={onClose}>
+      {faze.length > 0 && (
+        <div className="camp">
+          <label>Pe ce fază</label>
+          <select value={f.fazaId} onChange={(e) => setF({ ...f, fazaId: e.target.value })}>
+            {faze.map((fz) => <option key={fz.id} value={fz.id}>{fz.nume}</option>)}
+            <option value="">— nealocat pe fază —</option>
+          </select>
+        </div>
+      )}
       <div className="camp">
         <label>Din inventar</label>
         <select value={f.materialId} onChange={(e) => alegeMaterial(e.target.value)}>
@@ -3798,7 +4037,10 @@ function FormConsum({ santier, materiale, onSalveaza, onClose }) {
 function FormPontaj({ santier, angajati, echipe, onSalveaza, onClose }) {
   const [data, setData] = useState(aziISO());
   const [ore, setOre] = useState("8");
-  const [tip, setTip] = useState(santier.domeniu || DOMENII[0]);
+  const faze = Array.isArray(santier.faze) ? santier.faze : [];
+  const [fazaId, setFazaId] = useState(faze[0]?.id || "");
+  const fazaAleasa = faze.find((x) => x.id === fazaId);
+  const [tip, setTip] = useState(faze[0]?.domeniu || santier.domeniu || DOMENII[0]);
   const [separat, setSeparat] = useState(false);
   const [tipuri, setTipuri] = useState({}); // pe om, când fac lucruri diferite
   const [sel, setSel] = useState({});
@@ -3820,6 +4062,25 @@ function FormPontaj({ santier, angajati, echipe, onSalveaza, onClose }) {
         <div className="camp"><label>Ore lucrate (fiecare)</label>
           <input type="number" step="0.5" value={ore} onChange={(e) => setOre(e.target.value)} /></div>
       </div>
+
+      {faze.length > 0 && (
+        <div className="camp">
+          <label>Pe ce fază au lucrat *</label>
+          <select value={fazaId} onChange={(e) => {
+            setFazaId(e.target.value);
+            const fz = faze.find((x) => x.id === e.target.value);
+            if (fz?.domeniu) setTip(fz.domeniu);
+          }}>
+            {faze.map((fz) => <option key={fz.id} value={fz.id}>{fz.nume}</option>)}
+          </select>
+          {fazaAleasa && (
+            <div className="sub" style={{ marginTop: 6 }}>
+              Cifrat {bani(fazaAleasa.valoare)}
+              {Number(fazaAleasa.orePrev) > 0 && <> · {fazaAleasa.orePrev}h prevăzute</>}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="camp">
         <label>Ce fel de muncă {separat && <span style={{ color: "var(--mut)" }}>(pentru toți, dacă nu schimbi mai jos)</span>}</label>
@@ -3871,7 +4132,8 @@ function FormPontaj({ santier, angajati, echipe, onSalveaza, onClose }) {
       <button className="btn btn-galben" disabled={alesi.length === 0 || !Number(ore)}
         onClick={() => alesi.length && Number(ore) &&
           onSalveaza(data, alesi.map((a) => ({
-            angajatId: a.id, nume: a.nume, ore, tarifOra: a.tarifOra, tipMunca: tipulLui(a.id),
+            angajatId: a.id, nume: a.nume, ore, tarifOra: a.tarifOra,
+            tipMunca: tipulLui(a.id), fazaId: fazaId || null,
           })))}>
         Pontează {alesi.length > 0 ? `${alesi.length} × ${ore}h` : ""}
       </button>
@@ -3879,7 +4141,7 @@ function FormPontaj({ santier, angajati, echipe, onSalveaza, onClose }) {
   );
 }
 
-function DetaliiSantier({ santier, pontaj, consum, bilant, matPrev, onStergePontaj, onStergeConsum, onClose }) {
+function DetaliiSantier({ santier, pontaj, consum, bilant, matPrev, orePrevTot, bilanturiFaze = [], onStergePontaj, onStergeConsum, onClose }) {
   if (!santier) return null;
   const peOm = {};
   pontaj.forEach((p) => {
@@ -3890,7 +4152,7 @@ function DetaliiSantier({ santier, pontaj, consum, bilant, matPrev, onStergePont
   });
   const totalOre = pontaj.reduce((s, p) => s + (Number(p.ore) || 0), 0);
   const totalCost = pontaj.reduce((s, p) => s + (Number(p.ore) || 0) * (Number(p.tarifOra) || 0), 0);
-  const orePrev = Number(santier.orePrev) || 0;
+  const orePrev = orePrevTot !== undefined ? orePrevTot : (Number(santier.orePrev) || 0);
   const prev = santier.materialePrev || [];
   /* grupez consumul pe denumire ca să pot compara cu devizul */
   const consumPeNume = {};
@@ -3912,6 +4174,43 @@ function DetaliiSantier({ santier, pontaj, consum, bilant, matPrev, onStergePont
           {bani(bilant.marja)}{bilant.procent !== null && ` · ${bilant.procent}%`}
         </b>
       </div>
+
+      {bilanturiFaze.length > 0 && (
+        <>
+          <div className="sectiune">Pe faze</div>
+          {bilanturiFaze.map(({ faza, b }) => (
+            <div className="card" key={faza.id} style={{ padding: "12px 13px" }}>
+              <div className="card-rand">
+                <div>
+                  <div className="titlu" style={{ fontSize: 14.5 }}>{faza.nume}</div>
+                  <div className="sub">{faza.domeniu} · cifrat {bani(b.incasat)}</div>
+                </div>
+                <b className="mono" style={{ color: b.marja >= 0 ? "var(--verde)" : "var(--rosu)", whiteSpace: "nowrap" }}>
+                  {b.marja < 0 ? "−" : ""}{bani(Math.abs(b.marja))}
+                  {b.procent !== null && <span style={{ fontSize: 11, color: "var(--mut)" }}> · {b.procent}%</span>}
+                </b>
+              </div>
+              <div className="plan-real">
+                <div className="pr-col">
+                  <div className="pr-lbl">Ore</div>
+                  <div className="pr-val mono" style={{ color: b.orePrev && b.ore > b.orePrev ? "var(--rosu)" : "var(--text)" }}>{b.ore}h</div>
+                  <div className="pr-prev">din {b.orePrev ? b.orePrev + "h" : "—"}</div>
+                </div>
+                <div className="pr-col">
+                  <div className="pr-lbl">Materiale</div>
+                  <div className="pr-val mono" style={{ color: b.matPrev && b.materiale > b.matPrev ? "var(--rosu)" : "var(--text)" }}>{bani(b.materiale)}</div>
+                  <div className="pr-prev">din {b.matPrev ? bani(b.matPrev) : "—"}</div>
+                </div>
+                <div className="pr-col">
+                  <div className="pr-lbl">Manoperă</div>
+                  <div className="pr-val mono">{bani(b.manopera)}</div>
+                  <div className="pr-prev">plătită</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
 
       <div className="sectiune">Prevăzut vs realizat</div>
       <div className="fisa-rand">
