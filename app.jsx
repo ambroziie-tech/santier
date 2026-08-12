@@ -67,7 +67,7 @@ const gol = {
   santiere: [], pontaj: [], consum: [], planificare: [], sarcini: [],
   dotare: [], verificari: [],
   firma: null,
-  setari: { pin: PIN_IMPLICIT },
+  setari: { pin: PIN_IMPLICIT, zilePoze: 30 },
 };
 
 const aziISO = () => new Date().toISOString().slice(0, 10);
@@ -803,6 +803,45 @@ function App() {
     }
   };
 
+  /* ---------- curățenie automată a pozelor ----------
+     Pozele problemelor rezolvate se șterg după un număr de zile.
+     Textul rămâne — dispare doar imaginea, care ocupă locul. */
+  const [curatenie, setCuratenie] = useState("");
+
+  const zileDeLaISO = (d) => {
+    if (!d) return null;
+    return Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+  };
+
+  const stergePozeVechi = useCallback(async (praguri, tacut) => {
+    const zilePastrare = Number(praguri) || 0;
+    if (!zilePastrare) return 0;
+    const deSters = db.sarcini.filter((x) =>
+      x.status === "rezolvat" && (x.fotoId || x.fotoData) &&
+      zileDeLaISO(x.rezolvatISO) !== null && zileDeLaISO(x.rezolvatISO) >= zilePastrare);
+    if (deSters.length === 0) return 0;
+
+    for (const x of deSters) {
+      if (x.fotoId) { try { await stocare.delete(`foto:${x.fotoId}`, true); } catch (e) {} }
+    }
+    const sarcini = db.sarcini.map((x) =>
+      deSters.some((y) => y.id === x.id)
+        ? { ...x, fotoId: null, fotoData: null, pozaStearsa: true }
+        : x);
+    await salveaza({ ...db, sarcini });
+    if (!tacut) setCuratenie(`${deSters.length} ${deSters.length === 1 ? "poză ștearsă" : "poze șterse"}.`);
+    return deSters.length;
+  }, [db, salveaza]);
+
+  /* la fiecare intrare ca admin, curăț ce a expirat */
+  useEffect(() => {
+    if (!esteAdmin) return;
+    const zile = db.setari?.zilePoze;
+    if (zile === undefined || zile === 0) return;
+    stergePozeVechi(zile, true);
+    // eslint-disable-next-line
+  }, [esteAdmin, db.setari?.zilePoze]);
+
   const log = (text) => ({ id: uid(), cand: azi(), text });
   const cuJurnal = (d, text) => ({ ...d, jurnal: [log(text), ...d.jurnal].slice(0, 300) });
 
@@ -1114,8 +1153,8 @@ function App() {
       sarcini: db.sarcini.map((x) =>
         x.id === id
           ? x.status === "deschis"
-            ? { ...x, status: "rezolvat", rezolvatDe: cine, dataRezolvare: azi() }
-            : { ...x, status: "deschis", rezolvatDe: null, dataRezolvare: null }
+            ? { ...x, status: "rezolvat", rezolvatDe: cine, dataRezolvare: azi(), rezolvatISO: aziISO() }
+            : { ...x, status: "deschis", rezolvatDe: null, dataRezolvare: null, rezolvatISO: null }
           : x),
     });
   };
@@ -2522,6 +2561,46 @@ function App() {
               <div className="actiuni">
                 <button className="btn btn-mic principal" onClick={() => exporta(true)}>Backup complet (cu poze)</button>
                 <button className="btn btn-mic" onClick={() => exporta(false)}>Doar datele (fișier mic)</button>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="titlu">🧹 Curățenie automată a pozelor</div>
+              <div className="sub">
+                Pozele problemelor rezolvate se șterg singure după un timp. Textul rămâne —
+                dispare doar imaginea, care ocupă locul. Așa nu rămâi fără spațiu.
+              </div>
+              <div className="actiuni">
+                {[[7, "7 zile"], [30, "30 zile"], [90, "3 luni"], [0, "Niciodată"]].map(([z, et]) => (
+                  <button key={z}
+                    className={"btn btn-mic" + ((db.setari?.zilePoze ?? 30) === z ? " principal" : "")}
+                    onClick={() => salveaza({ ...db, setari: { ...db.setari, zilePoze: z } })}>
+                    {et}
+                  </button>
+                ))}
+              </div>
+              {(() => {
+                const cuPoza = db.sarcini.filter((x) => x.fotoId || x.fotoData);
+                const rezolvate = cuPoza.filter((x) => x.status === "rezolvat");
+                return (
+                  <div className="sub" style={{ marginTop: 11 }}>
+                    Acum: <b>{cuPoza.length}</b> {cuPoza.length === 1 ? "poză" : "poze"} salvate
+                    ({rezolvate.length} la probleme deja rezolvate).
+                    {curatenie && <><br /><span style={{ color: "var(--verde)" }}>{curatenie}</span></>}
+                  </div>
+                );
+              })()}
+              <div className="actiuni">
+                <button className="btn btn-mic"
+                  onClick={() => cere(
+                    "Ștergi acum pozele problemelor rezolvate mai vechi decât pragul ales? Textul rămâne.",
+                    async () => {
+                      const n = await stergePozeVechi(db.setari?.zilePoze || 30);
+                      if (n === 0) setCuratenie("Nimic de șters deocamdată.");
+                      setTimeout(() => setCuratenie(""), 5000);
+                    }, "Curăță")}>
+                  Curăță acum
+                </button>
               </div>
             </div>
 
@@ -4865,6 +4944,9 @@ function ListaSarcini({ santier, sarcini, onAdauga, onComuta, onSterge, onClose 
         </span>
       </div>
       {(x.fotoId || x.fotoData) && <Poza fotoId={x.fotoId} fotoData={x.fotoData} />}
+      {!x.fotoId && !x.fotoData && x.pozaStearsa && (
+        <div className="poza-gol" style={{ padding: 12 }}>Poza a fost ștearsă automat (problemă rezolvată)</div>
+      )}
       <div className="actiuni">
         <button className="btn btn-mic" onClick={() => onComuta(x.id)}>
           {x.status === "rezolvat" ? "Redeschide" : "Marchează rezolvat"}
