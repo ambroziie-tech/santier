@@ -835,12 +835,12 @@ function App() {
 
   /* la fiecare intrare ca admin, curăț ce a expirat */
   useEffect(() => {
-    if (!esteAdmin) return;
+    if (identitate?.rol !== "admin") return;
     const zile = db.setari?.zilePoze;
-    if (zile === undefined || zile === 0) return;
+    if (!zile) return;
     stergePozeVechi(zile, true);
     // eslint-disable-next-line
-  }, [esteAdmin, db.setari?.zilePoze]);
+  }, [identitate, db.setari?.zilePoze]);
 
   const log = (text) => ({ id: uid(), cand: azi(), text });
   const cuJurnal = (d, text) => ({ ...d, jurnal: [log(text), ...d.jurnal].slice(0, 300) });
