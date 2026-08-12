@@ -544,6 +544,13 @@ body{background:var(--asfalt)}
 .zi-antet{display:flex;justify-content:space-between;align-items:center;font-size:14px}
 .zi-antet button{padding:4px 12px;font-size:15px;line-height:1}
 .zi-gol{color:var(--linie);font-size:13px;padding:5px 0 2px}
+.rand-cerere{display:flex;align-items:center;gap:10px;padding:9px 2px;
+  border-bottom:1px dashed var(--linie)}
+.rand-cerere>div:first-child{flex:1;min-width:0}
+.rc-cant{display:flex;align-items:center;gap:9px;flex:none}
+.rc-cant button{width:34px;height:34px;border-radius:50%;background:var(--beton2);
+  border:1px solid var(--linie);color:var(--galben);font-size:19px;line-height:1;cursor:pointer}
+.rc-cant span{min-width:26px;text-align:center;font-size:15px;font-weight:700}
 .btn-sterge-plan{background:none;border:none;color:var(--mut);font-size:17px;line-height:1;
   padding:4px 8px;cursor:pointer;flex:none}
 .plan-item{background:var(--asfalt);border-radius:8px;padding:9px 10px;margin-top:8px;cursor:pointer;
@@ -810,6 +817,36 @@ function App() {
     setFoaie(null);
   };
   const salvMaterial = salvGen("materiale");
+
+  /* materialul primit: ori rămâne în depozit, ori pleacă direct pe un șantier
+     (caz în care intră ca și consum pe lucrarea aia, nu în stoc) */
+  const salvMaterialCuDestinatie = (m, dest) => {
+    const nou = m.id ? m : { ...m, id: uid() };
+    let materiale = m.id
+      ? db.materiale.map((x) => (x.id === m.id ? nou : x))
+      : [...db.materiale, nou];
+
+    if (!dest?.santierId) {
+      salveaza({ ...db, materiale });
+      setFoaie(null);
+      return;
+    }
+
+    const santier = db.santiere.find((x) => x.id === dest.santierId);
+    const cant = Number(nou.cant) || 0;
+    const intrare = {
+      id: uid(), santierId: dest.santierId, fazaId: dest.fazaId || null,
+      materialId: nou.id, nume: nou.nume, cant, unitate: nou.unitate,
+      pret: Number(nou.pret) || 0, data: aziISO(),
+      motiv: "livrat direct pe șantier",
+    };
+    /* a plecat tot pe șantier, deci în depozit nu rămâne nimic din livrarea asta */
+    materiale = materiale.map((x) => (x.id === nou.id ? { ...x, cant: 0 } : x));
+
+    salveaza(cuJurnal({ ...db, materiale, consum: [intrare, ...db.consum] },
+      `${santier?.nume || "Șantier"}: primit direct ${cant} ${nou.unitate} ${nou.nume}`));
+    setFoaie(null);
+  };
   const salvCamion = salvGen("camioane");
 
   const stergeGen = (cheie, mesaj) => (id) => cere(mesaj, () => {
@@ -1135,6 +1172,32 @@ function App() {
   const trimiteCerere = (c) => {
     salveaza({ ...db, cereri: [{ ...c, id: uid(), cand: azi(), status: "nou" }, ...db.cereri] });
     setFoaie(null);
+  };
+
+  /* adminul trimite materialele cerute: se scad din stoc și intră pe șantier */
+  const onoreazaCerere = (cerere) => {
+    const santier = db.santiere.find((x) => x.id === cerere.santierId);
+    let materiale = [...db.materiale];
+    const intrari = [];
+    (cerere.linii || []).forEach((l) => {
+      const mat = l.materialId ? materiale.find((m) => m.id === l.materialId) : null;
+      const cant = Number(l.cant) || 0;
+      if (mat) materiale = materiale.map((m) =>
+        m.id === mat.id ? { ...m, cant: Math.max(0, Number(m.cant) - cant) } : m);
+      if (cerere.santierId)
+        intrari.push({
+          id: uid(), santierId: cerere.santierId, fazaId: null,
+          materialId: mat?.id || null, nume: l.nume, cant,
+          unitate: l.unitate, pret: Number(mat?.pret) || 0,
+          data: aziISO(), motiv: `cerut de ${cerere.autorNume}`,
+          inregistratDe: "Admin",
+        });
+    });
+    salveaza(cuJurnal({
+      ...db, materiale,
+      consum: [...intrari, ...db.consum],
+      cereri: db.cereri.map((x) => (x.id === cerere.id ? { ...x, status: "rezolvat" } : x)),
+    }, `Trimis pe ${santier?.nume || "șantier"}: ${(cerere.linii || []).map((l) => `${l.cant} ${l.unitate} ${l.nume}`).join(", ")}`));
   };
   const marcheazaCerere = (id, status) =>
     salveaza({ ...db, cereri: db.cereri.map((c) => (c.id === id ? { ...c, status } : c)) });
@@ -1510,7 +1573,10 @@ function App() {
                   <div className="card-rand">
                     <div>
                       <div className="titlu">{t(c.tip === "problema" ? "⚠ Problemă" : "📦 Necesar")}</div>
-                      <div className="sub">{c.text}<br /><span className="mono">{c.cand}</span></div>
+                      <div className="sub">
+                        {c.santierNume && <>🏗 {c.santierNume}<br /></>}
+                        {c.text}<br /><span className="mono">{c.cand}</span>
+                      </div>
                     </div>
                     <span className={"chip " + (c.status === "nou" ? "alocat" : "ok")}>
                       {t(c.status === "nou" ? "Trimisă" : "Rezolvată")}
@@ -1536,7 +1602,8 @@ function App() {
             onClose={() => setFoaie(null)} />
         )}
         {foaie?.tip === "cerere" && (
-          <FormCerere eu={eu} onTrimite={trimiteCerere} onClose={() => setFoaie(null)} />
+          <FormCerere eu={eu} santiere={pentruConsum} materiale={db.materiale}
+            onTrimite={trimiteCerere} onClose={() => setFoaie(null)} />
         )}
 
         <Confirmare intrebare={intrebare} onInchide={() => setIntrebare(null)} />
@@ -2518,31 +2585,70 @@ function App() {
             <div className="sectiune">Probleme și necesar raportate de pe teren</div>
             {db.cereri.length === 0 ? (
               <div className="gol-msg">Nimic raportat. Muncitorii intră cu contul lor și trimit probleme sau ce le lipsește — apare doar aici, la tine.</div>
-            ) : db.cereri.map((c) => (
-              <div className="card" key={c.id}>
-                <div className="card-rand">
-                  <div>
-                    <div className="titlu">{t(c.tip === "problema" ? "⚠ Problemă" : "📦 Necesar")} · {c.autorNume}</div>
-                    <div className="sub">{c.text}<br /><span className="mono">{c.cand}</span></div>
+            ) : db.cereri.map((c) => {
+              const areLinii = Array.isArray(c.linii) && c.linii.length > 0;
+              return (
+                <div className="card" key={c.id}>
+                  <div className="card-rand">
+                    <div>
+                      <div className="titlu">{t(c.tip === "problema" ? "⚠ Problemă" : "📦 Necesar")} · {c.autorNume}</div>
+                      <div className="sub">
+                        {c.santierNume && <>🏗 {c.santierNume}<br /></>}
+                        {!areLinii && <>{c.text}<br /></>}
+                        <span className="mono">{c.cand}</span>
+                      </div>
+                    </div>
+                    <span className={"chip " + (c.status === "nou" ? "alocat" : "ok")}>
+                      {c.status === "nou" ? "Nouă" : "Rezolvată"}
+                    </span>
                   </div>
-                  <span className={"chip " + (c.status === "nou" ? "alocat" : "ok")}>
-                    {c.status === "nou" ? "Nouă" : "Rezolvată"}
-                  </span>
+
+                  {areLinii && (
+                    <div className="lista-in-card">
+                      {c.linii.map((l, i) => {
+                        const mat = l.materialId ? db.materiale.find((m) => m.id === l.materialId) : null;
+                        const lipsa = mat && Number(mat.cant) < Number(l.cant);
+                        return (
+                          <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                            <span>📦 {l.nume}</span>
+                            <b className="mono" style={{ color: lipsa ? "var(--rosu)" : "var(--text)", whiteSpace: "nowrap" }}>
+                              {l.cant} {l.unitate}
+                              {mat && <span style={{ color: "var(--mut)", fontWeight: 400 }}> / {mat.cant} în stoc</span>}
+                              {!mat && <span style={{ color: "var(--mut)", fontWeight: 400 }}> · nu e în stoc</span>}
+                            </b>
+                          </div>
+                        );
+                      })}
+                      {c.text && <div style={{ color: "var(--mut)", marginTop: 6 }}>{c.text}</div>}
+                    </div>
+                  )}
+
+                  <div className="actiuni">
+                    {c.status === "nou" && areLinii && c.santierId && (
+                      <button className="btn btn-mic principal"
+                        onClick={() => cere(
+                          `Trimiți ${c.linii.map((l) => `${l.cant} ${l.unitate} ${l.nume}`).join(", ")} pe ${c.santierNume}? Se scad din stoc și intră ca material consumat acolo.`,
+                          () => onoreazaCerere(c), "Trimite")}>
+                        Trimite materialele
+                      </button>
+                    )}
+                    {c.status === "nou"
+                      ? <button className="btn btn-mic" onClick={() => marcheazaCerere(c.id, "rezolvat")}>Marchează rezolvată</button>
+                      : <button className="btn btn-mic" onClick={() => marcheazaCerere(c.id, "nou")}>Redeschide</button>}
+                    <button className="btn btn-mic pericol" onClick={() => stergeCerere(c.id)}>Șterge</button>
+                  </div>
                 </div>
-                <div className="actiuni">
-                  {c.status === "nou"
-                    ? <button className="btn btn-mic principal" onClick={() => marcheazaCerere(c.id, "rezolvat")}>Marchează rezolvată</button>
-                    : <button className="btn btn-mic" onClick={() => marcheazaCerere(c.id, "nou")}>Redeschide</button>}
-                  <button className="btn btn-mic pericol" onClick={() => stergeCerere(c.id)}>Șterge</button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </>
         )}
       </div>
 
       {/* ---------- FORMULARE ADMIN ---------- */}
-      {foaie?.tip === "material" && <FormMaterial item={foaie.item} onSalveaza={salvMaterial} onClose={() => setFoaie(null)} />}
+      {foaie?.tip === "material" && (
+        <FormMaterial item={foaie.item} santiere={db.santiere.filter((x) => x.status !== "finalizat")}
+          onSalveaza={salvMaterialCuDestinatie} onClose={() => setFoaie(null)} />
+      )}
       {foaie?.tip === "scula" && <FormScula item={foaie.item} onSalveaza={salvScula} onClose={() => setFoaie(null)} />}
       {foaie?.tip === "echipa" && <FormEchipa item={foaie.item} onSalveaza={salvEchipa} onClose={() => setFoaie(null)} />}
       {foaie?.tip === "angajat" && <FormAngajat item={foaie.item} echipe={db.echipe} onSalveaza={salvAngajat} onClose={() => setFoaie(null)} />}
@@ -3526,9 +3632,13 @@ function EcranIntrare({ db, onIntra, onSeteazaPin }) {
 }
 
 /* ==================== FORMULARE ==================== */
-function FormMaterial({ item, onSalveaza, onClose }) {
+function FormMaterial({ item, santiere = [], onSalveaza, onClose }) {
   const [f, setF] = useState(item || { nume: "", categorie: "", cant: "", unitate: "buc", minim: "", pret: "", locatie: "" });
+  const [dest, setDest] = useState({ santierId: "", fazaId: "" });
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const santierAles = santiere.find((x) => x.id === dest.santierId);
+  const fazeleLui = Array.isArray(santierAles?.faze) ? santierAles.faze : [];
+  const valoare = (Number(f.cant) || 0) * (Number(f.pret) || 0);
   return (
     <Foaie titlu={item ? "Modifică material" : "Material nou"} onClose={onClose}>
       <div className="camp"><label>Denumire *</label>
@@ -3553,7 +3663,39 @@ function FormMaterial({ item, onSalveaza, onClose }) {
         <div className="camp"><label>Locație</label>
           <input value={f.locatie} onChange={set("locatie")} placeholder="ex. Depozit" /></div>
       </div>
-      <button className="btn btn-galben" onClick={() => f.nume.trim() && onSalveaza({ ...f, cant: Number(f.cant) || 0, pret: Number(f.pret) || 0 })}>
+
+      {!item && santiere.length > 0 && (
+        <>
+          <div className="sectiune">Unde a ajuns marfa</div>
+          <div className="camp">
+            <select value={dest.santierId}
+              onChange={(e) => setDest({ santierId: e.target.value, fazaId: "" })}>
+              <option value="">🏠 În depozit</option>
+              {santiere.map((x) => <option key={x.id} value={x.id}>🏗 Direct pe {x.nume}</option>)}
+            </select>
+          </div>
+
+          {fazeleLui.length > 0 && (
+            <div className="camp">
+              <label>Pe ce fază</label>
+              <select value={dest.fazaId} onChange={(e) => setDest({ ...dest, fazaId: e.target.value })}>
+                <option value="">— nealocat pe fază —</option>
+                {fazeleLui.map((fz) => <option key={fz.id} value={fz.id}>{fz.nume}</option>)}
+              </select>
+            </div>
+          )}
+
+          <div className="sub" style={{ marginBottom: 12, lineHeight: 1.55 }}>
+            {dest.santierId
+              ? <>Marfa nu intră în stoc — se trece direct pe <b>{santierAles?.nume}</b> ca material consumat
+                  {valoare > 0 && <>, {bani(valoare)}</>}. Materialul rămâne în listă cu stoc 0, ca să-l poți recomanda data viitoare.</>
+              : <>Intră în stoc, la depozit. De acolo îl repartizezi pe șantiere când pleacă.</>}
+          </div>
+        </>
+      )}
+
+      <button className="btn btn-galben"
+        onClick={() => f.nume.trim() && onSalveaza({ ...f, cant: Number(f.cant) || 0, pret: Number(f.pret) || 0 }, dest)}>
         Salvează
       </button>
     </Foaie>
@@ -3756,22 +3898,136 @@ function FormIntretinere({ camion, onSalveaza, onClose }) {
   );
 }
 
-function FormCerere({ eu, onTrimite, onClose }) {
-  const [f, setF] = useState({ tip: "problema", text: "" });
+function FormCerere({ eu, santiere = [], materiale = [], onTrimite, onClose }) {
+  const [tip, setTip] = useState("problema");
+  const [text, setText] = useState("");
+  const [santierId, setSantierId] = useState(santiere[0]?.id || "");
+  const [linii, setLinii] = useState([]);        // materialele cerute
+  const [cauta, setCauta] = useState("");
+  const [alege, setAlege] = useState(false);     // ecranul de ales din stoc
+
+  const santier = santiere.find((x) => x.id === santierId);
+  const gasite = cauta.trim()
+    ? materiale.filter((m) => m.nume.toLowerCase().includes(cauta.trim().toLowerCase()))
+    : materiale;
+
+  const adaugaDinStoc = (m) => {
+    if (linii.some((l) => l.materialId === m.id)) { setAlege(false); setCauta(""); return; }
+    setLinii([...linii, { materialId: m.id, nume: m.nume, unitate: m.unitate, cant: 1, stoc: m.cant }]);
+    setAlege(false); setCauta("");
+  };
+  const adaugaLiber = () => {
+    if (!cauta.trim()) return;
+    setLinii([...linii, { materialId: null, nume: cauta.trim(), unitate: "buc", cant: 1, stoc: null }]);
+    setAlege(false); setCauta("");
+  };
+  const setCant = (i, v) => setLinii(linii.map((l, j) => (j === i ? { ...l, cant: Math.max(0.5, v) } : l)));
+  const scoate = (i) => setLinii(linii.filter((_, j) => j !== i));
+
+  /* ecranul de ales material */
+  if (alege)
+    return (
+      <Foaie titlu="Ce vă trebuie?" onClose={() => { setAlege(false); setCauta(""); }}>
+        <input className="cautare" placeholder="Caută sau scrie ce vă trebuie…" value={cauta}
+          onChange={(e) => setCauta(e.target.value)} autoFocus />
+        {gasite.map((m) => (
+          <button key={m.id} className="btn btn-mare" onClick={() => adaugaDinStoc(m)}>
+            <span>📦 {m.nume}</span>
+            <span className="bm-stoc">{m.cant} {m.unitate} în depozit</span>
+          </button>
+        ))}
+        {cauta.trim() && (
+          <button className="btn btn-mic" style={{ width: "100%", marginTop: 8 }} onClick={adaugaLiber}>
+            + Cere „{cauta.trim()}" (nu e în depozit)
+          </button>
+        )}
+        {!cauta.trim() && materiale.length === 0 && (
+          <div className="gol-msg">Nu e nimic în depozit. Scrie mai sus ce vă trebuie.</div>
+        )}
+      </Foaie>
+    );
+
+  const valid = tip === "problema"
+    ? text.trim().length > 0
+    : (linii.length > 0 || text.trim().length > 0);
+
+  const trimite = () => {
+    const listaText = linii.map((l) => `${l.cant} ${l.unitate} ${l.nume}`).join(", ");
+    const corp = tip === "necesar"
+      ? [listaText, text.trim()].filter(Boolean).join(" — ")
+      : text.trim();
+    onTrimite({
+      tip, text: corp,
+      santierId: santierId || null,
+      santierNume: santier?.nume || null,
+      linii: tip === "necesar" ? linii : [],
+      autorId: eu?.id || null, autorNume: eu?.nume || "Necunoscut",
+    });
+  };
+
   return (
     <Foaie titlu="Raportează" onClose={onClose}>
       <div className="subtab">
-        <button className={f.tip === "problema" ? "activ" : ""} onClick={() => setF({ ...f, tip: "problema" })}>⚠ Problemă</button>
-        <button className={f.tip === "necesar" ? "activ" : ""} onClick={() => setF({ ...f, tip: "necesar" })}>📦 Am nevoie de…</button>
+        <button className={tip === "problema" ? "activ" : ""} onClick={() => setTip("problema")}>⚠ Problemă</button>
+        <button className={tip === "necesar" ? "activ" : ""} onClick={() => setTip("necesar")}>📦 Am nevoie de…</button>
       </div>
-      <div className="camp">
-        <label>{f.tip === "problema" ? "Ce s-a întâmplat?" : "Ce vă lipsește pe șantier?"}</label>
-        <textarea rows={4} value={f.text} onChange={(e) => setF({ ...f, text: e.target.value })}
-          placeholder={f.tip === "problema" ? "ex. S-a stricat flexul mare, nu mai pornește" : "ex. Ne trebuie 20 saci ciment și discuri de 230"} />
-      </div>
+
+      {santiere.length > 0 && (
+        <div className="camp">
+          <label>Pe ce șantier</label>
+          <select value={santierId} onChange={(e) => setSantierId(e.target.value)}>
+            {santiere.map((x) => <option key={x.id} value={x.id}>{x.nume}</option>)}
+            <option value="">— altundeva / nu e legat de un șantier —</option>
+          </select>
+        </div>
+      )}
+
+      {tip === "necesar" && (
+        <>
+          <div className="camp">
+            <label>Ce vă trebuie</label>
+            {linii.map((l, i) => (
+              <div key={i} className="rand-cerere">
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{l.nume}</div>
+                  <div className="sub" style={{ marginTop: 1 }}>
+                    {l.stoc === null
+                      ? "nu e în depozit"
+                      : <>în depozit: <b className="mono">{l.stoc} {l.unitate}</b></>}
+                  </div>
+                </div>
+                <div className="rc-cant">
+                  <button onClick={() => setCant(i, +(l.cant - 1).toFixed(1))}>−</button>
+                  <span className="mono">{l.cant}</span>
+                  <button onClick={() => setCant(i, +(l.cant + 1).toFixed(1))}>+</button>
+                </div>
+                <button className="btn-sterge-plan" onClick={() => scoate(i)}>✕</button>
+              </div>
+            ))}
+            <button className="btn btn-mic" style={{ width: "100%", marginTop: linii.length ? 8 : 0 }}
+              onClick={() => setAlege(true)}>
+              + Adaugă material
+            </button>
+          </div>
+
+          <div className="camp">
+            <label>Altceva de spus (opțional)</label>
+            <textarea rows={2} value={text} onChange={(e) => setText(e.target.value)}
+              placeholder="ex. ne ajunge până joi, aduceți dacă se poate mâine" />
+          </div>
+        </>
+      )}
+
+      {tip === "problema" && (
+        <div className="camp">
+          <label>Ce s-a întâmplat?</label>
+          <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)}
+            placeholder="ex. S-a stricat flexul mare, nu mai pornește" />
+        </div>
+      )}
+
       <div className="sub" style={{ marginBottom: 12 }}>Mesajul ajunge doar la admin.</div>
-      <button className="btn btn-galben" disabled={!f.text.trim()}
-        onClick={() => f.text.trim() && onTrimite({ tip: f.tip, text: f.text.trim(), autorId: eu?.id || null, autorNume: eu?.nume || "Necunoscut" })}>
+      <button className="btn btn-galben" disabled={!valid} onClick={() => valid && trimite()}>
         Trimite
       </button>
     </Foaie>
