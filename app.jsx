@@ -3242,6 +3242,12 @@ function App() {
         {/* ---------- CERERI ---------- */}
         {tab === "cereri" && (
           <>
+            <div className="filtre">
+              {[["toate", "Toate"], ["ore", "⏱ Ore"], ["necesar", "📦 Necesar"], ["problema", "⚠ Probleme"]].map(([id, et]) => (
+                <button key={id} className={filtruCereri === id ? "activ" : ""}
+                  onClick={() => setFiltruCereri(id)}>{et}</button>
+              ))}
+            </div>
             {(filtruCereri === "toate" || filtruCereri === "ore") && (() => {
               const noi = db.suplimentare.filter((x) => x.status === "nou");
               const vechi = db.suplimentare.filter((x) => x.status !== "nou").slice(0, 6);
@@ -3285,14 +3291,7 @@ function App() {
               };
               return (
                 <>
-                  <div className="filtre">
-              {[["toate", "Toate"], ["ore", "⏱ Ore"], ["necesar", "📦 Necesar"], ["problema", "⚠ Probleme"]].map(([id, et]) => (
-                <button key={id} className={filtruCereri === id ? "activ" : ""}
-                  onClick={() => setFiltruCereri(id)}>{et}</button>
-              ))}
-            </div>
-
-            <div className="sectiune">⏱ Ore suplimentare {noi.length > 0 && `(${noi.length} de aprobat)`}</div>
+                  <div className="sectiune">⏱ Ore suplimentare {noi.length > 0 && `(${noi.length} de aprobat)`}</div>
                   {noi.map(rand)}
                   {noi.length === 0 && <div className="gol-msg">Nimic de aprobat.</div>}
                   {vechi.length > 0 && (
