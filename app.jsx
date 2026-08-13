@@ -67,7 +67,7 @@ const gol = {
   santiere: [], pontaj: [], consum: [], planificare: [], sarcini: [],
   dotare: [], verificari: [],
   firma: null,
-  setari: { pin: PIN_IMPLICIT, zilePoze: 30,
+  setari: { pin: PIN_IMPLICIT, zilePoze: 30, zileCereri: 30,
     program: { start: "07:30", final: "16:00", pauza: 60,
       zile: ["MO", "TU", "WE", "TH", "FR"], special: {} } },
   suplimentare: [],
@@ -528,6 +528,11 @@ body{background:var(--asfalt)}
   background:var(--beton);border:1px solid var(--linie);border-radius:12px;padding:13px 14px;margin-bottom:10px}
 .rz-nr{font-size:22px;font-weight:800;color:var(--verde)}
 .rz-lbl{color:var(--mut);font-size:11.5px;margin-top:2px;line-height:1.4}
+.filtre{display:flex;gap:6px;overflow-x:auto;margin-bottom:11px;padding-bottom:3px}
+.filtre button{flex:none;background:var(--beton);border:1px solid var(--linie);color:var(--mut);
+  font-family:'Archivo',sans-serif;font-weight:600;font-size:12.5px;padding:7px 13px;
+  border-radius:20px;cursor:pointer;white-space:nowrap}
+.filtre button.activ{background:var(--galben-int);border-color:var(--galben);color:var(--galben)}
 .subtab{display:flex;gap:8px;margin-bottom:12px}
 .subtab button{flex:1;background:var(--beton);border:1px solid var(--linie);color:var(--mut);
   font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;padding:9px;border-radius:9px;cursor:pointer}
@@ -630,6 +635,12 @@ body{background:var(--asfalt)}
   color:var(--rosu);font-family:'Archivo',sans-serif;font-weight:700;font-size:14.5px;padding:14px;
   border-radius:11px;cursor:pointer;text-align:left;margin-top:6px}
 .meniu-iesire span{font-size:19px}
+.meniu-set button>div{display:flex;flex-direction:column;gap:2px}
+.ms-desc{font-size:11.5px;font-weight:400;color:var(--mut);text-transform:none;letter-spacing:0}
+.ms-sageata{font-size:20px;color:var(--mut);flex:none}
+.btn-inapoi{display:flex;align-items:center;gap:9px;background:none;border:none;color:var(--galben);
+  font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;padding:2px 0 12px;cursor:pointer}
+.btn-inapoi span{color:var(--text);font-size:16px;font-weight:800}
 .meniu-set button.activ{background:var(--galben-int);border-color:var(--galben);color:var(--galben)}
 .alerta-card{cursor:pointer;border-left:3px solid var(--galben)}
 .alerta-card.expirat{border-left-color:var(--rosu)}
@@ -677,8 +688,11 @@ function App() {
   const [incarcat, setIncarcat] = useState(false);
   const [tab, setTab] = useState("panou");
   const [subInv, setSubInv] = useState("materiale");
+  const [filtruCat, setFiltruCat] = useState("");
+  const [filtruCereri, setFiltruCereri] = useState("toate");
+  const [sortSant, setSortSant] = useState("activitate");
   const [subOam, setSubOam] = useState("angajati");
-  const [subSet, setSubSet] = useState("oameni");
+  const [subSet, setSubSet] = useState(null);
   const [tabM, setTabM] = useState("azi");
   const [intrebare, setIntrebare] = useState(null); // {mesaj, onDa, eticheta}
   const cere = (mesaj, onDa, eticheta, onNu) => setIntrebare({ mesaj, onDa, eticheta, onNu });
@@ -880,6 +894,34 @@ function App() {
     return deSters.length;
   }, [db, salveaza]);
 
+  /* cererile și suplimentarele rezolvate se șterg după un timp.
+     Orele deja aprobate rămân în pontaj — se șterge doar cererea. */
+  const curataCereri = useCallback(async (zile, tacut) => {
+    const prag = Number(zile) || 0;
+    if (!prag) return 0;
+    const vechi = (d) => {
+      const t = d ? new Date(d).getTime() : null;
+      return t ? Math.floor((Date.now() - t) / 86400000) >= prag : false;
+    };
+    const cereriRamase = db.cereri.filter((c) =>
+      c.status === "nou" || !vechi(c.rezolvatLa || c.candISO));
+    const supRamase = db.suplimentare.filter((x) =>
+      x.status === "nou" || !vechi(x.raspunsLa));
+    const sterse = (db.cereri.length - cereriRamase.length) + (db.suplimentare.length - supRamase.length);
+    if (sterse === 0) return 0;
+    await salveaza({ ...db, cereri: cereriRamase, suplimentare: supRamase });
+    if (!tacut) setCuratenie(`${sterse} intrări vechi șterse.`);
+    return sterse;
+  }, [db, salveaza]);
+
+  useEffect(() => {
+    if (identitate?.rol !== "admin") return;
+    const z = db.setari?.zileCereri;
+    if (!z) return;
+    curataCereri(z, true);
+    // eslint-disable-next-line
+  }, [identitate, db.setari?.zileCereri]);
+
   /* la fiecare intrare ca admin, curăț ce a expirat */
   useEffect(() => {
     if (identitate?.rol !== "admin") return;
@@ -888,6 +930,156 @@ function App() {
     stergePozeVechi(zile, true);
     // eslint-disable-next-line
   }, [identitate, db.setari?.zilePoze]);
+
+  /* raport tipăribil (din fereastra de tipărire alegi „Salvează ca PDF") */
+  const deschideRaport = (titlu, corp) => {
+    const w = window.open("", "_blank");
+    if (!w) { cere("Browserul a blocat fereastra. Permite ferestrele pop-up pentru site și încearcă din nou.", () => {}, "Am înțeles"); return; }
+    w.document.write(`<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8">
+      <title>${titlu}</title>
+      <style>
+        *{box-sizing:border-box}
+        body{font-family:-apple-system,system-ui,sans-serif;color:#17191D;max-width:800px;
+          margin:0 auto;padding:28px 22px;line-height:1.5;font-size:13px}
+        h1{font-size:21px;margin:0 0 3px}
+        h2{font-size:14px;margin:22px 0 8px;padding-bottom:5px;border-bottom:2px solid #F5B301;
+          text-transform:uppercase;letter-spacing:.5px}
+        .cap{color:#666;font-size:12px;margin-bottom:18px}
+        table{width:100%;border-collapse:collapse;margin-bottom:6px}
+        th{text-align:left;font-size:11px;text-transform:uppercase;color:#666;
+          border-bottom:1px solid #ddd;padding:6px 4px}
+        td{padding:6px 4px;border-bottom:1px solid #f0f0f0}
+        td.n,th.n{text-align:right;white-space:nowrap}
+        .tot{font-weight:700;background:#faf6e8}
+        .verde{color:#1c7a4a;font-weight:700}
+        .rosu{color:#c0392b;font-weight:700}
+        .mic{color:#666;font-size:11px}
+        @media print{ body{padding:0} button{display:none} }
+        button{background:#F5B301;border:none;padding:11px 18px;border-radius:8px;
+          font-size:14px;font-weight:700;cursor:pointer;margin-bottom:18px}
+      </style></head><body>
+      <button onclick="window.print()">Salvează ca PDF / Tipărește</button>
+      ${corp}
+      </body></html>`);
+    w.document.close();
+  };
+
+  const capRaport = (titlu, sub) => `
+    <h1>${titlu}</h1>
+    <div class="cap">${sub}<br>${db.firma?.nume || ""}${db.firma?.siret ? " · " + db.firma.siret : ""}
+    · generat ${new Date().toLocaleDateString("ro-RO")}</div>`;
+
+  const raportSantier = (s) => {
+    const b = bilant(s);
+    const pont = pontajSantier(s.id);
+    const cons = consumSantier(s.id);
+    const peOm = {};
+    pont.forEach((p) => {
+      if (!peOm[p.nume]) peOm[p.nume] = { ore: 0, cost: 0, zile: new Set() };
+      peOm[p.nume].ore += Number(p.ore) || 0;
+      peOm[p.nume].cost += (Number(p.ore) || 0) * (Number(p.tarifOra) || 0);
+      peOm[p.nume].zile.add(p.data);
+    });
+    const peMat = {};
+    cons.forEach((c) => {
+      const k = (c.nume || "").toLowerCase();
+      if (!peMat[k]) peMat[k] = { nume: c.nume, cant: 0, unitate: c.unitate, val: 0 };
+      peMat[k].cant += Number(c.cant) || 0;
+      peMat[k].val += (Number(c.cant) || 0) * (Number(c.pret) || 0);
+    });
+    const oreTot = pont.reduce((t, p) => t + (Number(p.ore) || 0), 0);
+
+    const faze = areFaze(s) ? s.faze.map((fz) => ({ fz, b: bilantFaza(s, fz) })) : [];
+
+    deschideRaport(`Raport ${s.nume}`, `
+      ${capRaport(s.nume, `${s.client ? s.client + " · " : ""}${s.adresaFull || s.adresa || ""}
+        ${s.dataStart ? " · început " + dataRo(s.dataStart) : ""}`)}
+
+      <h2>Bilanț</h2>
+      <table>
+        <tr><td>Cifrat</td><td class="n">${bani(b.incasat)}</td></tr>
+        <tr><td>Manoperă (${(+oreTot.toFixed(1))}h)</td><td class="n">− ${bani(b.manopera)}</td></tr>
+        <tr><td>Materiale</td><td class="n">− ${bani(b.materiale)}</td></tr>
+        <tr class="tot"><td>Marjă</td><td class="n ${b.marja >= 0 ? "verde" : "rosu"}">
+          ${b.marja < 0 ? "−" : ""}${bani(Math.abs(b.marja))}${b.procent !== null ? " · " + b.procent + "%" : ""}</td></tr>
+      </table>
+
+      ${faze.length ? `<h2>Pe faze</h2><table>
+        <tr><th>Fază</th><th class="n">Ore</th><th class="n">Manoperă</th><th class="n">Materiale</th><th class="n">Marjă</th></tr>
+        ${faze.map(({ fz, b: bf }) => `<tr><td>${fz.nume}<div class="mic">${fz.domeniu || ""}</div></td>
+          <td class="n">${bf.ore}h</td><td class="n">${bani(bf.manopera)}</td>
+          <td class="n">${bani(bf.materiale)}</td>
+          <td class="n ${bf.marja >= 0 ? "verde" : "rosu"}">${bf.marja < 0 ? "−" : ""}${bani(Math.abs(bf.marja))}</td></tr>`).join("")}
+      </table>` : ""}
+
+      <h2>Cine a lucrat</h2>
+      <table>
+        <tr><th>Nume</th><th class="n">Zile</th><th class="n">Ore</th><th class="n">Cost</th></tr>
+        ${Object.entries(peOm).sort((a, b2) => b2[1].ore - a[1].ore)
+          .map(([nume, v]) => `<tr><td>${nume}</td><td class="n">${v.zile.size}</td>
+            <td class="n">${+v.ore.toFixed(1)}h</td><td class="n">${bani(v.cost)}</td></tr>`).join("")}
+        <tr class="tot"><td>Total</td><td class="n"></td><td class="n">${+oreTot.toFixed(1)}h</td>
+          <td class="n">${bani(b.manopera)}</td></tr>
+      </table>
+
+      <h2>Materiale consumate</h2>
+      <table>
+        <tr><th>Material</th><th class="n">Cantitate</th><th class="n">Valoare</th></tr>
+        ${Object.values(peMat).sort((a, b2) => b2.val - a.val)
+          .map((m) => `<tr><td>${m.nume}</td><td class="n">${m.cant} ${m.unitate}</td>
+            <td class="n">${bani(m.val)}</td></tr>`).join("")}
+        <tr class="tot"><td>Total</td><td class="n"></td><td class="n">${bani(b.materiale)}</td></tr>
+      </table>
+    `);
+  };
+
+  const raportLunarOm = (an, luna) => {
+    const prefix = `${an}-${String(luna).padStart(2, "0")}`;
+    const pontLuna = db.pontaj.filter((p) => (p.data || "").startsWith(prefix));
+    const supLuna = db.suplimentare.filter((x) => x.status === "aprobat" && (x.data || "").startsWith(prefix));
+    const numeLuna = new Date(an, luna - 1, 1).toLocaleDateString("ro-RO", { month: "long", year: "numeric" });
+
+    const peOm = {};
+    db.angajati.forEach((a) => { peOm[a.id] = { a, ore: 0, cost: 0, supl: 0, costSupl: 0, peSantier: {}, zile: new Set() }; });
+    pontLuna.forEach((p) => {
+      if (!peOm[p.angajatId]) return;
+      const r = peOm[p.angajatId];
+      r.ore += Number(p.ore) || 0;
+      r.cost += (Number(p.ore) || 0) * (Number(p.tarifOra) || 0);
+      r.zile.add(p.data);
+      const sn = db.santiere.find((x) => x.id === p.santierId)?.nume || "—";
+      r.peSantier[sn] = (r.peSantier[sn] || 0) + (Number(p.ore) || 0);
+      if (p.suplimentar) { r.supl += Number(p.ore) || 0; r.costSupl += (Number(p.ore) || 0) * (Number(p.tarifOra) || 0); }
+    });
+
+    const randuri = Object.values(peOm).filter((r) => r.ore > 0 || r.supl > 0)
+      .sort((a, b) => b.ore - a.ore);
+    const totalOre = randuri.reduce((t, r) => t + r.ore, 0);
+    const totalCost = randuri.reduce((t, r) => t + r.cost, 0);
+
+    deschideRaport(`Raport ${numeLuna}`, `
+      ${capRaport(`Raport lunar — ${numeLuna}`, `${randuri.length} angajați cu ore înregistrate`)}
+
+      <table>
+        <tr><th>Angajat</th><th class="n">Zile</th><th class="n">Ore</th><th class="n">Suplimentare</th><th class="n">Cost total</th></tr>
+        ${randuri.map((r) => `<tr>
+          <td>${r.a.nume}<div class="mic">${r.a.grad || ""}</div></td>
+          <td class="n">${r.zile.size}</td>
+          <td class="n">${+r.ore.toFixed(1)}h</td>
+          <td class="n">${r.supl > 0 ? `+${+r.supl.toFixed(1)}h` : "—"}</td>
+          <td class="n">${bani(r.cost)}</td>
+        </tr>`).join("")}
+        <tr class="tot"><td>Total</td><td class="n"></td><td class="n">${+totalOre.toFixed(1)}h</td><td class="n"></td><td class="n">${bani(totalCost)}</td></tr>
+      </table>
+
+      <h2>Pe fiecare om, câte ore pe șantier</h2>
+      ${randuri.map((r) => `<h2 style="border:none;margin-top:16px;font-size:13px">${r.a.nume}</h2>
+        <table><tr><th>Șantier</th><th class="n">Ore</th></tr>
+        ${Object.entries(r.peSantier).sort((a, b) => b[1] - a[1])
+          .map(([n, o]) => `<tr><td>${n}</td><td class="n">${+o.toFixed(1)}h</td></tr>`).join("")}
+        </table>`).join("")}
+    `);
+  };
 
   const log = (text) => ({ id: uid(), cand: azi(), text });
   const cuJurnal = (d, text) => ({ ...d, jurnal: [log(text), ...d.jurnal].slice(0, 300) });
@@ -1047,7 +1239,10 @@ function App() {
       ...db,
       pontaj: [intrare, ...db.pontaj],
       suplimentare: db.suplimentare.map((x) =>
-        x.id === sup.id ? { ...x, status: "aprobat", raspunsLa: new Date().toISOString() } : x),
+        x.id === sup.id
+          ? { ...x, status: "aprobat", oreAprobate: Number(sup.ore) || 0,
+              notaAdmin: sup.notaAdmin || "", raspunsLa: new Date().toISOString() }
+          : x),
     }, `Suplimentare aprobate: ${sup.nume} · ${sup.ore}h pe ${santier?.nume || "șantier"} (${dataRo(sup.data)})`));
   };
 
@@ -1332,7 +1527,7 @@ function App() {
 
   /* cereri */
   const trimiteCerere = (c) => {
-    salveaza({ ...db, cereri: [{ ...c, id: uid(), cand: azi(), status: "nou" }, ...db.cereri] });
+    salveaza({ ...db, cereri: [{ ...c, id: uid(), cand: azi(), candISO: new Date().toISOString(), status: "nou" }, ...db.cereri] });
     setFoaie(null);
   };
 
@@ -1362,7 +1557,8 @@ function App() {
     }, `Trimis pe ${santier?.nume || "șantier"}: ${(cerere.linii || []).map((l) => `${l.cant} ${l.unitate} ${l.nume}`).join(", ")}`));
   };
   const marcheazaCerere = (id, status) =>
-    salveaza({ ...db, cereri: db.cereri.map((c) => (c.id === id ? { ...c, status } : c)) });
+    salveaza({ ...db, cereri: db.cereri.map((c) => (c.id === id
+      ? { ...c, status, rezolvatLa: status === "rezolvat" ? new Date().toISOString() : null } : c)) });
   const stergeCerere = stergeGen("cereri", "Ștergi această cerere?");
 
   /* ---------- derivate ---------- */
@@ -1377,6 +1573,10 @@ function App() {
   const pontajSantier = (sid) => db.pontaj.filter((p) => p.santierId === sid);
   const oreSantier = (sid) => pontajSantier(sid).reduce((s, p) => s + (Number(p.ore) || 0), 0);
   const costSantier = (sid) => pontajSantier(sid).reduce((s, p) => s + (Number(p.ore) || 0) * (Number(p.tarifOra) || 0), 0);
+  /* ultima zi în care s-a pontat ceva pe șantier */
+  const ultimaZi = (sid) =>
+    db.pontaj.filter((p) => p.santierId === sid).map((p) => p.data).sort().pop() || null;
+
   const consumSantier = (sid) => db.consum.filter((c) => c.santierId === sid);
   const costMaterialeSantier = (sid) =>
     consumSantier(sid).reduce((s, c) => s + (Number(c.cant) || 0) * (Number(c.pret) || 0), 0);
@@ -1979,23 +2179,29 @@ function App() {
                     <div className="card-rand">
                       <div>
                         <div className="titlu">{m.nume}</div>
-                        <div className="sub">Stoc: <b className="mono">{m.cant} {m.unitate}</b> · minim {m.minim}</div>
+                        <div className="sub">
+                          Stoc: <b className="mono">{m.cant} {m.unitate}</b> · minim {m.minim}
+                          {m.pret > 0 && <> · {bani(m.pret)}/{m.unitate}</>}
+                        </div>
                       </div>
                       <span className="chip alerta">Stoc scăzut</span>
                     </div>
+                    <div className="actiuni">
+                      <button className="btn btn-mic principal"
+                        onClick={() => setFoaie({ tip: "aprovizionare", item: m })}>
+                        + Am cumpărat
+                      </button>
+                    </div>
                   </div>
                 ))}
+                <button className="btn btn-mic" style={{ width: "100%" }}
+                  onClick={() => { setTab("inventar"); setSubInv("materiale"); setFoaie({ tip: "material" }); }}>
+                  + Material nou în stoc
+                </button>
               </>
             )}
 
-            <div className="sectiune">Ultimele mișcări</div>
-            {db.jurnal.length === 0 ? (
-              <div className="gol-msg">Nicio mișcare încă.</div>
-            ) : db.jurnal.slice(0, 12).map((j) => (
-              <div className="jurnal-rand" key={j.id}>
-                <div className="cand mono">{j.cand}</div><div className="ce">{j.text}</div>
-              </div>
-            ))}
+
 
           </>
         )}
@@ -2004,8 +2210,10 @@ function App() {
         {tab === "inventar" && (
           <>
             <div className="subtab">
-              <button className={subInv === "materiale" ? "activ" : ""} onClick={() => setSubInv("materiale")}>Materiale</button>
-              <button className={subInv === "scule" ? "activ" : ""} onClick={() => setSubInv("scule")}>Scule</button>
+              <button className={subInv === "materiale" ? "activ" : ""}
+                onClick={() => { setSubInv("materiale"); setFiltruCat(""); }}>Materiale</button>
+              <button className={subInv === "scule" ? "activ" : ""}
+                onClick={() => { setSubInv("scule"); setFiltruCat(""); }}>Scule</button>
             </div>
             <input className="cautare" placeholder="Caută…" value={cauta} onChange={(e) => setCauta(e.target.value)} />
 
@@ -2022,7 +2230,27 @@ function App() {
                 </div>
                 <button className="btn btn-galben" onClick={() => setFoaie({ tip: "material" })}>+ Adaugă material</button>
                 <div style={{ height: 12 }} />
-                {filtrat(db.materiale, ["nume", "categorie", "locatie"]).map((m) => {
+                {(() => {
+                  const cats = [...new Set(db.materiale.map((m) => (m.categorie || "").trim()).filter(Boolean))].sort();
+                  if (cats.length === 0) return null;
+                  return (
+                    <div className="filtre">
+                      <button className={!filtruCat ? "activ" : ""} onClick={() => setFiltruCat("")}>Toate</button>
+                      {cats.map((c) => (
+                        <button key={c} className={filtruCat === c ? "activ" : ""}
+                          onClick={() => setFiltruCat(filtruCat === c ? "" : c)}>{c}</button>
+                      ))}
+                    </div>
+                  );
+                })()}
+                {filtrat(db.materiale, ["nume", "categorie", "locatie"])
+                  .filter((m) => !filtruCat || (m.categorie || "").trim() === filtruCat)
+                  .sort((a, b) => {
+                    const sa = Number(a.cant) <= Number(a.minim || 0) ? 0 : 1;
+                    const sb = Number(b.cant) <= Number(b.minim || 0) ? 0 : 1;
+                    return sa - sb || a.nume.localeCompare(b.nume, "ro");
+                  })
+                  .map((m) => {
                   const scazut = Number(m.cant) <= Number(m.minim || 0);
                   return (
                     <div className="card" key={m.id}>
@@ -2072,7 +2300,26 @@ function App() {
                 </div>
                 <button className="btn btn-galben" onClick={() => setFoaie({ tip: "scula" })}>+ Adaugă sculă</button>
                 <div style={{ height: 12 }} />
-                {filtrat(db.scule, ["nume", "cod"]).map((s) => (
+                {(() => {
+                  const cats = [...new Set(db.scule.map((x) => (x.categorie || "").trim()).filter(Boolean))].sort();
+                  if (cats.length === 0) return null;
+                  return (
+                    <div className="filtre">
+                      <button className={!filtruCat ? "activ" : ""} onClick={() => setFiltruCat("")}>Toate</button>
+                      {cats.map((c) => (
+                        <button key={c} className={filtruCat === c ? "activ" : ""}
+                          onClick={() => setFiltruCat(filtruCat === c ? "" : c)}>{c}</button>
+                      ))}
+                    </div>
+                  );
+                })()}
+                {filtrat(db.scule, ["nume", "cod", "categorie"])
+                  .filter((x) => !filtruCat || (x.categorie || "").trim() === filtruCat)
+                  .sort((a, b) => {
+                    const ord = { problema: 0, service: 1, alocat: 2, depozit: 3 };
+                    return (ord[a.stare] ?? 9) - (ord[b.stare] ?? 9) || a.nume.localeCompare(b.nume, "ro");
+                  })
+                  .map((s) => (
                   <div className="card" key={s.id}>
                     <div className="card-rand">
                       <div>
@@ -2133,16 +2380,27 @@ function App() {
 
         {/* ---------- OAMENI ---------- */}
         {tab === "setari" && (
-          <div className="meniu-set">
-            {[["cifre", "📊", "Cifre și rentabilitate"], ["oameni", "👷", "Oameni și echipe"], ["dotare", "🧰", "Dotare echipe"], ["auto", "🚛", "Camioane și utilaje"], ["cont", "🔑", "Cont și acces"], ["invitatii", "📨", "Invită muncitorii"], ["backup", "💾", "Backup și restaurare"]].map(([id, ico, lbl]) => (
-              <button key={id} className={subSet === id ? "activ" : ""} onClick={() => { setSubSet(id); setCauta(""); }}>
-                <span>{ico}</span>{lbl}
+          <>
+            {!subSet && (
+              <div className="meniu-set">
+                {SECTIUNI_SETARI.map(([id, ico, lbl, desc]) => (
+                  <button key={id} onClick={() => { setSubSet(id); setCauta(""); }}>
+                    <span>{ico}</span>
+                    <div style={{ flex: 1 }}>{lbl}<span className="ms-desc">{desc}</span></div>
+                    <span className="ms-sageata">›</span>
+                  </button>
+                ))}
+                <button className="meniu-iesire" onClick={() => setIdent(null)}>
+                  <span>🚪</span>Ieși din cont
+                </button>
+              </div>
+            )}
+            {subSet && (
+              <button className="btn-inapoi" onClick={() => { setSubSet(null); setCauta(""); }}>
+                ‹ Setări<span>{SECTIUNI_SETARI.find((x) => x[0] === subSet)?.[2]}</span>
               </button>
-            ))}
-            <button className="meniu-iesire" onClick={() => setIdent(null)}>
-              <span>🚪</span>Ieși din cont
-            </button>
-          </div>
+            )}
+          </>
         )}
 
         {tab === "setari" && subSet === "oameni" && (
@@ -2213,7 +2471,22 @@ function App() {
           <>
             <button className="btn btn-galben" onClick={() => setFoaie({ tip: "santier" })}>+ Adaugă șantier</button>
             <div style={{ height: 12 }} />
-            {db.santiere.map((s) => {
+            <div className="filtre">
+              {[["activitate", "Ultima activitate"], ["marja", "Marjă"], ["nume", "Nume"],
+                ["valoare", "Valoare"], ["finalizate", "Finalizate"]].map(([id, et]) => (
+                <button key={id} className={sortSant === id ? "activ" : ""}
+                  onClick={() => setSortSant(id)}>{et}</button>
+              ))}
+            </div>
+            {db.santiere
+              .filter((s) => sortSant === "finalizate" ? s.status === "finalizat" : s.status !== "finalizat")
+              .sort((a, b) => {
+                if (sortSant === "marja") return bilant(b).marja - bilant(a).marja;
+                if (sortSant === "nume") return a.nume.localeCompare(b.nume, "ro");
+                if (sortSant === "valoare") return valoareSantier(b) - valoareSantier(a);
+                return (ultimaZi(b.id) || "").localeCompare(ultimaZi(a.id) || "");
+              })
+              .map((s) => {
               const ore = oreSantier(s.id);
               const oameni = new Set(pontajSantier(s.id).map((p) => p.angajatId || p.nume)).size;
               const finalizat = s.status === "finalizat";
@@ -2234,6 +2507,15 @@ function App() {
                         {s.adresa && <>{s.adresa}</>}
                         {s.dataStart && <> · din {dataRo(s.dataStart)}</>}
                         {nrFaze > 0 && <> · <span style={{ color: "var(--galben)" }}>{nrFaze} faze</span></>}
+                        {(() => {
+                          const uz = ultimaZi(s.id);
+                          if (!uz) return <><br /><span style={{ color: "var(--mut)" }}>nimeni n-a lucrat încă aici</span></>;
+                          const z = Math.floor((Date.now() - new Date(uz).getTime()) / 86400000);
+                          const cul = z >= 14 ? "var(--rosu)" : z >= 7 ? "var(--galben)" : "var(--mut)";
+                          return <><br /><span style={{ color: cul }}>
+                            {z === 0 ? "s-a lucrat azi" : z === 1 ? "ultima dată ieri" : `ultima dată acum ${z} zile`}
+                          </span></>;
+                        })()}
                       </div>
                     </div>
                     <span className={"chip " + (finalizat ? "gri" : "ok")}>{finalizat ? "Finalizat" : "Activ"}</span>
@@ -2285,6 +2567,11 @@ function App() {
                       📷 De rezolvat{db.sarcini.filter((x) => x.santierId === s.id && x.status === "deschis").length > 0
                         ? ` (${db.sarcini.filter((x) => x.santierId === s.id && x.status === "deschis").length})` : ""}
                     </button>
+                    {finalizat && (
+                      <button className="btn btn-mic principal" onClick={() => raportSantier(s)}>
+                        📄 Raport PDF
+                      </button>
+                    )}
                     <button className="btn btn-mic" onClick={() => setFoaie({ tip: "detaliiSantier", item: s })}>Detalii</button>
                     <button className="btn btn-mic" onClick={() => setFoaie({ tip: "santier", item: s })}>Modifică</button>
                     <button className="btn btn-mic" onClick={() => salvSantier({ ...s, status: finalizat ? "activ" : "finalizat" })}>
@@ -2776,6 +3063,10 @@ function App() {
           <Invitatii db={db} onSeteazaPin={(id, pin) => setPinAngajat(id, pin, false)} />
         )}
 
+        {tab === "setari" && subSet === "rapoarte" && (
+          <RaportLunar db={db} bani={bani} dataRo={dataRo} onRaport={raportLunarOm} />
+        )}
+
         {tab === "setari" && subSet === "backup" && (
           <>
             {lucruBackup && (
@@ -2828,6 +3119,40 @@ function App() {
                     "Ștergi acum pozele problemelor rezolvate mai vechi decât pragul ales? Textul rămâne.",
                     async () => {
                       const n = await stergePozeVechi(db.setari?.zilePoze || 30);
+                      if (n === 0) setCuratenie("Nimic de șters deocamdată.");
+                      setTimeout(() => setCuratenie(""), 5000);
+                    }, "Curăță")}>
+                  Curăță acum
+                </button>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="titlu">🧹 Curățenie cereri și ore suplimentare</div>
+              <div className="sub">
+                Cererile rezolvate și cererile de ore suplimentare (aprobate sau refuzate) se
+                șterg singure din listă după un timp. Orele deja aprobate rămân în pontaj —
+                se șterge doar cererea, nu munca plătită.
+              </div>
+              <div className="actiuni">
+                {[[7, "7 zile"], [30, "30 zile"], [90, "3 luni"], [0, "Niciodată"]].map(([z, et]) => (
+                  <button key={z}
+                    className={"btn btn-mic" + ((db.setari?.zileCereri ?? 30) === z ? " principal" : "")}
+                    onClick={() => salveaza({ ...db, setari: { ...db.setari, zileCereri: z } })}>
+                    {et}
+                  </button>
+                ))}
+              </div>
+              <div className="sub" style={{ marginTop: 11 }}>
+                Acum: <b>{db.cereri.filter((c) => c.status === "rezolvat").length}</b> cereri rezolvate ·{" "}
+                <b>{db.suplimentare.filter((x) => x.status !== "nou").length}</b> suplimentare procesate.
+              </div>
+              <div className="actiuni">
+                <button className="btn btn-mic"
+                  onClick={() => cere(
+                    "Ștergi acum cererile și suplimentarele vechi mai vechi decât pragul ales?",
+                    async () => {
+                      const n = await curataCereri(db.setari?.zileCereri || 30);
                       if (n === 0) setCuratenie("Nimic de șters deocamdată.");
                       setTimeout(() => setCuratenie(""), 5000);
                     }, "Curăță")}>
@@ -2893,7 +3218,7 @@ function App() {
         {/* ---------- CERERI ---------- */}
         {tab === "cereri" && (
           <>
-            {(() => {
+            {(filtruCereri === "toate" || filtruCereri === "ore") && (() => {
               const noi = db.suplimentare.filter((x) => x.status === "nou");
               const vechi = db.suplimentare.filter((x) => x.status !== "nou").slice(0, 6);
               if (db.suplimentare.length === 0) return null;
@@ -2922,9 +3247,7 @@ function App() {
                     {x.status === "nou" && (
                       <div className="actiuni">
                         <button className="btn btn-mic principal"
-                          onClick={() => cere(
-                            `Aprobi ${x.ore}h suplimentare pentru ${x.nume}? Se trec direct în pontaj${cost > 0 ? ` și costă ${bani(cost)}` : ""}.`,
-                            () => aprobaSuplimentare(x), "Aprobă")}>
+                          onClick={() => setFoaie({ tip: "aproba", item: x })}>
                           Aprobă
                         </button>
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "respinge", item: x })}>
@@ -2938,7 +3261,14 @@ function App() {
               };
               return (
                 <>
-                  <div className="sectiune">⏱ Ore suplimentare {noi.length > 0 && `(${noi.length} de aprobat)`}</div>
+                  <div className="filtre">
+              {[["toate", "Toate"], ["ore", "⏱ Ore"], ["necesar", "📦 Necesar"], ["problema", "⚠ Probleme"]].map(([id, et]) => (
+                <button key={id} className={filtruCereri === id ? "activ" : ""}
+                  onClick={() => setFiltruCereri(id)}>{et}</button>
+              ))}
+            </div>
+
+            <div className="sectiune">⏱ Ore suplimentare {noi.length > 0 && `(${noi.length} de aprobat)`}</div>
                   {noi.map(rand)}
                   {noi.length === 0 && <div className="gol-msg">Nimic de aprobat.</div>}
                   {vechi.length > 0 && (
@@ -2951,10 +3281,18 @@ function App() {
               );
             })()}
 
-            <div className="sectiune">Probleme și necesar raportate de pe teren</div>
+            {(filtruCereri === "toate" || filtruCereri !== "ore") &&
+              <div className="sectiune">
+                {filtruCereri === "necesar" ? "📦 Cereri de materiale"
+                  : filtruCereri === "problema" ? "⚠ Probleme raportate"
+                  : "Probleme și necesar raportate de pe teren"}
+              </div>}
             {db.cereri.length === 0 ? (
               <div className="gol-msg">Nimic raportat. Muncitorii intră cu contul lor și trimit probleme sau ce le lipsește — apare doar aici, la tine.</div>
-            ) : db.cereri.map((c) => {
+            ) : db.cereri
+              .filter((c) => filtruCereri === "toate" || filtruCereri === c.tip)
+              .filter(() => filtruCereri !== "ore")
+              .map((c) => {
               const areLinii = Array.isArray(c.linii) && c.linii.length > 0;
               return (
                 <div className="card" key={c.id}>
@@ -3035,6 +3373,33 @@ function App() {
           onClose={() => setFoaie(null)}
         />
       )}
+      {foaie?.tip === "aprovizionare" && (
+        <FormAprovizionare material={foaie.item}
+          santiere={db.santiere.filter((x) => x.status !== "finalizat")}
+          onSalveaza={(cant, pret, dest) => {
+            const m = foaie.item;
+            const cantN = Number(cant) || 0;
+            const pretN = Number(pret) || Number(m.pret) || 0;
+            if (dest?.santierId) {
+              const sant = db.santiere.find((x) => x.id === dest.santierId);
+              salveaza(cuJurnal({
+                ...db,
+                materiale: db.materiale.map((x) => (x.id === m.id ? { ...x, pret: pretN } : x)),
+                consum: [{ id: uid(), santierId: dest.santierId, fazaId: null,
+                  materialId: m.id, nume: m.nume, cant: cantN, unitate: m.unitate,
+                  pret: pretN, data: aziISO(), motiv: "livrat direct pe șantier" }, ...db.consum],
+              }, `${sant?.nume}: primit direct ${cantN} ${m.unitate} ${m.nume}`));
+            } else {
+              salveaza(cuJurnal({
+                ...db,
+                materiale: db.materiale.map((x) =>
+                  x.id === m.id ? { ...x, cant: (Number(x.cant) || 0) + cantN, pret: pretN } : x),
+              }, `Aprovizionat: ${cantN} ${m.unitate} ${m.nume}`));
+            }
+            setFoaie(null);
+          }}
+          onClose={() => setFoaie(null)} />
+      )}
       {foaie?.tip === "santier" && <FormSantier item={foaie.item} onSalveaza={salvSantier} onClose={() => setFoaie(null)} />}
       {foaie?.tip === "pontaj" && (
         <FormPontaj santier={foaie.item} angajati={db.angajati} echipe={db.echipe} program={db.setari?.program}
@@ -3076,6 +3441,13 @@ function App() {
       {foaie?.tip === "sarcinaNoua" && (
         <FormSarcina santierId={foaie.santierId} onSalveaza={salvSarcina}
           onClose={() => setFoaie(foaie.inapoi ? { tip: "sarcini", item: foaie.inapoi } : null)} />
+      )}
+      {foaie?.tip === "aproba" && (
+        <AprobaSuplimentare sup={foaie.item}
+          angajat={db.angajati.find((a) => a.id === foaie.item.angajatId)}
+          santier={db.santiere.find((x) => x.id === foaie.item.santierId)}
+          onAproba={(ore, nota) => { aprobaSuplimentare({ ...foaie.item, ore, notaAdmin: nota }); setFoaie(null); }}
+          onClose={() => setFoaie(null)} />
       )}
       {foaie?.tip === "respinge" && (
         <Foaie titlu={`Refuzi ${foaie.item.ore}h pentru ${foaie.item.nume}?`} onClose={() => setFoaie(null)}>
@@ -4007,6 +4379,107 @@ function EcranIntrare({ db, onIntra, onSeteazaPin }) {
 }
 
 /* ==================== FORMULARE ==================== */
+function FormAprovizionare({ material, santiere = [], onSalveaza, onClose }) {
+  const [cant, setCant] = useState("");
+  const [pret, setPret] = useState(material.pret || "");
+  const [santierId, setSantierId] = useState("");
+  const [fazaId, setFazaId] = useState("");
+  const santierAles = santiere.find((x) => x.id === santierId);
+  const fazeleLui = Array.isArray(santierAles?.faze) ? santierAles.faze : [];
+  const valoare = (Number(cant) || 0) * (Number(pret) || 0);
+
+  return (
+    <Foaie titlu={`Am cumpărat: ${material.nume}`} onClose={onClose}>
+      <div className="sub" style={{ marginBottom: 12 }}>
+        În stoc acum: <b className="mono">{material.cant} {material.unitate}</b> · minim {material.minim} {material.unitate}
+      </div>
+      <div className="rand2">
+        <div className="camp"><label>Cât ai cumpărat *</label>
+          <input type="number" step="0.01" value={cant} onChange={(e) => setCant(e.target.value)}
+            placeholder={`ex. ${material.minim || 20}`} autoFocus /></div>
+        <div className="camp"><label>Preț / {material.unitate}</label>
+          <input type="number" step="0.01" value={pret} onChange={(e) => setPret(e.target.value)} /></div>
+      </div>
+
+      {santiere.length > 0 && (
+        <div className="camp">
+          <label>Unde a ajuns</label>
+          <select value={santierId} onChange={(e) => { setSantierId(e.target.value); setFazaId(""); }}>
+            <option value="">🏠 În depozit</option>
+            {santiere.map((x) => <option key={x.id} value={x.id}>🏗 Direct pe {x.nume}</option>)}
+          </select>
+        </div>
+      )}
+      {fazeleLui.length > 0 && (
+        <div className="camp">
+          <label>Pe ce fază</label>
+          <select value={fazaId} onChange={(e) => setFazaId(e.target.value)}>
+            <option value="">— nealocat pe fază —</option>
+            {fazeleLui.map((fz) => <option key={fz.id} value={fz.id}>{fz.nume}</option>)}
+          </select>
+        </div>
+      )}
+
+      {valoare > 0 && <div className="sub" style={{ marginBottom: 12 }}>Valoare: <b style={{ color: "var(--galben)" }}>{bani(valoare)}</b></div>}
+
+      <button className="btn btn-galben" disabled={!Number(cant)}
+        onClick={() => Number(cant) && onSalveaza(cant, pret, { santierId, fazaId })}>
+        {santierId ? "Trimite direct pe șantier" : "Adaugă în stoc"}
+      </button>
+    </Foaie>
+  );
+}
+
+function AprobaSuplimentare({ sup, angajat, santier, onAproba, onClose }) {
+  const [ore, setOre] = useState(sup.ore);
+  const [nota, setNota] = useState("");
+  const cost = ore * (Number(angajat?.tarifOra) || 0);
+  const schimbat = Number(ore) !== Number(sup.ore);
+
+  return (
+    <Foaie titlu={`Aprobă: ${sup.nume}`} onClose={onClose}>
+      <div className="card" style={{ marginBottom: 14 }}>
+        <div className="sub" style={{ marginTop: 0 }}>
+          A cerut <b className="mono">{sup.ore}h</b> pe {santier?.nume || "—"}, {dataRo(sup.data)}
+          {sup.motivCerere && <><br />„{sup.motivCerere}"</>}
+        </div>
+      </div>
+
+      <div className="camp">
+        <label>Câte ore aprobi</label>
+        <div className="stepper">
+          <button onClick={() => setOre(Math.max(0.5, +(ore - 0.5).toFixed(1)))}>−</button>
+          <div>
+            <div className="st-nr mono">{ore}</div>
+            <div className="st-um">ore</div>
+          </div>
+          <button onClick={() => setOre(+(ore + 0.5).toFixed(1))}>+</button>
+        </div>
+      </div>
+
+      {schimbat && (
+        <div className="sub" style={{ color: "var(--galben)", marginBottom: 12 }}>
+          A cerut {sup.ore}h, aprobi {ore}h — diferența trebuie explicată omului mai jos.
+        </div>
+      )}
+
+      {cost > 0 && <div className="sub" style={{ marginBottom: 12 }}>Cost: <b>{bani(cost)}</b></div>}
+
+      {schimbat && (
+        <div className="camp">
+          <label>De ce ai schimbat (îl vede omul)</label>
+          <textarea rows={2} value={nota} onChange={(e) => setNota(e.target.value)}
+            placeholder="ex. ai stat 3h dar înregistrate erau doar 2h lucrate" />
+        </div>
+      )}
+
+      <button className="btn btn-galben" onClick={() => onAproba(ore, nota.trim())}>
+        Aprobă {ore}h
+      </button>
+    </Foaie>
+  );
+}
+
 function FormMaterial({ item, santiere = [], onSalveaza, onClose }) {
   const [f, setF] = useState(item || { nume: "", categorie: "", cant: "", unitate: "buc", minim: "", pret: "", locatie: "" });
   const [dest, setDest] = useState({ santierId: "", fazaId: "" });
@@ -4084,6 +4557,9 @@ function FormScula({ item, onSalveaza, onClose }) {
     <Foaie titlu={item ? "Modifică sculă" : "Sculă nouă"} onClose={onClose}>
       <div className="camp"><label>Denumire *</label>
         <input value={f.nume} onChange={set("nume")} placeholder="ex. Flex Makita 230mm" /></div>
+      <div className="camp"><label>Categorie</label>
+        <input value={f.categorie || ""} onChange={set("categorie")} placeholder="ex. Electrice, Manuale, Utilaje" list="cat-scule" />
+      </div>
       <div className="rand2">
         <div className="camp"><label>Cod / serie</label>
           <input value={f.cod} onChange={set("cod")} placeholder="ex. SC-014" /></div>
@@ -4409,6 +4885,17 @@ function FormCerere({ eu, santiere = [], materiale = [], onTrimite, onClose }) {
   );
 }
 
+const SECTIUNI_SETARI = [
+  ["cifre", "📊", "Cifre și rentabilitate", "marje, aport pe om, pierderi"],
+  ["oameni", "👷", "Oameni și echipe", "angajați, fișe, echipe"],
+  ["rapoarte", "📄", "Raport lunar", "ore și costuri pe fiecare om"],
+  ["dotare", "🧰", "Dotare echipe", "sculele obligatorii, verificări"],
+  ["auto", "🚛", "Camioane și utilaje", "ITP, asigurări, revizii"],
+  ["cont", "🔑", "Firmă, program, acces", "date firmă, orar, PIN, limbă"],
+  ["invitatii", "📨", "Invită muncitorii", "linkuri și parole"],
+  ["backup", "💾", "Backup și curățenie", "salvare, restaurare, poze"],
+];
+
 const NUME_ZI = { MO: "Luni", TU: "Marți", WE: "Miercuri", TH: "Joi", FR: "Vineri", SA: "Sâmbătă", SU: "Duminică" };
 const SCURT_ZI = { MO: "L", TU: "Ma", WE: "Mi", TH: "J", FR: "V", SA: "S", SU: "D" };
 
@@ -4624,6 +5111,62 @@ function FormSuplimentare({ eu, santiere = [], program, onTrimite, onClose }) {
         Trimite spre aprobare
       </button>
     </Foaie>
+  );
+}
+
+function RaportLunar({ db, bani, dataRo, onRaport }) {
+  const azi = new Date();
+  const [an, setAn] = useState(azi.getFullYear());
+  const [luna, setLuna] = useState(azi.getMonth() + 1);
+
+  const prefix = `${an}-${String(luna).padStart(2, "0")}`;
+  const pontLuna = db.pontaj.filter((p) => (p.data || "").startsWith(prefix));
+  const oreLuna = pontLuna.reduce((t, p) => t + (Number(p.ore) || 0), 0);
+  const costLuna = pontLuna.reduce((t, p) => t + (Number(p.ore) || 0) * (Number(p.tarifOra) || 0), 0);
+  const oameniLuna = new Set(pontLuna.map((p) => p.angajatId)).size;
+
+  const numeLuni = ["Ian", "Feb", "Mar", "Apr", "Mai", "Iun", "Iul", "Aug", "Sep", "Oct", "Noi", "Dec"];
+
+  return (
+    <>
+      <div className="card">
+        <div className="titlu">📄 Raport lunar pe fiecare om</div>
+        <div className="sub">
+          Ore, zile lucrate, suplimentare și cost, defalcate pe fiecare angajat și pe șantierele
+          lui. Se deschide ca pagină de tipărit — de acolo alegi „Salvează ca PDF".
+        </div>
+      </div>
+
+      <div className="camp">
+        <label>Luna</label>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {numeLuni.map((n, i) => (
+            <button key={i} className={"btn btn-mic" + (luna === i + 1 ? " principal" : "")}
+              style={{ minWidth: 44 }} onClick={() => setLuna(i + 1)}>{n}</button>
+          ))}
+        </div>
+      </div>
+      <div className="camp">
+        <label>Anul</label>
+        <div style={{ display: "flex", gap: 6 }}>
+          {[azi.getFullYear() - 1, azi.getFullYear()].map((a) => (
+            <button key={a} className={"btn btn-mic" + (an === a ? " principal" : "")} onClick={() => setAn(a)}>{a}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="rezumat" style={{ marginTop: 6 }}>
+        <div>
+          <div className="rz-nr mono">{+oreLuna.toFixed(1)}h</div>
+          <div className="rz-lbl">{oameniLuna} {oameniLuna === 1 ? "om" : "oameni"} · {bani(costLuna)}</div>
+        </div>
+      </div>
+
+      <button className="btn btn-galben" disabled={pontLuna.length === 0}
+        onClick={() => onRaport(an, luna)}>
+        {pontLuna.length === 0 ? "Nimic pontat în luna asta" : "Deschide raportul (PDF)"}
+      </button>
+    </>
   );
 }
 
