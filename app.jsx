@@ -542,6 +542,10 @@ body{background:var(--asfalt)}
   border-radius:16px 16px 0 0;border-top:2px solid var(--galben);z-index:50;
   padding:18px 16px calc(26px + env(safe-area-inset-bottom, 0px));
   max-height:88vh;overflow-y:auto}
+.foaie-cap{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.foaie-cap h2{margin-bottom:0}
+.foaie-x{flex:none;width:34px;height:34px;border-radius:50%;background:var(--beton2);
+  border:1px solid var(--linie);color:var(--text);font-size:16px;line-height:1;cursor:pointer}
 .foaie h2{font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
 .camp{margin-bottom:11px}
 .camp label{display:block;font-size:12px;font-weight:600;color:var(--mut);margin-bottom:5px}
@@ -668,7 +672,10 @@ function Foaie({ titlu, onClose, children }) {
     <>
       <div className="voal" onClick={onClose} />
       <div className="foaie" role="dialog" aria-label={titlu}>
-        <h2>{titlu}</h2>
+        <div className="foaie-cap">
+          <h2>{titlu}</h2>
+          <button className="foaie-x" onClick={onClose} aria-label="Închide">✕</button>
+        </div>
         {children}
       </div>
     </>
@@ -954,12 +961,29 @@ function App() {
         .verde{color:#1c7a4a;font-weight:700}
         .rosu{color:#c0392b;font-weight:700}
         .mic{color:#666;font-size:11px}
-        @media print{ body{padding:0} button{display:none} }
+        @media print{ body{padding:0} .bara-sus{display:none} }
+        .bara-sus{position:sticky;top:0;background:#fff;padding:10px 0 14px;
+          display:flex;gap:10px;border-bottom:1px solid #eee;margin-bottom:14px;z-index:9}
         button{background:#F5B301;border:none;padding:11px 18px;border-radius:8px;
-          font-size:14px;font-weight:700;cursor:pointer;margin-bottom:18px}
+          font-size:14px;font-weight:700;cursor:pointer}
+        button.secundar{background:#eee;color:#333}
       </style></head><body>
-      <button onclick="window.print()">Salvează ca PDF / Tipărește</button>
+      <div class="bara-sus">
+        <button onclick="window.print()">🖨 Salvează ca PDF / Tipărește</button>
+        <button class="secundar" id="btn-inchide">✕ Închide</button>
+      </div>
+      <div id="nota-inchide" style="display:none;color:#999;font-size:12px;margin:-6px 0 14px">
+        Browserul nu lasă pagina să se închidă singură — apasă din nou pe filă/fereastră ca să revii.
+      </div>
       ${corp}
+      <script>
+        document.getElementById("btn-inchide").onclick = function () {
+          window.close();
+          setTimeout(function () {
+            document.getElementById("nota-inchide").style.display = "block";
+          }, 250);
+        };
+      </script>
       </body></html>`);
     w.document.close();
   };
