@@ -1892,6 +1892,47 @@ function App() {
               </>
             )}
 
+            {(() => {
+              /* zile în care cineva are mult peste programul normal — probabil pontaj dublu */
+              const pragBaza = oreDinProgram(programZi(db.setari?.program, "MO")) || 8;
+              const peZiOm = {};
+              db.pontaj.forEach((p) => {
+                if (!p.angajatId || !p.data) return;
+                const k = p.angajatId + "|" + p.data;
+                if (!peZiOm[k]) peZiOm[k] = { nume: p.nume, data: p.data, ore: 0, intrari: 0 };
+                peZiOm[k].ore += Number(p.ore) || 0;
+                peZiOm[k].intrari += 1;
+              });
+              const suspecte = Object.values(peZiOm)
+                .filter((x) => x.intrari > 1 && x.ore > pragBaza + 4)
+                .sort((a, b) => b.data.localeCompare(a.data))
+                .slice(0, 5);
+              if (suspecte.length === 0) return null;
+              return (
+                <>
+                  <div className="sectiune">⚠ Posibil pontaj dublu</div>
+                  {suspecte.map((x, i) => (
+                    <div className="card alerta-card expirat" key={i}>
+                      <div className="card-rand">
+                        <div>
+                          <div className="titlu">{x.nume}</div>
+                          <div className="sub">
+                            {dataRo(x.data)} · <b className="mono">{+x.ore.toFixed(1)}h</b> în{" "}
+                            {x.intrari} pontaje separate
+                          </div>
+                        </div>
+                        <span className="chip alerta">verifică</span>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="sub" style={{ marginBottom: 6 }}>
+                    Poate fi corect (a lucrat pe două șantiere), dar merită verificat —
+                    intri pe șantier → Detalii → Intrări pontaj și ștergi ce e în plus.
+                  </div>
+                </>
+              );
+            })()}
+
             {db.scule.filter((x) => x.stare === "problema").length > 0 && (
               <>
                 <div className="sectiune">🔧 Scule raportate cu probleme</div>
@@ -2997,6 +3038,7 @@ function App() {
       {foaie?.tip === "santier" && <FormSantier item={foaie.item} onSalveaza={salvSantier} onClose={() => setFoaie(null)} />}
       {foaie?.tip === "pontaj" && (
         <FormPontaj santier={foaie.item} angajati={db.angajati} echipe={db.echipe} program={db.setari?.program}
+          pontajExistent={db.pontaj} santiere={db.santiere}
           onSalveaza={(data, randuri) => adaugaPontaj(foaie.item.id, data, randuri)} onClose={() => setFoaie(null)} />
       )}
       {foaie?.tip === "membri" && (
@@ -4852,10 +4894,11 @@ function FormConsum({ santier, materiale, onSalveaza, onClose }) {
   );
 }
 
-function FormPontaj({ santier, angajati, echipe, program, onSalveaza, onClose }) {
+function FormPontaj({ santier, angajati, echipe, program, pontajExistent = [], santiere = [], onSalveaza, onClose }) {
   const [data, setData] = useState(aziISO());
   const [ore, setOre] = useState(() =>
     String(oreDinProgram(programZi(program, codZiDinData(aziISO()))) || 8).replace(".00", ""));
+  const ore1 = Number(ore) || 0;
   const faze = Array.isArray(santier.faze) ? santier.faze : [];
   const [fazaId, setFazaId] = useState(faze[0]?.id || "");
   const fazaAleasa = faze.find((x) => x.id === fazaId);
@@ -4872,6 +4915,24 @@ function FormPontaj({ santier, angajati, echipe, program, onSalveaza, onClose })
   const alesi = angajati.filter((a) => sel[a.id]);
   const faraTarif = alesi.filter((a) => !Number(a.tarifOra));
   const tipulLui = (id) => (separat ? tipuri[id] || tip : tip);
+
+  /* ce are deja fiecare pontat în ziua asta, pe orice șantier */
+  const dejaAzi = (id) => pontajExistent.filter((p) => p.angajatId === id && p.data === data);
+  const oreDejaAzi = (id) => dejaAzi(id).reduce((t, p) => t + (Number(p.ore) || 0), 0);
+
+  const dublate = alesi
+    .map((a) => {
+      const ore = oreDejaAzi(a.id);
+      if (ore === 0) return null;
+      const unde = [...new Set(dejaAzi(a.id).map((p) =>
+        santiere.find((x) => x.id === p.santierId)?.nume || "alt șantier"))];
+      const aici = unde.includes(santier.nume);
+      return { a, ore, unde, aici, total: ore + (Number(ore1) || 0) };
+    })
+    .filter(Boolean);
+
+  const oraNormala = oreDinProgram(programZi(program, codZiDinData(data)));
+  const preaMulte = dublate.filter((d) => d.total > oraNormala + 4);
 
   return (
     <Foaie titlu={`Pontaj: ${santier.nume}`} onClose={onClose}>
@@ -4933,8 +4994,10 @@ function FormPontaj({ santier, angajati, echipe, program, onSalveaza, onClose })
               <input type="checkbox" checked={!!sel[a.id]} onChange={() => comuta(a.id)}
                 style={{ width: 19, height: 19, accentColor: "var(--galben)", flex: "none" }} />
               {a.nume}
-              <span style={{ color: "var(--mut)", fontSize: 12, marginLeft: "auto" }}>
-                {Number(a.tarifOra) ? bani(a.tarifOra) + "/h" : "fără cost orar"}
+              <span style={{ color: "var(--mut)", fontSize: 12, marginLeft: "auto", textAlign: "right" }}>
+                {oreDejaAzi(a.id) > 0
+                  ? <b style={{ color: "var(--rosu)" }}>are deja {oreDejaAzi(a.id)}h azi</b>
+                  : (Number(a.tarifOra) ? bani(a.tarifOra) + "/h" : "fără cost orar")}
               </span>
             </label>
             {separat && sel[a.id] && (
@@ -4947,18 +5010,51 @@ function FormPontaj({ santier, angajati, echipe, program, onSalveaza, onClose })
         ))}
       </div>
 
+      {dublate.length > 0 && (
+        <div className="conflict">
+          <b>⚠ Sunt deja pontați în ziua asta</b>
+          {dublate.map((d, i) => (
+            <div key={i} className="cf-rand">
+              <b>{d.a.nume}</b> are <b className="mono">{d.ore}h</b> pe{" "}
+              {d.unde.join(", ")}
+              {d.aici && <span style={{ color: "var(--galben)" }}> (chiar aici)</span>}.
+              {" "}Dacă salvezi, ajunge la <b className="mono">{+d.total.toFixed(1)}h</b> în ziua asta.
+            </div>
+          ))}
+          <div className="cf-sfat">
+            {preaMulte.length > 0
+              ? "Pare o dublare — verifică dacă n-ai pontat deja o dată cu toată echipa."
+              : "Dacă e corect (a lucrat pe două șantiere), poți salva liniștit."}
+          </div>
+          <div className="actiuni">
+            <button className="btn btn-mic"
+              onClick={() => {
+                const nou = { ...sel };
+                dublate.forEach((d) => { nou[d.a.id] = false; });
+                setSel(nou);
+              }}>
+              Scoate-i pe cei {dublate.length === 1 ? "deja pontat" : "deja pontați"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {faraTarif.length > 0 && (
         <div className="sub" style={{ color: "var(--rosu)", marginBottom: 10 }}>
           ⚠ {faraTarif.map((a) => a.nume).join(", ")} nu are cost orar setat — orele se pontează, dar costul iese 0. Completează-l din fișă.
         </div>
       )}
-      <button className="btn btn-galben" disabled={alesi.length === 0 || !Number(ore)}
+      <button className={"btn " + (preaMulte.length > 0 ? "btn-mic pericol" : "btn-galben")}
+        style={preaMulte.length > 0 ? { width: "100%", padding: "13px" } : null}
+        disabled={alesi.length === 0 || !Number(ore)}
         onClick={() => alesi.length && Number(ore) &&
           onSalveaza(data, alesi.map((a) => ({
             angajatId: a.id, nume: a.nume, ore, tarifOra: a.tarifOra,
             tipMunca: tipulLui(a.id), fazaId: fazaId || null,
           })))}>
-        Pontează {alesi.length > 0 ? `${alesi.length} × ${ore}h` : ""}
+        {preaMulte.length > 0
+          ? `Pontează oricum (${preaMulte.map((d) => d.a.nume.split(" ")[0]).join(", ")} ar ajunge la ${+preaMulte[0].total.toFixed(1)}h)`
+          : `Pontează ${alesi.length > 0 ? `${alesi.length} × ${ore}h` : ""}`}
       </button>
     </Foaie>
   );
