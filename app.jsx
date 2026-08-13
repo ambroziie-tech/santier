@@ -405,6 +405,28 @@ const zileRamase = (d) => {
 };
 const dataRo = (d) => (d ? new Date(d).toLocaleDateString("ro-RO") : "—");
 
+/* Deschide adresa în aplicația de hărți a telefonului.
+   Pe iPhone Apple Plans/Google Maps, pe Android Google Maps — decide sistemul. */
+const linkHarta = (adresa) => {
+  const q = encodeURIComponent(adresa || "");
+  const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  return iOS ? `maps://?q=${q}` : `https://www.google.com/maps/search/?api=1&query=${q}`;
+};
+
+/* butonul de navigare, folosit peste tot unde apare o adresă */
+function ButonHarta({ adresa, mic }) {
+  if (!adresa || !adresa.trim()) return null;
+  return (
+    <a className={"btn btn-mic" + (mic ? "" : " principal")}
+      style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
+      href={linkHarta(adresa)} target="_blank" rel="noreferrer"
+      onClick={(e) => e.stopPropagation()}>
+      📍 {mic ? "Hartă" : "Deschide în hărți"}
+    </a>
+  );
+}
+
 /* ---------- stiluri ---------- */
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Chivo+Mono:wght@400;500;700&display=swap');
@@ -1413,6 +1435,14 @@ function App() {
             </div>
             {eAzi && <span className="chip alocat">{t("Azi")}</span>}
           </div>
+          {(s?.adresaFull || s?.adresa) && (
+            <div className="actiuni">
+              <ButonHarta adresa={s.adresaFull || s.adresa} />
+              {s.adresaFull && (
+                <span className="sub" style={{ alignSelf: "center", marginTop: 0 }}>{s.adresaFull}</span>
+              )}
+            </div>
+          )}
         </div>
       );
     };
@@ -2067,6 +2097,7 @@ function App() {
                     {!finalizat && (
                       <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "consum", item: s })}>+ Material</button>
                     )}
+                    {(s.adresaFull || s.adresa) && <ButonHarta adresa={s.adresaFull || s.adresa} mic />}
                     <button className="btn btn-mic" onClick={() => setFoaie({ tip: "sarcini", item: s })}>
                       📷 De rezolvat{db.sarcini.filter((x) => x.santierId === s.id && x.status === "deschis").length > 0
                         ? ` (${db.sarcini.filter((x) => x.santierId === s.id && x.status === "deschis").length})` : ""}
@@ -2174,6 +2205,11 @@ function App() {
                             {!ech && oameni.length === 0 && "Fără oameni alocați"}
                             {p.note && <><br />{p.note}</>}
                           </div>
+                          {(s?.adresaFull || s?.adresa) && (
+                            <div style={{ marginTop: 7 }}>
+                              <ButonHarta adresa={s.adresaFull || s.adresa} mic />
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -4228,7 +4264,7 @@ function EditorFaze({ faze, onSchimba }) {
 function FormSantier({ item, onSalveaza, onClose }) {
   const [f, setF] = useState(
     item || { nume: "", client: "", adresa: "", dataStart: "", status: "activ",
-      domeniu: DOMENII[0], valoare: "", orePrev: "", materialePrev: [], faze: [] }
+      adresaFull: "", domeniu: DOMENII[0], valoare: "", orePrev: "", materialePrev: [], faze: [] }
   );
   const [peFaze, setPeFaze] = useState(Array.isArray(item?.faze) && item.faze.length > 0);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
@@ -4253,10 +4289,21 @@ function FormSantier({ item, onSalveaza, onClose }) {
           </select></div>
       </div>
       <div className="rand2">
-        <div className="camp"><label>Adresă / localitate</label>
+        <div className="camp"><label>Localitate</label>
           <input value={f.adresa} onChange={set("adresa")} placeholder="ex. Beaucouzé" /></div>
         <div className="camp"><label>Data începerii</label>
           <input type="date" value={f.dataStart} onChange={set("dataStart")} /></div>
+      </div>
+
+      <div className="camp">
+        <label>Adresa completă (pentru navigare)</label>
+        <input value={f.adresaFull || ""} onChange={set("adresaFull")}
+          placeholder="ex. 12 rue des Tilleuls, 49070 Beaucouzé" />
+        <div className="sub" style={{ marginTop: 6, display: "flex", justifyContent: "space-between",
+          alignItems: "center", gap: 10 }}>
+          <span>Oamenii apasă un buton și li se deschide în hărți.</span>
+          <ButonHarta adresa={f.adresaFull} mic />
+        </div>
       </div>
 
       <div className="sectiune">Devizul — ce ai prevăzut</div>
@@ -4500,6 +4547,17 @@ function DetaliiSantier({ santier, pontaj, consum, bilant, matPrev, orePrevTot, 
 
   return (
     <Foaie titlu={`Detalii: ${santier.nume}`} onClose={onClose}>
+      {(santier.adresaFull || santier.adresa) && (
+        <div className="card" style={{ padding: "12px 13px" }}>
+          <div className="card-rand">
+            <div>
+              <div className="titlu" style={{ fontSize: 14 }}>📍 Adresă</div>
+              <div className="sub">{santier.adresaFull || santier.adresa}</div>
+            </div>
+            <ButonHarta adresa={santier.adresaFull || santier.adresa} mic />
+          </div>
+        </div>
+      )}
       <div className="fisa-rand"><span className="k">Cifrat</span><b className="mono">{bani(bilant.incasat)}</b></div>
       <div className="fisa-rand"><span className="k">Manoperă</span><b className="mono">−{bani(bilant.manopera)}</b></div>
       <div className="fisa-rand"><span className="k">Materiale</span><b className="mono">−{bani(bilant.materiale)}</b></div>
