@@ -68,7 +68,8 @@ const gol = {
   dotare: [], verificari: [],
   firma: null,
   setari: { pin: PIN_IMPLICIT, zilePoze: 30,
-    program: { start: "07:30", final: "16:00", zile: ["MO", "TU", "WE", "TH", "FR"] } },
+    program: { start: "07:30", final: "16:00", pauza: 60,
+      zile: ["MO", "TU", "WE", "TH", "FR"], special: {} } },
   suplimentare: [],
 };
 
@@ -379,6 +380,28 @@ const minute = (h) => {
   const [a, b] = h.split(":").map(Number);
   return a * 60 + (b || 0);
 };
+/* Programul unei zile: cel special dacă există, altfel cel standard.
+   codZi: "MO".."SU" */
+const CODURI_ZI = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
+const codZiDinData = (dataISO) => CODURI_ZI[(new Date(dataISO).getDay() + 6) % 7];
+
+const programZi = (program, codZi) => {
+  const p = program || {};
+  const sp = (p.special || {})[codZi];
+  return {
+    start: sp?.start || p.start || "07:30",
+    final: sp?.final || p.final || "16:00",
+    pauza: sp?.pauza !== undefined ? sp.pauza : (p.pauza !== undefined ? p.pauza : 60),
+    special: !!sp,
+  };
+};
+
+/* orele plătite dintr-o zi: durata minus pauza */
+const oreDinProgram = (pz) => {
+  const d = (minute(pz.final) || 0) - (minute(pz.start) || 0) - (Number(pz.pauza) || 0);
+  return d > 0 ? +(d / 60).toFixed(2) : 0;
+};
+
 const catreOra = (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 const interval = (p) => `${p.oraStart || "—"}–${p.oraFinal || "—"}`;
 /* două intervale se suprapun dacă unul începe înainte ca celălalt să se termine */
@@ -1172,12 +1195,13 @@ function App() {
     for (let d = 0; d < 7; d++) {
       if (!zileLucru.includes(coduri[d])) continue;
       const data = iso(adaugaZile(luni, d));
+      const pz = programZi(p, coduri[d]);
       echipeCuSantier.forEach(({ e, s: sant }) => {
         const exista = db.planificare.some((x) => x.data === data && x.echipaId === e.id);
         if (exista) return;
         noi.push({
           id: uid(), data, santierId: sant.id, echipaId: e.id, angajatIds: [],
-          oraStart: p.start || "07:30", oraFinal: p.final || "16:00", note: "",
+          oraStart: pz.start, oraFinal: pz.final, note: "",
         });
       });
     }
@@ -1187,7 +1211,7 @@ function App() {
       return;
     }
 
-    cere(`Pun ${noi.length} zile de lucru după programul firmei (${p.start || "07:30"}–${p.final || "16:00"})? Ce e deja pus nu se atinge.`,
+    cere(`Pun ${noi.length} zile de lucru după programul firmei? Zilele cu program special (ex. vineri) primesc orele lor. Ce e deja pus nu se atinge.`,
       () => salveaza(cuJurnal({ ...db, planificare: [...db.planificare, ...noi] },
         `Planing generat automat: ${noi.length} intrări`)),
       "Completează");
@@ -2665,49 +2689,8 @@ function App() {
                 Orele standard ale firmei. Se folosesc când pui ceva în planing, la pontaj și
                 când completezi automat săptămâna.
               </div>
-              {(() => {
-                const p = db.setari?.program || { start: "07:30", final: "16:00", zile: ["MO","TU","WE","TH","FR"] };
-                const setP = (k, v) => salveaza({ ...db, setari: { ...db.setari, program: { ...p, [k]: v } } });
-                const coduri = [["MO","L"],["TU","Ma"],["WE","Mi"],["TH","J"],["FR","V"],["SA","S"],["SU","D"]];
-                const comutaZi = (c) => {
-                  const zile = p.zile || [];
-                  setP("zile", zile.includes(c) ? zile.filter((x) => x !== c) : [...zile, c]);
-                };
-                const durata = (minute(p.final) || 0) - (minute(p.start) || 0);
-                return (
-                  <>
-                    <div className="rand2" style={{ marginTop: 12 }}>
-                      <div className="camp">
-                        <label>De la ora</label>
-                        <input type="time" value={p.start} onChange={(e) => setP("start", e.target.value)} />
-                      </div>
-                      <div className="camp">
-                        <label>Până la ora</label>
-                        <input type="time" value={p.final} onChange={(e) => setP("final", e.target.value)} />
-                      </div>
-                    </div>
-                    <div className="camp">
-                      <label>Zile lucrătoare</label>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        {coduri.map(([c, et]) => (
-                          <button key={c}
-                            className={"btn btn-mic" + ((p.zile || []).includes(c) ? " principal" : "")}
-                            style={{ flex: 1, padding: "10px 0" }}
-                            onClick={() => comutaZi(c)}>
-                            {et}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {durata > 0 && (
-                      <div className="sub">
-                        {(durata / 60).toFixed(1).replace(".0", "")}h pe zi ·{" "}
-                        {((durata / 60) * (p.zile || []).length).toFixed(1).replace(".0", "")}h pe săptămână
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
+              <ProgramLucru program={db.setari?.program}
+                onSchimba={(pr) => salveaza({ ...db, setari: { ...db.setari, program: pr } })} />
             </div>
 
             <div className="card">
@@ -4384,6 +4367,146 @@ function FormCerere({ eu, santiere = [], materiale = [], onTrimite, onClose }) {
   );
 }
 
+const NUME_ZI = { MO: "Luni", TU: "Marți", WE: "Miercuri", TH: "Joi", FR: "Vineri", SA: "Sâmbătă", SU: "Duminică" };
+const SCURT_ZI = { MO: "L", TU: "Ma", WE: "Mi", TH: "J", FR: "V", SA: "S", SU: "D" };
+
+function ProgramLucru({ program, onSchimba }) {
+  const p = program || { start: "07:30", final: "16:00", pauza: 60, zile: ["MO","TU","WE","TH","FR"], special: {} };
+  const [deschis, setDeschis] = useState(null);
+
+  const set = (k, v) => onSchimba({ ...p, [k]: v });
+  const comutaZi = (c) => {
+    const zile = p.zile || [];
+    set("zile", zile.includes(c) ? zile.filter((x) => x !== c) : [...zile, c]);
+  };
+  const setSpecial = (c, k, v) =>
+    onSchimba({ ...p, special: { ...(p.special || {}), [c]: { ...programZi(p, c), [k]: v, } } });
+  const scoateSpecial = (c) => {
+    const sp = { ...(p.special || {}) };
+    delete sp[c];
+    onSchimba({ ...p, special: sp });
+    setDeschis(null);
+  };
+  const adaugaSpecial = (c) => {
+    onSchimba({ ...p, special: { ...(p.special || {}), [c]: { start: p.start, final: p.final, pauza: p.pauza } } });
+    setDeschis(c);
+  };
+
+  const zileActive = (p.zile || []);
+  const totalSapt = zileActive.reduce((t, c) => t + oreDinProgram(programZi(p, c)), 0);
+
+  return (
+    <>
+      <div className="rand2" style={{ marginTop: 12 }}>
+        <div className="camp">
+          <label>De la ora</label>
+          <input type="time" value={p.start} onChange={(e) => set("start", e.target.value)} />
+        </div>
+        <div className="camp">
+          <label>Până la ora</label>
+          <input type="time" value={p.final} onChange={(e) => set("final", e.target.value)} />
+        </div>
+      </div>
+
+      <div className="camp">
+        <label>Pauza de masă (nu se plătește)</label>
+        <div style={{ display: "flex", gap: 6 }}>
+          {[0, 30, 45, 60, 90].map((m) => (
+            <button key={m}
+              className={"btn btn-mic" + ((p.pauza ?? 60) === m ? " principal" : "")}
+              style={{ flex: 1, padding: "10px 0" }}
+              onClick={() => set("pauza", m)}>
+              {m === 0 ? "fără" : m + " min"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="camp">
+        <label>Zile lucrătoare</label>
+        <div style={{ display: "flex", gap: 6 }}>
+          {CODURI_ZI.map((c) => (
+            <button key={c}
+              className={"btn btn-mic" + (zileActive.includes(c) ? " principal" : "")}
+              style={{ flex: 1, padding: "10px 0" }}
+              onClick={() => comutaZi(c)}>
+              {SCURT_ZI[c]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="sectiune">Zile cu program diferit</div>
+      <div className="sub" style={{ marginBottom: 10 }}>
+        Dacă vinerea ieșiți mai devreme, pune-i program propriu. Restul zilelor rămân pe cel standard.
+      </div>
+
+      {zileActive.map((c) => {
+        const pz = programZi(p, c);
+        const ore = oreDinProgram(pz);
+        return (
+          <div className="card" key={c} style={{ padding: "11px 13px" }}>
+            <div className="card-rand" style={{ cursor: "pointer" }}
+              onClick={() => (pz.special ? setDeschis(deschis === c ? null : c) : adaugaSpecial(c))}>
+              <div>
+                <div className="titlu" style={{ fontSize: 14 }}>{NUME_ZI[c]}</div>
+                <div className="sub">
+                  <span className="mono">{pz.start}–{pz.final}</span>
+                  {pz.pauza > 0 && <> · pauză {pz.pauza} min</>}
+                  {" · "}<b>{ore}h plătite</b>
+                </div>
+              </div>
+              <span className={"chip " + (pz.special ? "alocat" : "gri")}>
+                {pz.special ? (deschis === c ? "▲" : "Special") : "Standard"}
+              </span>
+            </div>
+
+            {pz.special && deschis === c && (
+              <div style={{ marginTop: 11 }}>
+                <div className="rand2">
+                  <div className="camp">
+                    <label>De la</label>
+                    <input type="time" value={pz.start} onChange={(e) => setSpecial(c, "start", e.target.value)} />
+                  </div>
+                  <div className="camp">
+                    <label>Până la</label>
+                    <input type="time" value={pz.final} onChange={(e) => setSpecial(c, "final", e.target.value)} />
+                  </div>
+                </div>
+                <div className="camp">
+                  <label>Pauză</label>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {[0, 30, 45, 60].map((m) => (
+                      <button key={m}
+                        className={"btn btn-mic" + (pz.pauza === m ? " principal" : "")}
+                        style={{ flex: 1, padding: "9px 0" }}
+                        onClick={() => setSpecial(c, "pauza", m)}>
+                        {m === 0 ? "fără" : m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button className="btn btn-mic" style={{ width: "100%" }} onClick={() => scoateSpecial(c)}>
+                  Înapoi la programul standard
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {totalSapt > 0 && (
+        <div className="rezumat" style={{ marginTop: 10 }}>
+          <div>
+            <div className="rz-nr mono">{(+totalSapt.toFixed(2)).toString().replace(".00", "")}h</div>
+            <div className="rz-lbl">pe săptămână, plătite · {zileActive.length} zile</div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function MotivRefuz({ onTrimite }) {
   const [m, setM] = useState("");
   return (
@@ -4408,10 +4531,16 @@ function FormSuplimentare({ eu, santiere = [], program, onTrimite, onClose }) {
 
   return (
     <Foaie titlu="Ore peste program" onClose={onClose}>
-      <div className="sub" style={{ marginBottom: 14 }}>
-        Programul normal e {p.start || "07:30"}–{p.final || "16:00"}. Scrie aici doar orele
-        în plus. Șeful trebuie să le aprobe ca să intre la plată.
-      </div>
+      {(() => {
+        const pz = programZi(p, codZiDinData(data));
+        return (
+          <div className="sub" style={{ marginBottom: 14 }}>
+            În ziua aia programul e <b className="mono">{pz.start}–{pz.final}</b>
+            {pz.pauza > 0 && <> cu {pz.pauza} min pauză</>} — adică {oreDinProgram(pz)}h.
+            Scrie aici doar orele <b>în plus</b>. Șeful trebuie să le aprobe ca să intre la plată.
+          </div>
+        );
+      })()}
 
       {santiere.length > 0 && (
         <div className="camp">
@@ -4725,11 +4854,8 @@ function FormConsum({ santier, materiale, onSalveaza, onClose }) {
 
 function FormPontaj({ santier, angajati, echipe, program, onSalveaza, onClose }) {
   const [data, setData] = useState(aziISO());
-  const [ore, setOre] = useState(() => {
-    const p = program || {};
-    const d = (minute(p.final) || 0) - (minute(p.start) || 0);
-    return d > 0 ? String(+(d / 60).toFixed(1)).replace(".0", "") : "8";
-  });
+  const [ore, setOre] = useState(() =>
+    String(oreDinProgram(programZi(program, codZiDinData(aziISO()))) || 8).replace(".00", ""));
   const faze = Array.isArray(santier.faze) ? santier.faze : [];
   const [fazaId, setFazaId] = useState(faze[0]?.id || "");
   const fazaAleasa = faze.find((x) => x.id === fazaId);
@@ -4751,7 +4877,11 @@ function FormPontaj({ santier, angajati, echipe, program, onSalveaza, onClose })
     <Foaie titlu={`Pontaj: ${santier.nume}`} onClose={onClose}>
       <div className="rand2">
         <div className="camp"><label>Data</label>
-          <input type="date" value={data} onChange={(e) => setData(e.target.value)} /></div>
+          <input type="date" value={data} onChange={(e) => {
+            setData(e.target.value);
+            const o = oreDinProgram(programZi(program, codZiDinData(e.target.value)));
+            if (o) setOre(String(o).replace(".00", ""));
+          }} /></div>
         <div className="camp"><label>Ore lucrate (fiecare)</label>
           <input type="number" step="0.5" value={ore} onChange={(e) => setOre(e.target.value)} /></div>
       </div>
@@ -5067,7 +5197,8 @@ function FormPlan({ item, data, santiere, echipe, angajati, planificare, program
   const [f, setF] = useState(
     item || { data, santierId: santiere.filter((s) => s.status !== "finalizat")[0]?.id || "",
       echipaId: "", angajatIds: [],
-      oraStart: program?.start || "07:30", oraFinal: program?.final || "16:00", note: "" }
+      oraStart: programZi(program, codZiDinData(data)).start,
+      oraFinal: programZi(program, codZiDinData(data)).final, note: "" }
   );
   const comuta = (id) => {
     const l = f.angajatIds || [];
