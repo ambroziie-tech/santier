@@ -65,7 +65,7 @@ const gol = {
   materiale: [], scule: [], echipe: [], angajati: [],
   camioane: [], intretinere: [], cereri: [], jurnal: [],
   santiere: [], pontaj: [], consum: [], planificare: [], sarcini: [],
-  dotare: [], verificari: [],
+  dotare: [], verificari: [], categoriiMateriale: [],
   firma: null,
   setari: { pin: PIN_IMPLICIT, zilePoze: 30, zileCereri: 30,
     program: { start: "07:30", final: "16:00", pauza: 60,
@@ -1590,6 +1590,11 @@ function App() {
   const filtrat = (lista, campuri) =>
     !q ? lista : lista.filter((x) => campuri.some((c) => (x[c] || "").toLowerCase().includes(q)));
   const numeEchipa = (id) => db.echipe.find((e) => e.id === id)?.nume || "Fără echipă";
+  const categoriiMateriale = [...new Set([
+    ...(db.categoriiMateriale || []),
+    ...db.materiale.map((m) => (m.categorie || "").trim()).filter(Boolean),
+  ])].sort((a, b) => a.localeCompare(b, "ro"));
+
   const stocScazut = db.materiale.filter((m) => Number(m.cant) <= Number(m.minim || 0));
   const cereriNoi = db.cereri.filter((c) => c.status === "nou");
   const valMateriale = db.materiale.reduce((s, m) => s + (Number(m.cant) || 0) * (Number(m.pret) || 0), 0);
@@ -3088,6 +3093,10 @@ function App() {
           <Dotare db={db} onSalveaza={salveaza} setFoaie={setFoaie} cere={cere} />
         )}
 
+        {tab === "setari" && subSet === "categorii" && (
+          <CategoriiMateriale db={db} onSalveaza={salveaza} cere={cere} />
+        )}
+
         {tab === "setari" && subSet === "invitatii" && (
           <Invitatii db={db} onSeteazaPin={(id, pin) => setPinAngajat(id, pin, false)} />
         )}
@@ -3382,7 +3391,7 @@ function App() {
       {/* ---------- FORMULARE ADMIN ---------- */}
       {foaie?.tip === "material" && (
         <FormMaterial item={foaie.item} santiere={db.santiere.filter((x) => x.status !== "finalizat")}
-          onSalveaza={salvMaterialCuDestinatie} onClose={() => setFoaie(null)} />
+          categorii={categoriiMateriale} onSalveaza={salvMaterialCuDestinatie} onClose={() => setFoaie(null)} />
       )}
       {foaie?.tip === "scula" && <FormScula item={foaie.item} onSalveaza={salvScula} onClose={() => setFoaie(null)} />}
       {foaie?.tip === "echipa" && (
@@ -3689,6 +3698,107 @@ const zileDeLa = (dataISO) => {
   if (!dataISO) return null;
   return Math.floor((Date.now() - new Date(dataISO).getTime()) / 86400000);
 };
+
+function CategoriiMateriale({ db, onSalveaza, cere }) {
+  const [nume, setNume] = useState("");
+  const [editez, setEditez] = useState(null); // categoria redenumită acum
+  const [redenumire, setRedenumire] = useState("");
+
+  const folosite = db.materiale.reduce((acc, m) => {
+    const c = (m.categorie || "").trim();
+    if (c) acc[c] = (acc[c] || 0) + 1;
+    return acc;
+  }, {});
+  const toate = [...new Set([...(db.categoriiMateriale || []), ...Object.keys(folosite)])]
+    .sort((a, b) => a.localeCompare(b, "ro"));
+
+  const adauga = () => {
+    const n = nume.trim();
+    if (!n || toate.includes(n)) { setNume(""); return; }
+    onSalveaza({ ...db, categoriiMateriale: [...(db.categoriiMateriale || []), n] });
+    setNume("");
+  };
+
+  const salveazaRedenumire = (vechi) => {
+    const nou = redenumire.trim();
+    setEditez(null);
+    if (!nou || nou === vechi) return;
+    onSalveaza({
+      ...db,
+      categoriiMateriale: [...new Set((db.categoriiMateriale || []).map((c) => (c === vechi ? nou : c)))],
+      materiale: db.materiale.map((m) => ((m.categorie || "").trim() === vechi ? { ...m, categorie: nou } : m)),
+    });
+  };
+
+  const sterge = (c) => {
+    const nr = folosite[c] || 0;
+    cere(
+      nr > 0
+        ? `Ștergi categoria „${c}"? ${nr} ${nr === 1 ? "material rămâne" : "materiale rămân"} fără categorie.`
+        : `Ștergi categoria „${c}"?`,
+      () => onSalveaza({
+        ...db,
+        categoriiMateriale: (db.categoriiMateriale || []).filter((x) => x !== c),
+        materiale: db.materiale.map((m) => ((m.categorie || "").trim() === c ? { ...m, categorie: "" } : m)),
+      }),
+      "Șterge"
+    );
+  };
+
+  return (
+    <>
+      <div className="card">
+        <div className="titlu">🏷️ Categoriile tale</div>
+        <div className="sub">
+          Le vezi apoi la fiecare material, la alegere. Le poți redenumi sau șterge oricând —
+          materialele care le foloseau nu se șterg, doar rămân fără categorie.
+        </div>
+      </div>
+
+      <div className="camp">
+        <label>Adaugă o categorie nouă</label>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input value={nume} onChange={(e) => setNume(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && adauga()}
+            placeholder="ex. Instalații electrice" style={{ flex: 1 }} />
+          <button className="btn btn-mic principal" onClick={adauga}>+</button>
+        </div>
+      </div>
+
+      {toate.length === 0 ? (
+        <div className="gol-msg">
+          Nicio categorie încă. Adaugă-le aici sau apar automat pe măsură ce le scrii la materiale.
+        </div>
+      ) : (
+        toate.map((c) => (
+          <div className="card" key={c} style={{ padding: "11px 14px" }}>
+            {editez === c ? (
+              <div style={{ display: "flex", gap: 8 }}>
+                <input value={redenumire} onChange={(e) => setRedenumire(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && salveazaRedenumire(c)}
+                  autoFocus style={{ flex: 1 }} />
+                <button className="btn btn-mic principal" onClick={() => salveazaRedenumire(c)}>Salvează</button>
+              </div>
+            ) : (
+              <div className="card-rand">
+                <div>
+                  <div className="titlu" style={{ fontSize: 14.5 }}>{c}</div>
+                  <div className="sub">
+                    {folosite[c] || 0} {folosite[c] === 1 ? "material" : "materiale"}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button className="btn btn-mic" onClick={() => { setEditez(c); setRedenumire(c); }}>Redenumește</button>
+                  <button className="btn btn-mic pericol" onClick={() => sterge(c)}>Șterge</button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))
+      )}
+    </>
+  );
+}
 
 function Dotare({ db, onSalveaza, setFoaie, cere }) {
   const [nume, setNume] = useState("");
@@ -4511,7 +4621,7 @@ function AprobaSuplimentare({ sup, angajat, santier, onAproba, onClose }) {
   );
 }
 
-function FormMaterial({ item, santiere = [], onSalveaza, onClose }) {
+function FormMaterial({ item, santiere = [], categorii = [], onSalveaza, onClose }) {
   const [f, setF] = useState(item || { nume: "", categorie: "", cant: "", unitate: "buc", minim: "", pret: "", locatie: "" });
   const [dest, setDest] = useState({ santierId: "", fazaId: "" });
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
@@ -4536,12 +4646,28 @@ function FormMaterial({ item, santiere = [], onSalveaza, onClose }) {
         <div className="camp"><label>Prag minim (alertă)</label>
           <input type="number" value={f.minim} onChange={set("minim")} placeholder="ex. 10" /></div>
       </div>
-      <div className="rand2">
-        <div className="camp"><label>Categorie</label>
-          <input value={f.categorie} onChange={set("categorie")} placeholder="ex. Zidărie" /></div>
-        <div className="camp"><label>Locație</label>
-          <input value={f.locatie} onChange={set("locatie")} placeholder="ex. Depozit" /></div>
+      <div className="camp"><label>Categorie</label>
+        {f.categorie === "__noua__" || (f.categorie && !categorii.includes(f.categorie)) ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <input value={f.categorie === "__noua__" ? "" : f.categorie}
+              onChange={(e) => setF({ ...f, categorie: e.target.value })}
+              placeholder="ex. Zidărie" autoFocus style={{ flex: 1 }} />
+            {categorii.length > 0 && (
+              <button className="btn btn-mic" onClick={() => setF({ ...f, categorie: categorii[0] })}>
+                Anulează
+              </button>
+            )}
+          </div>
+        ) : (
+          <select value={f.categorie} onChange={set("categorie")}>
+            <option value="">— fără categorie —</option>
+            {categorii.map((c) => <option key={c}>{c}</option>)}
+            <option value="__noua__">+ Categorie nouă…</option>
+          </select>
+        )}
       </div>
+      <div className="camp"><label>Locație</label>
+        <input value={f.locatie} onChange={set("locatie")} placeholder="ex. Depozit" /></div>
 
       {!item && santiere.length > 0 && (
         <>
@@ -4950,6 +5076,7 @@ const SECTIUNI_SETARI = [
   ["oameni", "👷", "Oameni și echipe", "angajați, fișe, echipe"],
   ["rapoarte", "📄", "Raport lunar", "ore și costuri pe fiecare om"],
   ["dotare", "🧰", "Dotare echipe", "sculele obligatorii, verificări"],
+  ["categorii", "🏷️", "Categorii materiale", "adaugă, redenumește, șterge"],
   ["auto", "🚛", "Camioane și utilaje", "ITP, asigurări, revizii"],
   ["cont", "🔑", "Firmă, program, acces", "date firmă, orar, PIN, limbă"],
   ["invitatii", "📨", "Invită muncitorii", "linkuri și parole"],
