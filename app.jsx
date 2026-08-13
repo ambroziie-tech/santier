@@ -1401,7 +1401,7 @@ function App() {
     const zileLucru = p.zile || ["MO", "TU", "WE", "TH", "FR"];
     const coduri = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
     const echipeCuSantier = db.echipe
-      .map((e) => ({ e, s: db.santiere.find((x) => x.status !== "finalizat" && x.nume === e.santier) }))
+      .map((e) => ({ e, s: db.santiere.find((x) => x.status !== "finalizat" && x.id === e.santierId) }))
       .filter((x) => x.s);
 
     if (echipeCuSantier.length === 0) {
@@ -2461,12 +2461,17 @@ function App() {
                 {db.echipe.map((e) => {
                   const membri = db.angajati.filter((a) => a.echipaId === e.id);
                   const sculeleEi = db.scule.filter((s) => s.echipaId === e.id);
+                  const santierEi = db.santiere.find((x) => x.id === e.santierId);
+                  const camioaneEi = db.camioane.filter((c) => (e.camioaneIds || []).includes(c.id));
                   return (
                     <div className="card" key={e.id}>
                       <div className="card-rand">
                         <div>
                           <div className="titlu">{e.nume}</div>
-                          <div className="sub">{e.santier ? `Șantier: ${e.santier}` : "Fără șantier"} · {membri.length} oameni</div>
+                          <div className="sub">
+                            {santierEi ? `🏗 ${santierEi.nume}` : "Fără șantier fix"} · {membri.length} oameni
+                            {camioaneEi.length > 0 && <> · 🚛 {camioaneEi.map((c) => c.nume).join(", ")}</>}
+                          </div>
                         </div>
                         <span className="chip alocat">{sculeleEi.length} scule</span>
                       </div>
@@ -3380,7 +3385,10 @@ function App() {
           onSalveaza={salvMaterialCuDestinatie} onClose={() => setFoaie(null)} />
       )}
       {foaie?.tip === "scula" && <FormScula item={foaie.item} onSalveaza={salvScula} onClose={() => setFoaie(null)} />}
-      {foaie?.tip === "echipa" && <FormEchipa item={foaie.item} onSalveaza={salvEchipa} onClose={() => setFoaie(null)} />}
+      {foaie?.tip === "echipa" && (
+        <FormEchipa item={foaie.item} santiere={db.santiere.filter((x) => x.status !== "finalizat")}
+          camioane={db.camioane} onSalveaza={salvEchipa} onClose={() => setFoaie(null)} />
+      )}
       {foaie?.tip === "angajat" && <FormAngajat item={foaie.item} echipe={db.echipe} onSalveaza={salvAngajat} onClose={() => setFoaie(null)} />}
       {foaie?.tip === "fisa" && (
         <FisaAngajat
@@ -3561,7 +3569,7 @@ function App() {
         <Foaie titlu={`Alocă: ${foaie.item.nume}`} onClose={() => setFoaie(null)}>
           {db.echipe.map((e) => (
             <button key={e.id} className="btn btn-galben" style={{ marginBottom: 9 }} onClick={() => alocaScula(foaie.item.id, e.id)}>
-              {e.nume} {e.santier ? `· ${e.santier}` : ""}
+              {e.nume} {(() => { const sn = db.santiere.find((x) => x.id === e.santierId); return sn ? `· ${sn.nume}` : ""; })()}
             </button>
           ))}
         </Foaie>
@@ -4594,15 +4602,44 @@ function FormScula({ item, onSalveaza, onClose }) {
   );
 }
 
-function FormEchipa({ item, onSalveaza, onClose }) {
-  const [f, setF] = useState(item || { nume: "", santier: "" });
+function FormEchipa({ item, santiere = [], camioane = [], onSalveaza, onClose }) {
+  const [f, setF] = useState(item || { nume: "", santierId: "", camioaneIds: [] });
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const comutaCamion = (id) => {
+    const l = f.camioaneIds || [];
+    setF({ ...f, camioaneIds: l.includes(id) ? l.filter((x) => x !== id) : [...l, id] });
+  };
   return (
     <Foaie titlu={item ? "Modifică echipă" : "Echipă nouă"} onClose={onClose}>
       <div className="camp"><label>Nume echipă *</label>
         <input value={f.nume} onChange={set("nume")} placeholder="ex. Echipa 1 — Zidărie" /></div>
-      <div className="camp"><label>Șantier</label>
-        <input value={f.santier} onChange={set("santier")} placeholder="ex. Casa Beaucouzé" /></div>
+
+      <div className="camp">
+        <label>Camion / utilaj alocat</label>
+        {camioane.length === 0 ? (
+          <div className="sub">Niciun vehicul în evidență — le adaugi din Setări → Camioane.</div>
+        ) : (
+          camioane.map((c) => (
+            <label key={c.id} className="rand-bifa">
+              <input type="checkbox" checked={(f.camioaneIds || []).includes(c.id)} onChange={() => comutaCamion(c.id)} />
+              <span>{c.nume}<span className="rb-sub">{c.numar || "fără număr"}</span></span>
+            </label>
+          ))
+        )}
+      </div>
+
+      <div className="camp">
+        <label>Șantier fix (opțional)</label>
+        <select value={f.santierId || ""} onChange={set("santierId")}>
+          <option value="">— fără, se stabilește prin planing —</option>
+          {santiere.map((x) => <option key={x.id} value={x.id}>{x.nume}</option>)}
+        </select>
+        <div className="sub" style={{ marginTop: 6 }}>
+          Dacă echipa merge mereu pe același șantier, alege-l aici — folosește la
+          completarea automată a planingului (⚡ din tab-ul Planing).
+        </div>
+      </div>
+
       <button className="btn btn-galben" onClick={() => f.nume.trim() && onSalveaza(f)}>Salvează</button>
     </Foaie>
   );
