@@ -2882,54 +2882,69 @@ function App() {
               </>
             )}
 
-            {subInvPermis === "camioane" && (
-                      <>
-                        <button className="btn btn-galben" onClick={() => setFoaie({ tip: "camion" })}>+ Adaugă camion / utilaj</button>
-                        <div style={{ height: 12 }} />
-                        {db.camioane.map((c) => {
-                          const istoric = db.intretinere.filter((i) => i.camionId === c.id);
-                          const costTotal = istoric.reduce((s, i) => s + (Number(i.cost) || 0), 0);
-                          const expirari = [["ITP", c.itp], ["Asig.", c.asigurare], ["Revizie", c.revizie]]
-                            .filter(([, d]) => d)
-                            .map(([t, d]) => ({ t, d, z: zileRamase(d) }));
-                          return (
-                            <div className="card" key={c.id}>
-                              <div className="card-rand">
-                                <div>
-                                  <div className="titlu">{c.nume}</div>
-                                  <div className="sub">
-                                    {c.numar && <><span className="mono">{c.numar}</span> · </>}
-                                    {c.km && <><b className="mono">{Number(c.km).toLocaleString("ro-RO")} km</b> · </>}
-                                    cheltuieli totale: <b>{bani(costTotal)}</b>
-                                  </div>
-                                </div>
-                                {expirari.some((e) => e.z <= 30)
-                                  ? <span className="chip alerta">Verifică acte</span>
-                                  : <span className="chip ok">În regulă</span>}
-                              </div>
-                              {expirari.length > 0 && (
-                                <div className="lista-in-card">
-                                  {expirari.map((e, i) => (
-                                    <div key={i}>
-                                      {e.z <= 30 ? "🔴" : "🟢"} {e.t}: {dataRo(e.d)}
-                                      {e.z !== null && <span style={{ color: e.z <= 30 ? "var(--rosu)" : "var(--mut)" }}> · {e.z < 0 ? `expirat de ${-e.z} zile` : `${e.z} zile`}</span>}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              <div className="actiuni">
-                                <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "intretinere", item: c })}>+ Întreținere</button>
-                                <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "alimentare", item: c })}>⛽ Alimentare</button>
-                                <button className="btn btn-mic" onClick={() => setFoaie({ tip: "istoricCamion", item: c })}>Istoric ({istoric.length})</button>
-                                <button className="btn btn-mic" onClick={() => setFoaie({ tip: "camion", item: c })}>Modifică</button>
-                                <button className="btn btn-mic pericol" onClick={() => stergeGen("camioane", "Ștergi acest vehicul?")(c.id)}>Șterge</button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {db.camioane.length === 0 && <div className="gol-msg">Niciun vehicul. Adaugă camioanele și utilajele ca să urmărești ITP, asigurări, revizii și costurile de întreținere.</div>}
-                      </>
+            {subInvPermis === "camioane" && (() => {
+              const cardVehicul = (c) => {
+                const istoric = db.intretinere.filter((i) => i.camionId === c.id);
+                const costTotal = istoric.reduce((s, i) => s + (Number(i.cost) || 0), 0);
+                const expirari = [["ITP", c.itp], ["Asig.", c.asigurare], ["Revizie", c.revizie]]
+                  .filter(([, d]) => d)
+                  .map(([t, d]) => ({ t, d, z: zileRamase(d) }));
+                return (
+                  <div className="card" key={c.id}>
+                    <div className="card-rand">
+                      <div>
+                        <div className="titlu">{c.nume}</div>
+                        <div className="sub">
+                          {c.numar && <><span className="mono">{c.numar}</span> · </>}
+                          {c.km && <><b className="mono">{Number(c.km).toLocaleString("ro-RO")} km</b> · </>}
+                          cheltuieli totale: <b>{bani(costTotal)}</b>
+                        </div>
+                      </div>
+                      {expirari.some((e) => e.z <= 30)
+                        ? <span className="chip alerta">Verifică acte</span>
+                        : <span className="chip ok">În regulă</span>}
+                    </div>
+                    {expirari.length > 0 && (
+                      <div className="lista-in-card">
+                        {expirari.map((e, i) => (
+                          <div key={i}>
+                            {e.z <= 30 ? "🔴" : "🟢"} {e.t}: {dataRo(e.d)}
+                            {e.z !== null && <span style={{ color: e.z <= 30 ? "var(--rosu)" : "var(--mut)" }}> · {e.z < 0 ? `expirat de ${-e.z} zile` : `${e.z} zile`}</span>}
+                          </div>
+                        ))}
+                      </div>
                     )}
+                    <div className="actiuni">
+                      <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "intretinere", item: c })}>+ Întreținere</button>
+                      <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "alimentare", item: c })}>⛽ Alimentare</button>
+                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "istoricCamion", item: c })}>Istoric ({istoric.length})</button>
+                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "camion", item: c })}>Modifică</button>
+                      <button className="btn btn-mic pericol" onClick={() => stergeGen("camioane", "Ștergi acest vehicul?")(c.id)}>Șterge</button>
+                    </div>
+                  </div>
+                );
+              };
+
+              const camioane = db.camioane.filter((c) => c.tip !== "utilaj");
+              const utilaje = db.camioane.filter((c) => c.tip === "utilaj");
+
+              return (
+                <>
+                  <button className="btn btn-galben" onClick={() => setFoaie({ tip: "camion" })}>+ Adaugă</button>
+                  <div style={{ height: 12 }} />
+
+                  <div className="sectiune">🚛 Camioane</div>
+                  {camioane.length === 0
+                    ? <div className="gol-msg">Niciun camion încă.</div>
+                    : camioane.map(cardVehicul)}
+
+                  <div className="sectiune">🏗 Utilaje</div>
+                  {utilaje.length === 0
+                    ? <div className="gol-msg">Niciun utilaj încă — betonieră, excavator, telescopic, dumper.</div>
+                    : utilaje.map(cardVehicul)}
+                </>
+              );
+            })()}
 
           </>
           );
@@ -6082,19 +6097,28 @@ function FisaAngajat({ angajat, echipe, numeEchipa, pontaj, santiere, roluriFirm
 }
 
 function FormCamion({ item, onSalveaza, onClose }) {
-  const [f, setF] = useState(item || { nume: "", numar: "", km: "", itp: "", asigurare: "", revizie: "" });
+  const [f, setF] = useState(item || { tip: "camion", nume: "", numar: "", km: "", itp: "", asigurare: "", revizie: "" });
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const eUtilaj = f.tip === "utilaj";
   return (
-    <Foaie titlu={item ? "Modifică vehicul" : "Vehicul nou"} onClose={onClose}>
-      <div className="camp"><label>Denumire *</label>
-        <input value={f.nume} onChange={set("nume")} placeholder="ex. Iveco Daily basculabil" /></div>
-      <div className="rand2">
-        <div className="camp"><label>Număr înmatriculare</label>
-          <input value={f.numar} onChange={set("numar")} placeholder="ex. GA-123-BC" /></div>
-        <div className="camp"><label>Kilometraj</label>
-          <input type="number" value={f.km} onChange={set("km")} placeholder="ex. 184000" /></div>
+    <Foaie titlu={item ? "Modifică" : "Adaugă"} onClose={onClose}>
+      <div className="camp">
+        <label>Ce fel de vehicul</label>
+        <div className="subtab">
+          <button className={!eUtilaj ? "activ" : ""} onClick={() => setF({ ...f, tip: "camion" })}>🚛 Camion</button>
+          <button className={eUtilaj ? "activ" : ""} onClick={() => setF({ ...f, tip: "utilaj" })}>🏗 Utilaj</button>
+        </div>
       </div>
-      <div className="camp"><label>ITP / Contrôle technique valabil până la</label>
+      <div className="camp"><label>Denumire *</label>
+        <input value={f.nume} onChange={set("nume")}
+          placeholder={eUtilaj ? "ex. Manitou MT 625" : "ex. Iveco Daily basculabil"} /></div>
+      <div className="rand2">
+        <div className="camp"><label>{eUtilaj ? "Număr / serie (opțional)" : "Număr înmatriculare"}</label>
+          <input value={f.numar} onChange={set("numar")} placeholder={eUtilaj ? "ex. utilaj" : "ex. GA-123-BC"} /></div>
+        <div className="camp"><label>{eUtilaj ? "Ore de funcționare" : "Kilometraj"}</label>
+          <input type="number" value={f.km} onChange={set("km")} placeholder={eUtilaj ? "ex. 3200" : "ex. 184000"} /></div>
+      </div>
+      <div className="camp"><label>{eUtilaj ? "ITP / inspecție (dacă are)" : "ITP / Contrôle technique valabil până la"}</label>
         <input type="date" value={f.itp} onChange={set("itp")} /></div>
       <div className="rand2">
         <div className="camp"><label>Asigurare până la</label>
@@ -7466,7 +7490,14 @@ function FormPlan({ item, data, santiere, echipe, angajati, planificare, program
           {conflicte.map((c, i) => {
             const durata = (minute(f.oraFinal) || 0) - (minute(f.oraStart) || 0);
             const startDupa = minute(c.alta.oraFinal);
-            const potDupa = startDupa !== null && durata > 0 && startDupa + durata <= 24 * 60;
+            const progZi = programZi(program, codZiDinData(f.data));
+            const sfarsitProgram = minute(progZi.final);
+            /* sugestia nu trece de sfârșitul programului zilei — dacă nu încape toată durata, o scurtează */
+            const capatDupa = startDupa !== null
+              ? (sfarsitProgram !== null ? Math.min(startDupa + durata, sfarsitProgram) : startDupa + durata)
+              : null;
+            const potDupa = startDupa !== null && durata > 0 && capatDupa > startDupa;
+            const scurtat = potDupa && capatDupa < startDupa + durata;
             const potInainte = minute(c.alta.oraStart) !== null && minute(f.oraStart) !== null
               && minute(c.alta.oraStart) < minute(f.oraStart);
             return (
@@ -7477,9 +7508,14 @@ function FormPlan({ item, data, santiere, echipe, angajati, planificare, program
                 <div className="actiuni" style={{ marginTop: 7 }}>
                   {potDupa && (
                     <button className="btn btn-mic principal"
-                      onClick={() => setF({ ...f, oraStart: catreOra(startDupa), oraFinal: catreOra(startDupa + durata) })}>
-                      Îi pun după: {catreOra(startDupa)}–{catreOra(startDupa + durata)}
+                      onClick={() => setF({ ...f, oraStart: catreOra(startDupa), oraFinal: catreOra(capatDupa) })}>
+                      Îi pun după: {catreOra(startDupa)}–{catreOra(capatDupa)}
                     </button>
+                  )}
+                  {potDupa && scurtat && (
+                    <div className="sub" style={{ width: "100%", marginTop: -3, marginBottom: 3 }}>
+                      Scurtat — programul zilei se termină la {progZi.final}.
+                    </div>
                   )}
                   {potInainte && (
                     <button className="btn btn-mic"
