@@ -65,9 +65,9 @@ const gol = {
   materiale: [], scule: [], echipe: [], angajati: [],
   camioane: [], intretinere: [], cereri: [], jurnal: [],
   santiere: [], pontaj: [], consum: [], planificare: [], sarcini: [],
-  dotare: [], verificari: [], categoriiMateriale: [],
+  dotare: [], verificari: [], categoriiMateriale: [], categoriiScule: [],
   firma: null,
-  setari: { pin: PIN_IMPLICIT, zilePoze: 30, zileCereri: 30,
+  setari: { pin: PIN_IMPLICIT, zilePoze: 30, zileCereri: 30, oreVizibileMuncitori: true,
     program: { start: "07:30", final: "16:00", pauza: 60,
       zile: ["MO", "TU", "WE", "TH", "FR"], special: {} } },
   suplimentare: [],
@@ -1595,6 +1595,11 @@ function App() {
     ...db.materiale.map((m) => (m.categorie || "").trim()).filter(Boolean),
   ])].sort((a, b) => a.localeCompare(b, "ro"));
 
+  const categoriiScule = [...new Set([
+    ...(db.categoriiScule || []),
+    ...db.scule.map((s) => (s.categorie || "").trim()).filter(Boolean),
+  ])].sort((a, b) => a.localeCompare(b, "ro"));
+
   const stocScazut = db.materiale.filter((m) => Number(m.cant) <= Number(m.minim || 0));
   const cereriNoi = db.cereri.filter((c) => c.status === "nou");
   const valMateriale = db.materiale.reduce((s, m) => s + (Number(m.cant) || 0) * (Number(m.pret) || 0), 0);
@@ -1746,6 +1751,22 @@ function App() {
     const sarciniDeschise = sarciniLui.filter((x) => x.status === "deschis");
 
     const cereriDeschise = cererileMele.filter((c) => c.status === "nou");
+
+    /* orele lui, calculate doar dacă adminul le lasă vizibile */
+    const oreVizibile = db.setari?.oreVizibileMuncitori ?? true;
+    const oreleMele = db.pontaj.filter((p) => p.angajatId === identitate.angajatId);
+    const totalOreMele = oreleMele.reduce((s, p) => s + (Number(p.ore) || 0), 0);
+    const peSantierOre = {};
+    const peTipOre = {};
+    oreleMele.forEach((p) => {
+      const n = db.santiere.find((s) => s.id === p.santierId)?.nume || t("Șantier șters");
+      peSantierOre[n] = (peSantierOre[n] || 0) + (Number(p.ore) || 0);
+      const tp = p.tipMunca || "—";
+      peTipOre[tp] = (peTipOre[tp] || 0) + (Number(p.ore) || 0);
+    });
+    const luna30Mele = oreleMele
+      .filter((p) => p.data >= iso(adaugaZile(new Date(), -30)))
+      .reduce((s, p) => s + (Number(p.ore) || 0), 0);
 
     const cardPlan = (p, mic) => {
       const s = db.santiere.find((x) => x.id === p.santierId);
@@ -1937,6 +1958,45 @@ function App() {
 
           {/* ---------- ORE ---------- */}
           {/* ---------- CERERI ---------- */}
+          {tabM === "ore" && oreVizibile && (
+            <>
+              <div className="rezumat">
+                <div>
+                  <div className="rz-nr mono">{totalOreMele}h</div>
+                  <div className="rz-lbl">{t("Total:")} toate lucrările</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div className="rz-nr mono" style={{ color: "var(--galben)" }}>{luna30Mele}h</div>
+                  <div className="rz-lbl">ultimele 30 de zile</div>
+                </div>
+              </div>
+              {totalOreMele === 0 ? (
+                <div className="gol-msg">Nu ai încă ore pontate. Șeful le trece după fiecare zi de lucru.</div>
+              ) : (
+                <>
+                  <div className="sectiune">Pe șantier</div>
+                  {Object.entries(peSantierOre).sort((a, b) => b[1] - a[1]).map(([n, o]) => (
+                    <div className="card" key={n} style={{ padding: "12px 14px" }}>
+                      <div className="card-rand">
+                        <div className="titlu" style={{ fontSize: 14 }}>🏗 {n}</div>
+                        <b className="mono">{o}h</b>
+                      </div>
+                      <div className="bara"><div className="bara-fill"
+                        style={{ width: `${(o / totalOreMele) * 100}%`, background: "var(--galben)" }} /></div>
+                    </div>
+                  ))}
+                  <div className="sectiune">Ce ai lucrat</div>
+                  {Object.entries(peTipOre).sort((a, b) => b[1] - a[1]).map(([n, o]) => (
+                    <div className="fisa-rand" key={n}>
+                      <span>{n}</span>
+                      <b className="mono">{o}h · {Math.round((o / totalOreMele) * 100)}%</b>
+                    </div>
+                  ))}
+                </>
+              )}
+            </>
+          )}
+
           {tabM === "cereri" && (
             <>
               <div className="card">
@@ -2052,6 +2112,7 @@ function App() {
             ["azi", "🗓", t("Azi"), sarciniDeschise.length],
             ["scule", "🔧", "Scule", 0],
             ...(eu?.poateStoc ? [["materiale", "📦", "Materiale", 0]] : []),
+            ...(oreVizibile ? [["ore", "⏱", t("Orele tale"), 0]] : []),
             ["cereri", "✉", t("Cereri"),
               cereriDeschise.length + db.suplimentare.filter((x) => x.angajatId === identitate.angajatId && x.status === "nou").length],
           ].map(([id, ico, lbl, badge]) => (
@@ -3046,6 +3107,24 @@ function App() {
             </div>
 
             <div className="card">
+              <div className="titlu">👁 Ce văd muncitorii</div>
+              <div className="sub">
+                Dacă opriți, tabul „Orele tale" dispare complet de pe telefonul lor — restul
+                (planing, scule, cereri, materiale) rămâne neschimbat.
+              </div>
+              <div className="actiuni">
+                <button className={"btn btn-mic" + ((db.setari?.oreVizibileMuncitori ?? true) ? " principal" : "")}
+                  onClick={() => salveaza({ ...db, setari: { ...db.setari, oreVizibileMuncitori: true } })}>
+                  Își văd orele
+                </button>
+                <button className={"btn btn-mic" + (!(db.setari?.oreVizibileMuncitori ?? true) ? " principal" : "")}
+                  onClick={() => salveaza({ ...db, setari: { ...db.setari, oreVizibileMuncitori: false } })}>
+                  Nu le văd
+                </button>
+              </div>
+            </div>
+
+            <div className="card">
               <div className="titlu">🕖 Programul de lucru</div>
               <div className="sub">
                 Orele standard ale firmei. Se folosesc când pui ceva în planing, la pontaj și
@@ -3095,6 +3174,10 @@ function App() {
 
         {tab === "setari" && subSet === "categorii" && (
           <CategoriiMateriale db={db} onSalveaza={salveaza} cere={cere} />
+        )}
+
+        {tab === "setari" && subSet === "categoriiScule" && (
+          <CategoriiScule db={db} onSalveaza={salveaza} cere={cere} />
         )}
 
         {tab === "setari" && subSet === "invitatii" && (
@@ -3393,7 +3476,9 @@ function App() {
         <FormMaterial item={foaie.item} santiere={db.santiere.filter((x) => x.status !== "finalizat")}
           categorii={categoriiMateriale} onSalveaza={salvMaterialCuDestinatie} onClose={() => setFoaie(null)} />
       )}
-      {foaie?.tip === "scula" && <FormScula item={foaie.item} onSalveaza={salvScula} onClose={() => setFoaie(null)} />}
+      {foaie?.tip === "scula" && (
+        <FormScula item={foaie.item} categorii={categoriiScule} onSalveaza={salvScula} onClose={() => setFoaie(null)} />
+      )}
       {foaie?.tip === "echipa" && (
         <FormEchipa item={foaie.item} santiere={db.santiere.filter((x) => x.status !== "finalizat")}
           camioane={db.camioane} onSalveaza={salvEchipa} onClose={() => setFoaie(null)} />
@@ -3785,6 +3870,108 @@ function CategoriiMateriale({ db, onSalveaza, cere }) {
                   <div className="titlu" style={{ fontSize: 14.5 }}>{c}</div>
                   <div className="sub">
                     {folosite[c] || 0} {folosite[c] === 1 ? "material" : "materiale"}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button className="btn btn-mic" onClick={() => { setEditez(c); setRedenumire(c); }}>Redenumește</button>
+                  <button className="btn btn-mic pericol" onClick={() => sterge(c)}>Șterge</button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))
+      )}
+    </>
+  );
+}
+
+function CategoriiScule({ db, onSalveaza, cere }) {
+  const [nume, setNume] = useState("");
+  const [editez, setEditez] = useState(null);
+  const [redenumire, setRedenumire] = useState("");
+
+  const folosite = db.scule.reduce((acc, sc) => {
+    const c = (sc.categorie || "").trim();
+    if (c) acc[c] = (acc[c] || 0) + 1;
+    return acc;
+  }, {});
+  const toate = [...new Set([...(db.categoriiScule || []), ...Object.keys(folosite)])]
+    .sort((a, b) => a.localeCompare(b, "ro"));
+
+  const adauga = () => {
+    const n = nume.trim();
+    if (!n || toate.includes(n)) { setNume(""); return; }
+    onSalveaza({ ...db, categoriiScule: [...(db.categoriiScule || []), n] });
+    setNume("");
+  };
+
+  const salveazaRedenumire = (vechi) => {
+    const nou = redenumire.trim();
+    setEditez(null);
+    if (!nou || nou === vechi) return;
+    onSalveaza({
+      ...db,
+      categoriiScule: [...new Set((db.categoriiScule || []).map((c) => (c === vechi ? nou : c)))],
+      scule: db.scule.map((sc) => ((sc.categorie || "").trim() === vechi ? { ...sc, categorie: nou } : sc)),
+    });
+  };
+
+  const sterge = (c) => {
+    const nr = folosite[c] || 0;
+    cere(
+      nr > 0
+        ? `Ștergi categoria „${c}"? ${nr} ${nr === 1 ? "sculă rămâne" : "scule rămân"} fără categorie.`
+        : `Ștergi categoria „${c}"?`,
+      () => onSalveaza({
+        ...db,
+        categoriiScule: (db.categoriiScule || []).filter((x) => x !== c),
+        scule: db.scule.map((sc) => ((sc.categorie || "").trim() === c ? { ...sc, categorie: "" } : sc)),
+      }),
+      "Șterge"
+    );
+  };
+
+  return (
+    <>
+      <div className="card">
+        <div className="titlu">🗂️ Categoriile tale de scule</div>
+        <div className="sub">
+          Le vezi apoi la fiecare sculă, la alegere, și le folosești ca filtre la lista de scule.
+          Le poți redenumi sau șterge oricând — sculele care le foloseau nu se șterg, doar rămân
+          fără categorie.
+        </div>
+      </div>
+
+      <div className="camp">
+        <label>Adaugă o categorie nouă</label>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input value={nume} onChange={(e) => setNume(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && adauga()}
+            placeholder="ex. Electrice" style={{ flex: 1 }} />
+          <button className="btn btn-mic principal" onClick={adauga}>+</button>
+        </div>
+      </div>
+
+      {toate.length === 0 ? (
+        <div className="gol-msg">
+          Nicio categorie încă. Adaugă-le aici sau apar automat pe măsură ce le scrii la scule.
+        </div>
+      ) : (
+        toate.map((c) => (
+          <div className="card" key={c} style={{ padding: "11px 14px" }}>
+            {editez === c ? (
+              <div style={{ display: "flex", gap: 8 }}>
+                <input value={redenumire} onChange={(e) => setRedenumire(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && salveazaRedenumire(c)}
+                  autoFocus style={{ flex: 1 }} />
+                <button className="btn btn-mic principal" onClick={() => salveazaRedenumire(c)}>Salvează</button>
+              </div>
+            ) : (
+              <div className="card-rand">
+                <div>
+                  <div className="titlu" style={{ fontSize: 14.5 }}>{c}</div>
+                  <div className="sub">
+                    {folosite[c] || 0} {folosite[c] === 1 ? "sculă" : "scule"}
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
@@ -4707,7 +4894,7 @@ function FormMaterial({ item, santiere = [], categorii = [], onSalveaza, onClose
   );
 }
 
-function FormScula({ item, onSalveaza, onClose }) {
+function FormScula({ item, categorii = [], onSalveaza, onClose }) {
   const [f, setF] = useState(item || { nume: "", cod: "", pret: "" });
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   return (
@@ -4715,7 +4902,24 @@ function FormScula({ item, onSalveaza, onClose }) {
       <div className="camp"><label>Denumire *</label>
         <input value={f.nume} onChange={set("nume")} placeholder="ex. Flex Makita 230mm" /></div>
       <div className="camp"><label>Categorie</label>
-        <input value={f.categorie || ""} onChange={set("categorie")} placeholder="ex. Electrice, Manuale, Utilaje" list="cat-scule" />
+        {f.categorie === "__noua__" || (f.categorie && !categorii.includes(f.categorie)) ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <input value={f.categorie === "__noua__" ? "" : f.categorie}
+              onChange={(e) => setF({ ...f, categorie: e.target.value })}
+              placeholder="ex. Electrice" autoFocus style={{ flex: 1 }} />
+            {categorii.length > 0 && (
+              <button className="btn btn-mic" onClick={() => setF({ ...f, categorie: categorii[0] })}>
+                Anulează
+              </button>
+            )}
+          </div>
+        ) : (
+          <select value={f.categorie || ""} onChange={set("categorie")}>
+            <option value="">— fără categorie —</option>
+            {categorii.map((c) => <option key={c}>{c}</option>)}
+            <option value="__noua__">+ Categorie nouă…</option>
+          </select>
+        )}
       </div>
       <div className="rand2">
         <div className="camp"><label>Cod / serie</label>
@@ -5077,6 +5281,7 @@ const SECTIUNI_SETARI = [
   ["rapoarte", "📄", "Raport lunar", "ore și costuri pe fiecare om"],
   ["dotare", "🧰", "Dotare echipe", "sculele obligatorii, verificări"],
   ["categorii", "🏷️", "Categorii materiale", "adaugă, redenumește, șterge"],
+  ["categoriiScule", "🗂️", "Categorii scule", "adaugă, redenumește, șterge"],
   ["auto", "🚛", "Camioane și utilaje", "ITP, asigurări, revizii"],
   ["cont", "🔑", "Firmă, program, acces", "date firmă, orar, PIN, limbă"],
   ["invitatii", "📨", "Invită muncitorii", "linkuri și parole"],
