@@ -1821,7 +1821,7 @@ function App() {
     permisiuni.planing && "planing",
     (permisiuni.stocMateriale || permisiuni.stocScule || permisiuni.stocAuto) && "inventar",
     permisiuni.cereri && "cereri",
-    (permisiuni.cifre || permisiuni.rapoarte || permisiuni.dotare || permisiuni.oameni) && "setari",
+    "setari", // mereu accesibil — aici stă și butonul de ieșire din cont
   ].filter(Boolean);
   /* dacă tabul curent nu e permis rolului, cad pe primul tab permis */
   const tabEfectiv = (!idTaburiPermise || idTaburiPermise.includes(tab)) ? tab : idTaburiPermise[0];
@@ -1997,6 +1997,52 @@ function App() {
           {/* ---------- SCULE ---------- */}
           {tabM === "scule" && !eBirou && (
             <>
+              {db.scule.filter((x) => x.comun).length > 0 && (
+                <>
+                  <div className="sectiune">🔧 Utilaje comune</div>
+                  <div className="sub" style={{ marginBottom: 10 }}>Se mută între echipe.</div>
+                  {db.scule.filter((x) => x.comun).map((s) => {
+                    const laEchipa = s.echipaId === eu?.echipaId;
+                    return (
+                      <div className="card" key={s.id}>
+                        <div className="card-rand">
+                          <div>
+                            <div className="titlu">{s.nume}</div>
+                            <div className="sub">
+                              {s.stare === "alocat"
+                                ? <>La <b style={{ color: laEchipa ? "var(--verde)" : "var(--text)" }}>
+                                    {laEchipa ? "voi" : numeEchipa(s.echipaId)}</b> din {s.dataAlocare}</>
+                                : s.stare === "service" ? "În service"
+                                : s.stare === "problema" ? "Cu problemă"
+                                : "În depozit — liber"}
+                            </div>
+                          </div>
+                          <span className={"chip " + (s.stare === "problema" ? "alerta" : s.stare)}>
+                            {s.stare === "alocat" ? (laEchipa ? "La voi" : "Ocupat") : s.stare === "service" ? "Service"
+                              : s.stare === "problema" ? "Problemă" : "Liber"}
+                          </span>
+                        </div>
+                        {!laEchipa && s.stare !== "problema" && s.stare !== "service" && (
+                          <div className="actiuni">
+                            <button className="btn btn-mic"
+                              onClick={() => trimiteCerere({
+                                tip: "necesar",
+                                text: `Ne trebuie ${s.nume}${s.stare === "alocat" ? `, e acum la ${numeEchipa(s.echipaId)}` : ""}.`,
+                                santierId: eu?.echipaId ? (db.santiere.find((x) => x.id === echipaMea?.santierId)?.id || null) : null,
+                                santierNume: echipaMea?.nume ? db.santiere.find((x) => x.id === echipaMea?.santierId)?.nume || null : null,
+                                linii: [], dataCeruta: null, oameniCeruti: null,
+                                autorId: eu?.id || null, autorNume: eu?.nume || "Necunoscut",
+                              })}>
+                              Cer utilajul ăsta
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
               {(() => {
                 const camioaneEchipa = db.camioane.filter((c) => (echipaMea?.camioaneIds || []).includes(c.id));
                 const aleMeleAlimentari = db.alimentari.filter((x) => x.autorId === identitate.angajatId);
@@ -2693,8 +2739,48 @@ function App() {
                 </div>
                 <button className="btn btn-galben" onClick={() => setFoaie({ tip: "scula" })}>+ Adaugă sculă</button>
                 <div style={{ height: 12 }} />
+
                 {(() => {
-                  const cats = [...new Set(db.scule.map((x) => (x.categorie || "").trim()).filter(Boolean))].sort();
+                  const comune = db.scule.filter((x) => x.comun);
+                  if (comune.length === 0) return null;
+                  return (
+                    <>
+                      <div className="sectiune">🔧 Utilaje comune</div>
+                      <div className="sub" style={{ marginBottom: 10 }}>
+                        Se mută între echipe. Oricine vede cine îl are acum.
+                      </div>
+                      {comune.map((s) => (
+                        <div className="card" key={s.id}>
+                          <div className="card-rand">
+                            <div>
+                              <div className="titlu">{s.nume}</div>
+                              <div className="sub">
+                                {s.stare === "alocat" ? <>La <b>{numeEchipa(s.echipaId)}</b> din {s.dataAlocare}</>
+                                  : s.stare === "service" ? "În service" : s.stare === "problema" ? "Cu problemă"
+                                  : "În depozit — liber"}
+                              </div>
+                            </div>
+                            <span className={"chip " + (s.stare === "problema" ? "alerta" : s.stare)}>
+                              {s.stare === "alocat" ? "Ocupat" : s.stare === "service" ? "Service"
+                                : s.stare === "problema" ? "Problemă" : "Liber"}
+                            </span>
+                          </div>
+                          <div className="actiuni">
+                            <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "aloca", item: s })}>
+                              Transferă
+                            </button>
+                            {s.stare === "alocat" && (
+                              <button className="btn btn-mic" onClick={() => returneazaScula(s.id)}>Eliberează</button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  );
+                })()}
+
+                {(() => {
+                  const cats = [...new Set(db.scule.filter((x) => !x.comun).map((x) => (x.categorie || "").trim()).filter(Boolean))].sort();
                   if (cats.length === 0) return null;
                   return (
                     <div className="filtre">
@@ -2706,7 +2792,7 @@ function App() {
                     </div>
                   );
                 })()}
-                {filtrat(db.scule, ["nume", "cod", "categorie"])
+                {filtrat(db.scule.filter((x) => !x.comun), ["nume", "cod", "categorie"])
                   .filter((x) => !filtruCat || (x.categorie || "").trim() === filtruCat)
                   .sort((a, b) => {
                     const ord = { problema: 0, service: 1, alocat: 2, depozit: 3 };
@@ -2827,8 +2913,8 @@ function App() {
           <>
             {!subSet && (
               <div className="meniu-set">
-                {SECTIUNI_SETARI
-                  .filter(([id]) => {
+                {(() => {
+                  const sectiuni = SECTIUNI_SETARI.filter(([id]) => {
                     if (esteProprietar) return true;
                     if (id === "cifre") return !!permisiuni.cifre;
                     if (id === "rapoarte") return !!permisiuni.rapoarte;
@@ -2837,14 +2923,21 @@ function App() {
                     if (id === "categorii" || id === "categoriiScule")
                       return !!permisiuni.stocMateriale || !!permisiuni.stocScule;
                     return false; // cont, invitații, backup, roluri — doar proprietarul
-                  })
-                  .map(([id, ico, lbl, desc]) => (
-                  <button key={id} onClick={() => { setSubSet(id); setCauta(""); }}>
-                    <span>{ico}</span>
-                    <div style={{ flex: 1 }}>{lbl}<span className="ms-desc">{desc}</span></div>
-                    <span className="ms-sageata">›</span>
-                  </button>
-                ))}
+                  });
+                  if (sectiuni.length === 0)
+                    return (
+                      <div className="sub" style={{ marginBottom: 12 }}>
+                        Rolul tău nu are acces la nicio secțiune din Setări.
+                      </div>
+                    );
+                  return sectiuni.map(([id, ico, lbl, desc]) => (
+                    <button key={id} onClick={() => { setSubSet(id); setCauta(""); }}>
+                      <span>{ico}</span>
+                      <div style={{ flex: 1 }}>{lbl}<span className="ms-desc">{desc}</span></div>
+                      <span className="ms-sageata">›</span>
+                    </button>
+                  ));
+                })()}
                 <button className="meniu-iesire" onClick={() => setIdent(null)}>
                   <span>🚪</span>Ieși din cont
                 </button>
@@ -5690,6 +5783,12 @@ function FormScula({ item, categorii = [], onSalveaza, onClose }) {
         <div className="camp"><label>Preț achiziție (€)</label>
           <input type="number" step="0.01" value={f.pret} onChange={set("pret")} placeholder="ex. 220" /></div>
       </div>
+      <label className="rand-bifa" style={{ marginBottom: 11 }}>
+        <input type="checkbox" checked={!!f.comun} onChange={(e) => setF({ ...f, comun: e.target.checked })} />
+        <span>Utilaj comun
+          <span className="rb-sub">Se mută între echipe — betonieră, excavator, telescopic, dumper, schelă. Orice echipă vede cine îl are acum.</span>
+        </span>
+      </label>
       <button className="btn btn-galben" onClick={() => f.nume.trim() && onSalveaza({ ...f, pret: Number(f.pret) || 0 })}>Salvează</button>
     </Foaie>
   );
