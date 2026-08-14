@@ -67,7 +67,7 @@ const gol = {
   santiere: [], pontaj: [], consum: [], planificare: [], sarcini: [],
   dotare: [], verificari: [], categoriiMateriale: [], categoriiScule: [],
   firma: null,
-  setari: { pin: PIN_IMPLICIT, zilePoze: 30, zileCereri: 30, oreVizibileMuncitori: true,
+  setari: { pin: PIN_IMPLICIT, zilePoze: 30, zileCereri: 30, oreVizibileMuncitori: true, procentTaxe: 0,
     program: { start: "07:30", final: "16:00", pauza: 60,
       zile: ["MO", "TU", "WE", "TH", "FR"], special: {} } },
   suplimentare: [],
@@ -414,6 +414,10 @@ const seSuprapun = (a, b) => {
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const azi = () => new Date().toLocaleDateString("ro-RO", { day: "2-digit", month: "2-digit", year: "numeric" });
+/* costul real al unei ore lucrate, cu taxele patronale incluse */
+const costCuTaxe = (ore, tarifOra, procentTaxe) =>
+  (Number(ore) || 0) * (Number(tarifOra) || 0) * (1 + (Number(procentTaxe) || 0) / 100);
+
 let SIMBOL = "€";
 const bani = (n) =>
   (Number(n) || 0).toLocaleString("ro-RO", { maximumFractionDigits: 0 }) + " " + SIMBOL;
@@ -1023,7 +1027,9 @@ function App() {
       <table>
         <tr><td>Cifrat</td><td class="n">${bani(b.incasat)}</td></tr>
         <tr><td>Manoperă (${(+oreTot.toFixed(1))}h)</td><td class="n">− ${bani(b.manopera)}</td></tr>
+        ${b.taxe > 0 ? `<tr><td>Taxe pe salarii</td><td class="n">− ${bani(b.taxe)}</td></tr>` : ""}
         <tr><td>Materiale</td><td class="n">− ${bani(b.materiale)}</td></tr>
+        ${b.auto > 0 ? `<tr><td>Auto (combustibil/întreținere)</td><td class="n">− ${bani(b.auto)}</td></tr>` : ""}
         <tr class="tot"><td>Marjă</td><td class="n ${b.marja >= 0 ? "verde" : "rosu"}">
           ${b.marja < 0 ? "−" : ""}${bani(Math.abs(b.marja))}${b.procent !== null ? " · " + b.procent + "%" : ""}</td></tr>
       </table>
@@ -1076,24 +1082,31 @@ function App() {
       if (p.suplimentar) { r.supl += Number(p.ore) || 0; r.costSupl += (Number(p.ore) || 0) * (Number(p.tarifOra) || 0); }
     });
 
+    const procTaxe = Number(db.setari?.procentTaxe) || 0;
     const randuri = Object.values(peOm).filter((r) => r.ore > 0 || r.supl > 0)
+      .map((r) => ({ ...r, costReal: r.cost * (1 + procTaxe / 100) }))
       .sort((a, b) => b.ore - a.ore);
     const totalOre = randuri.reduce((t, r) => t + r.ore, 0);
     const totalCost = randuri.reduce((t, r) => t + r.cost, 0);
+    const totalCostReal = randuri.reduce((t, r) => t + r.costReal, 0);
 
     deschideRaport(`Raport ${numeLuna}`, `
-      ${capRaport(`Raport lunar — ${numeLuna}`, `${randuri.length} angajați cu ore înregistrate`)}
+      ${capRaport(`Raport lunar — ${numeLuna}`, `${randuri.length} angajați cu ore înregistrate` +
+        (procTaxe > 0 ? ` · ${procTaxe}% taxe pe salarii` : ""))}
 
       <table>
-        <tr><th>Angajat</th><th class="n">Zile</th><th class="n">Ore</th><th class="n">Suplimentare</th><th class="n">Cost total</th></tr>
+        <tr><th>Angajat</th><th class="n">Zile</th><th class="n">Ore</th><th class="n">Suplimentare</th>
+          <th class="n">Salariu brut</th>${procTaxe > 0 ? '<th class="n">Cost real</th>' : ""}</tr>
         ${randuri.map((r) => `<tr>
           <td>${r.a.nume}<div class="mic">${r.a.grad || ""}</div></td>
           <td class="n">${r.zile.size}</td>
           <td class="n">${+r.ore.toFixed(1)}h</td>
           <td class="n">${r.supl > 0 ? `+${+r.supl.toFixed(1)}h` : "—"}</td>
           <td class="n">${bani(r.cost)}</td>
+          ${procTaxe > 0 ? `<td class="n">${bani(r.costReal)}</td>` : ""}
         </tr>`).join("")}
-        <tr class="tot"><td>Total</td><td class="n"></td><td class="n">${+totalOre.toFixed(1)}h</td><td class="n"></td><td class="n">${bani(totalCost)}</td></tr>
+        <tr class="tot"><td>Total</td><td class="n"></td><td class="n">${+totalOre.toFixed(1)}h</td><td class="n"></td>
+          <td class="n">${bani(totalCost)}</td>${procTaxe > 0 ? `<td class="n">${bani(totalCostReal)}</td>` : ""}</tr>
       </table>
 
       <h2>Pe fiecare om, câte ore pe șantier</h2>
@@ -1635,29 +1648,37 @@ function App() {
     const pont = pontajFaza(s.id, f.id);
     const ore = pont.reduce((t, p) => t + (Number(p.ore) || 0), 0);
     const manopera = pont.reduce((t, p) => t + (Number(p.ore) || 0) * (Number(p.tarifOra) || 0), 0);
+    const taxe = manopera * (Number(db.setari?.procentTaxe) || 0) / 100;
     const materiale = consumFaza(s.id, f.id).reduce((t, c) => t + (Number(c.cant) || 0) * (Number(c.pret) || 0), 0);
     const incasat = Number(f.valoare) || 0;
-    const cost = manopera + materiale;
-    return { ore, manopera, materiale, cost, incasat, marja: incasat - cost,
+    const cost = manopera + taxe + materiale;
+    return { ore, manopera, taxe, materiale, cost, incasat, marja: incasat - cost,
       procent: incasat > 0 ? Math.round(((incasat - cost) / incasat) * 100) : null,
       orePrev: Number(f.orePrev) || 0, matPrev: sumaMat(f.materialePrev) };
   };
 
+  const autoSantier = (sid) =>
+    db.intretinere.filter((i) => i.santierId === sid).reduce((s, i) => s + (Number(i.cost) || 0), 0);
+
   const bilant = (s) => {
     const manopera = costSantier(s.id);
+    const taxe = manopera * (Number(db.setari?.procentTaxe) || 0) / 100;
     const materiale = costMaterialeSantier(s.id);
-    const cost = manopera + materiale;
+    const auto = autoSantier(s.id);
+    const cost = manopera + taxe + materiale + auto;
     const incasat = valoareSantier(s);
-    return { manopera, materiale, cost, incasat, marja: incasat - cost,
+    return { manopera, taxe, materiale, auto, cost, incasat, marja: incasat - cost,
       procent: incasat > 0 ? Math.round(((incasat - cost) / incasat) * 100) : null };
   };
   const consumNealocat = db.consum.filter((c) => !c.santierId);
   const pierderiTotal = consumNealocat.reduce((s, c) => s + (Number(c.cant) || 0) * (Number(c.pret) || 0), 0);
   const santiereActive = db.santiere.filter((s) => s.status !== "finalizat");
   const costManoperaTotal = db.santiere.reduce((s, x) => s + costSantier(x.id), 0);
+  const taxeSalariiTotal = costManoperaTotal * (Number(db.setari?.procentTaxe) || 0) / 100;
   const cifratTotal = db.santiere.reduce((s, x) => s + valoareSantier(x), 0);
   const materialeAlocateTotal = db.santiere.reduce((s, x) => s + costMaterialeSantier(x.id), 0);
-  const marjaBruta = cifratTotal - costManoperaTotal - materialeAlocateTotal;
+  const cheltuieliAutoTotal = db.intretinere.reduce((s, i) => s + (Number(i.cost) || 0), 0);
+  const marjaBruta = cifratTotal - costManoperaTotal - taxeSalariiTotal - materialeAlocateTotal - cheltuieliAutoTotal;
   const marjaTotala = marjaBruta - pierderiTotal;
   const alerteCamioane = db.camioane
     .flatMap((c) =>
@@ -2647,7 +2668,10 @@ function App() {
                     <div className="pr-col">
                       <div className="pr-lbl">Manoperă</div>
                       <div className="pr-val mono">{bani(b.manopera)}</div>
-                      <div className="pr-prev">{oameni} {oameni === 1 ? "om" : "oameni"}</div>
+                      <div className="pr-prev">
+                        {oameni} {oameni === 1 ? "om" : "oameni"}
+                        {b.taxe > 0 && <> · +{bani(b.taxe)} taxe</>}
+                      </div>
                     </div>
                   </div>
                   <div className="actiuni">
@@ -2803,7 +2827,8 @@ function App() {
           const peOm = db.angajati.map((a) => {
             const ale = db.pontaj.filter((p) => p.angajatId === a.id);
             const ore = ale.reduce((s, p) => s + (Number(p.ore) || 0), 0);
-            const cost = ale.reduce((s, p) => s + (Number(p.ore) || 0) * (Number(p.tarifOra) || 0), 0);
+            const costBrut = ale.reduce((s, p) => s + (Number(p.ore) || 0) * (Number(p.tarifOra) || 0), 0);
+            const cost = costBrut * (1 + (Number(db.setari?.procentTaxe) || 0) / 100);
             /* venitul din manoperă atribuit proporțional cu orele lui pe fiecare șantier */
             let venit = 0;
             const oreDomeniu = {};
@@ -2891,11 +2916,17 @@ function App() {
               <div className="card">
                 <div className="fisa-rand"><span className="k">Cifrat pe lucrări</span><b className="mono">{bani(cifratTotal)}</b></div>
                 <div className="fisa-rand"><span className="k">Manoperă pontată</span><b className="mono">−{bani(costManoperaTotal)}</b></div>
+                {taxeSalariiTotal > 0 && (
+                  <div className="fisa-rand"><span className="k">Taxe pe salarii ({db.setari?.procentTaxe}%)</span><b className="mono">−{bani(taxeSalariiTotal)}</b></div>
+                )}
                 <div className="fisa-rand"><span className="k">Materiale pe șantiere</span><b className="mono">−{bani(materialeAlocateTotal)}</b></div>
                 <div className="fisa-rand">
                   <span className="k">Materiale fără destinație</span>
                   <b className="mono" style={{ color: pierderiTotal > 0 ? "var(--rosu)" : "var(--mut)" }}>−{bani(pierderiTotal)}</b>
                 </div>
+                {cheltuieliAutoTotal > 0 && (
+                  <div className="fisa-rand"><span className="k">Auto (întreținere + combustibil)</span><b className="mono">−{bani(cheltuieliAutoTotal)}</b></div>
+                )}
                 <div className="fisa-rand" style={{ borderBottom: "none", paddingTop: 12 }}>
                   <span className="k"><b>Marjă netă</b></span>
                   <b className="mono" style={{ fontSize: 18, color: marjaTotala >= 0 ? "var(--verde)" : "var(--rosu)" }}>
@@ -3044,7 +3075,7 @@ function App() {
                       <div className="sub">
                         {c.numar && <><span className="mono">{c.numar}</span> · </>}
                         {c.km && <><b className="mono">{Number(c.km).toLocaleString("ro-RO")} km</b> · </>}
-                        întreținere totală: <b>{bani(costTotal)}</b>
+                        cheltuieli totale: <b>{bani(costTotal)}</b>
                       </div>
                     </div>
                     {expirari.some((e) => e.z <= 30)
@@ -3063,6 +3094,7 @@ function App() {
                   )}
                   <div className="actiuni">
                     <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "intretinere", item: c })}>+ Întreținere</button>
+                    <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "alimentare", item: c })}>⛽ Alimentare</button>
                     <button className="btn btn-mic" onClick={() => setFoaie({ tip: "istoricCamion", item: c })}>Istoric ({istoric.length})</button>
                     <button className="btn btn-mic" onClick={() => setFoaie({ tip: "camion", item: c })}>Modifică</button>
                     <button className="btn btn-mic pericol" onClick={() => stergeGen("camioane", "Ștergi acest vehicul?")(c.id)}>Șterge</button>
@@ -3122,6 +3154,31 @@ function App() {
                   Nu le văd
                 </button>
               </div>
+            </div>
+
+            <div className="card">
+              <div className="titlu">💰 Taxe pe salarii</div>
+              <div className="sub">
+                Pe lângă ce plătești direct angajatului, mai ai și cotizații patronale.
+                Procentul de aici se adaugă la manoperă peste tot în aplicație — pe șantiere,
+                în Cifre, în rapoarte — ca marja să reflecte costul real, nu doar salariul brut.
+              </div>
+              <div className="camp" style={{ marginTop: 11, marginBottom: 4 }}>
+                <label>Procent peste salariul brut</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <input type="number" step="0.5" style={{ maxWidth: 100 }}
+                    value={db.setari?.procentTaxe ?? 0}
+                    onChange={(e) => salveaza({ ...db, setari: { ...db.setari, procentTaxe: e.target.value } })}
+                    placeholder="ex. 42" />
+                  <span className="sub" style={{ marginTop: 0 }}>%</span>
+                </div>
+              </div>
+              {Number(db.setari?.procentTaxe) > 0 && (
+                <div className="sub">
+                  Un salariu de 20 €/h te costă de fapt <b className="mono">
+                  {bani(20 * (1 + Number(db.setari.procentTaxe) / 100))}</b>/h.
+                </div>
+              )}
             </div>
 
             <div className="card">
@@ -3647,6 +3704,10 @@ function App() {
       {foaie?.tip === "intretinere" && (
         <FormIntretinere camion={foaie.item} onSalveaza={(i) => adaugaIntretinere(foaie.item.id, i)} onClose={() => setFoaie(null)} />
       )}
+      {foaie?.tip === "alimentare" && (
+        <FormAlimentare camion={foaie.item} santiere={db.santiere.filter((x) => x.status !== "finalizat")}
+          onSalveaza={(i) => adaugaIntretinere(foaie.item.id, i)} onClose={() => setFoaie(null)} />
+      )}
       {foaie?.tip === "istoricCamion" && (
         <Foaie titlu={`Istoric: ${foaie.item.nume}`} onClose={() => setFoaie(null)}>
           {db.intretinere.filter((i) => i.camionId === foaie.item.id).length === 0 ? (
@@ -3654,7 +3715,12 @@ function App() {
           ) : db.intretinere.filter((i) => i.camionId === foaie.item.id).map((i) => (
             <div className="jurnal-rand" key={i.id}>
               <div className="cand mono">{i.data}{i.km ? ` · ${Number(i.km).toLocaleString("ro-RO")} km` : ""}</div>
-              <div className="ce">{i.tip}{i.cost ? <> · <b>{bani(i.cost)}</b></> : ""}{i.note ? <><br />{i.note}</> : ""}</div>
+              <div className="ce">
+                {i.tip}{i.cost ? <> · <b>{bani(i.cost)}</b></> : ""}
+                {i.santierId && <> · <span style={{ color: "var(--galben)" }}>
+                  {db.santiere.find((x) => x.id === i.santierId)?.nume || "șantier"}</span></>}
+                {i.note ? <><br />{i.note}</> : ""}
+              </div>
             </div>
           ))}
         </Foaie>
@@ -5139,6 +5205,62 @@ function FormIntretinere({ camion, onSalveaza, onClose }) {
   );
 }
 
+
+function FormAlimentare({ camion, santiere = [], onSalveaza, onClose }) {
+  const [litri, setLitri] = useState("");
+  const [cost, setCost] = useState("");
+  const [km, setKm] = useState("");
+  const [santierId, setSantierId] = useState("");
+  const [note, setNote] = useState("");
+
+  const pretLitru = Number(litri) > 0 && Number(cost) > 0 ? (Number(cost) / Number(litri)).toFixed(2) : null;
+  const valid = Number(litri) > 0 && Number(cost) > 0;
+
+  return (
+    <Foaie titlu={`Alimentare: ${camion.nume}`} onClose={onClose}>
+      <div className="rand2">
+        <div className="camp"><label>Litri *</label>
+          <input type="number" step="0.1" value={litri} onChange={(e) => setLitri(e.target.value)}
+            placeholder="ex. 65" autoFocus /></div>
+        <div className="camp"><label>Cost total (€) *</label>
+          <input type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)}
+            placeholder="ex. 112" /></div>
+      </div>
+      {pretLitru && <div className="sub" style={{ marginTop: -6, marginBottom: 12 }}>≈ {pretLitru} €/litru</div>}
+
+      <div className="camp"><label>Km curent (opțional)</label>
+        <input type="number" value={km} onChange={(e) => setKm(e.target.value)} placeholder={camion.km ? String(camion.km) : "ex. 185200"} />
+      </div>
+
+      {santiere.length > 0 && (
+        <div className="camp">
+          <label>Pe ce șantier (opțional)</label>
+          <select value={santierId} onChange={(e) => setSantierId(e.target.value)}>
+            <option value="">— fără, cost general —</option>
+            {santiere.map((x) => <option key={x.id} value={x.id}>{x.nume}</option>)}
+          </select>
+          <div className="sub" style={{ marginTop: 6 }}>
+            Dacă alegi un șantier, costul intră direct în marja lui. Altfel rămâne cheltuială
+            generală a firmei.
+          </div>
+        </div>
+      )}
+
+      <div className="camp"><label>Note (opțional)</label>
+        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ex. Total, Angers" />
+      </div>
+
+      <button className="btn btn-galben" disabled={!valid}
+        onClick={() => valid && onSalveaza({
+          data: azi(), tip: `⛽ Alimentare ${litri} L`, cost, km: km || undefined,
+          note, santierId: santierId || null,
+        })}>
+        Salvează
+      </button>
+    </Foaie>
+  );
+}
+
 function FormCerere({ eu, santiere = [], materiale = [], onTrimite, onClose }) {
   const [tip, setTip] = useState("problema");
   const [text, setText] = useState("");
@@ -6032,11 +6154,17 @@ function DetaliiSantier({ santier, pontaj, consum, bilant, matPrev, orePrevTot, 
       )}
       <div className="fisa-rand"><span className="k">Cifrat</span><b className="mono">{bani(bilant.incasat)}</b></div>
       <div className="fisa-rand"><span className="k">Manoperă</span><b className="mono">−{bani(bilant.manopera)}</b></div>
+      {bilant.taxe > 0 && (
+        <div className="fisa-rand"><span className="k">Taxe pe salarii</span><b className="mono">−{bani(bilant.taxe)}</b></div>
+      )}
       <div className="fisa-rand"><span className="k">Materiale</span><b className="mono">−{bani(bilant.materiale)}</b></div>
+      {bilant.auto > 0 && (
+        <div className="fisa-rand"><span className="k">Auto (combustibil/întreținere)</span><b className="mono">−{bani(bilant.auto)}</b></div>
+      )}
       <div className="fisa-rand" style={{ borderBottom: "none", paddingTop: 12 }}>
         <span className="k"><b>Marjă</b></span>
         <b className="mono" style={{ fontSize: 17, color: bilant.marja >= 0 ? "var(--verde)" : "var(--rosu)" }}>
-          {bani(bilant.marja)}{bilant.procent !== null && ` · ${bilant.procent}%`}
+          {bilant.marja < 0 ? "−" : ""}{bani(Math.abs(bilant.marja))}{bilant.procent !== null && ` · ${bilant.procent}%`}
         </b>
       </div>
 
