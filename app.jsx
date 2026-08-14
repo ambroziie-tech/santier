@@ -1234,6 +1234,23 @@ function App() {
     salveaza(cuJurnal({ ...db, scule: lista }, `${scula.nume} → trimisă la service`));
   };
 
+  /* utilaje comune: se urmăresc pe șantier, nu pe echipă */
+  const mutaUtilajComun = (sculaId, santierId) => {
+    const scula = db.scule.find((x) => x.id === sculaId);
+    const santier = db.santiere.find((x) => x.id === santierId);
+    const lista = db.scule.map((x) =>
+      x.id === sculaId ? { ...x, stare: "alocat", santierId, echipaId: null, dataAlocare: azi() } : x);
+    salveaza(cuJurnal({ ...db, scule: lista },
+      `${scula.nume} → mutat pe ${santier?.nume || "șantier"}`));
+    setFoaie(null);
+  };
+  const aduLaDepozitUtilaj = (sculaId) => {
+    const scula = db.scule.find((x) => x.id === sculaId);
+    const lista = db.scule.map((x) =>
+      x.id === sculaId ? { ...x, stare: "depozit", santierId: null, dataAlocare: null } : x);
+    salveaza(cuJurnal({ ...db, scule: lista }, `${scula.nume} ← adus la depozit`));
+  };
+
   /* angajați */
   const salvAngajat = (a) => {
     const vechi = a.id ? db.angajati.find((x) => x.id === a.id) : null;
@@ -2000,9 +2017,11 @@ function App() {
               {db.scule.filter((x) => x.comun).length > 0 && (
                 <>
                   <div className="sectiune">🔧 Utilaje comune</div>
-                  <div className="sub" style={{ marginBottom: 10 }}>Se mută între echipe.</div>
+                  <div className="sub" style={{ marginBottom: 10 }}>Se urmăresc pe locație — șantier sau depozit.</div>
                   {db.scule.filter((x) => x.comun).map((s) => {
-                    const laEchipa = s.echipaId === eu?.echipaId;
+                    const santierS = db.santiere.find((x) => x.id === s.santierId);
+                    const eSantierulMeu = s.stare === "alocat" && s.santierId === echipaMea?.santierId;
+                    const santierulMeuNume = db.santiere.find((x) => x.id === echipaMea?.santierId)?.nume || null;
                     return (
                       <div className="card" key={s.id}>
                         <div className="card-rand">
@@ -2010,26 +2029,26 @@ function App() {
                             <div className="titlu">{s.nume}</div>
                             <div className="sub">
                               {s.stare === "alocat"
-                                ? <>La <b style={{ color: laEchipa ? "var(--verde)" : "var(--text)" }}>
-                                    {laEchipa ? "voi" : numeEchipa(s.echipaId)}</b> din {s.dataAlocare}</>
+                                ? <>🏗 <b style={{ color: eSantierulMeu ? "var(--verde)" : "var(--text)" }}>
+                                    {eSantierulMeu ? "la voi" : santierS?.nume || "șantier șters"}</b> din {s.dataAlocare}</>
                                 : s.stare === "service" ? "În service"
                                 : s.stare === "problema" ? "Cu problemă"
-                                : "În depozit — liber"}
+                                : "🏠 La depozit — liber"}
                             </div>
                           </div>
                           <span className={"chip " + (s.stare === "problema" ? "alerta" : s.stare)}>
-                            {s.stare === "alocat" ? (laEchipa ? "La voi" : "Ocupat") : s.stare === "service" ? "Service"
+                            {s.stare === "alocat" ? (eSantierulMeu ? "La voi" : "Pe șantier") : s.stare === "service" ? "Service"
                               : s.stare === "problema" ? "Problemă" : "Liber"}
                           </span>
                         </div>
-                        {!laEchipa && s.stare !== "problema" && s.stare !== "service" && (
+                        {!eSantierulMeu && s.stare !== "problema" && s.stare !== "service" && (
                           <div className="actiuni">
                             <button className="btn btn-mic"
                               onClick={() => trimiteCerere({
                                 tip: "necesar",
-                                text: `Ne trebuie ${s.nume}${s.stare === "alocat" ? `, e acum la ${numeEchipa(s.echipaId)}` : ""}.`,
-                                santierId: eu?.echipaId ? (db.santiere.find((x) => x.id === echipaMea?.santierId)?.id || null) : null,
-                                santierNume: echipaMea?.nume ? db.santiere.find((x) => x.id === echipaMea?.santierId)?.nume || null : null,
+                                text: `Ne trebuie ${s.nume} la noi${santierulMeuNume ? ` pe ${santierulMeuNume}` : ""}${s.stare === "alocat" ? `, e acum pe ${santierS?.nume || "alt șantier"}` : ", e la depozit"}.`,
+                                santierId: echipaMea?.santierId || null,
+                                santierNume: santierulMeuNume,
                                 linii: [], dataCeruta: null, oameniCeruti: null,
                                 autorId: eu?.id || null, autorNume: eu?.nume || "Necunoscut",
                               })}>
@@ -2747,34 +2766,42 @@ function App() {
                     <>
                       <div className="sectiune">🔧 Utilaje comune</div>
                       <div className="sub" style={{ marginBottom: 10 }}>
-                        Se mută între echipe. Oricine vede cine îl are acum.
+                        Se urmăresc pe locație — șantier sau depozit.
                       </div>
-                      {comune.map((s) => (
-                        <div className="card" key={s.id}>
-                          <div className="card-rand">
-                            <div>
-                              <div className="titlu">{s.nume}</div>
-                              <div className="sub">
-                                {s.stare === "alocat" ? <>La <b>{numeEchipa(s.echipaId)}</b> din {s.dataAlocare}</>
-                                  : s.stare === "service" ? "În service" : s.stare === "problema" ? "Cu problemă"
-                                  : "În depozit — liber"}
+                      {comune.map((s) => {
+                        const santierS = db.santiere.find((x) => x.id === s.santierId);
+                        return (
+                          <div className="card" key={s.id}>
+                            <div className="card-rand">
+                              <div>
+                                <div className="titlu">{s.nume}</div>
+                                <div className="sub">
+                                  {s.stare === "alocat" ? <>🏗 <b>{santierS?.nume || "șantier șters"}</b> din {s.dataAlocare}</>
+                                    : s.stare === "service" ? "În service" : s.stare === "problema" ? "Cu problemă"
+                                    : "🏠 La depozit — liber"}
+                                </div>
                               </div>
+                              <span className={"chip " + (s.stare === "problema" ? "alerta" : s.stare)}>
+                                {s.stare === "alocat" ? "Pe șantier" : s.stare === "service" ? "Service"
+                                  : s.stare === "problema" ? "Problemă" : "Liber"}
+                              </span>
                             </div>
-                            <span className={"chip " + (s.stare === "problema" ? "alerta" : s.stare)}>
-                              {s.stare === "alocat" ? "Ocupat" : s.stare === "service" ? "Service"
-                                : s.stare === "problema" ? "Problemă" : "Liber"}
-                            </span>
+                            <div className="actiuni">
+                              <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "mutaUtilaj", item: s })}>
+                                Mută
+                              </button>
+                              {s.stare === "alocat" && (
+                                <button className="btn btn-mic" onClick={() => aduLaDepozitUtilaj(s.id)}>Adu la depozit</button>
+                              )}
+                              {s.stare !== "service" ? (
+                                <button className="btn btn-mic" onClick={() => trimiteService(s.id)}>Service</button>
+                              ) : (
+                                <button className="btn btn-mic" onClick={() => aduLaDepozitUtilaj(s.id)}>Înapoi în depozit</button>
+                              )}
+                            </div>
                           </div>
-                          <div className="actiuni">
-                            <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "aloca", item: s })}>
-                              Transferă
-                            </button>
-                            {s.stare === "alocat" && (
-                              <button className="btn btn-mic" onClick={() => returneazaScula(s.id)}>Eliberează</button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </>
                   );
                 })()}
@@ -4283,6 +4310,25 @@ function App() {
           {db.echipe.map((e) => (
             <button key={e.id} className="btn btn-galben" style={{ marginBottom: 9 }} onClick={() => alocaScula(foaie.item.id, e.id)}>
               {e.nume} {(() => { const sn = db.santiere.find((x) => x.id === e.santierId); return sn ? `· ${sn.nume}` : ""; })()}
+            </button>
+          ))}
+        </Foaie>
+      )}
+      {foaie?.tip === "mutaUtilaj" && (
+        <Foaie titlu={`Mută: ${foaie.item.nume}`} onClose={() => setFoaie(null)}>
+          <div className="sub" style={{ marginBottom: 12 }}>
+            Acum: {foaie.item.stare === "alocat"
+              ? `pe ${db.santiere.find((x) => x.id === foaie.item.santierId)?.nume || "șantier șters"}`
+              : foaie.item.stare === "service" ? "în service" : "la depozit"}
+          </div>
+          <button className="btn btn-mic" style={{ width: "100%", marginBottom: 9 }}
+            onClick={() => { aduLaDepozitUtilaj(foaie.item.id); setFoaie(null); }}>
+            🏠 La depozit
+          </button>
+          {db.santiere.filter((x) => x.status !== "finalizat").map((x) => (
+            <button key={x.id} className="btn btn-galben" style={{ marginBottom: 9 }}
+              onClick={() => mutaUtilajComun(foaie.item.id, x.id)}>
+              🏗 {x.nume}
             </button>
           ))}
         </Foaie>
