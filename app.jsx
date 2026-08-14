@@ -65,7 +65,7 @@ const gol = {
   materiale: [], scule: [], echipe: [], angajati: [],
   camioane: [], intretinere: [], cereri: [], jurnal: [],
   santiere: [], pontaj: [], consum: [], planificare: [], sarcini: [],
-  dotare: [], verificari: [], categoriiMateriale: [], categoriiScule: [],
+  dotare: [], verificari: [], categoriiMateriale: [], categoriiScule: [], roluriFirma: [],
   firma: null,
   alimentari: [],
   setari: { pin: PIN_IMPLICIT, zilePoze: 30, zileCereri: 30, oreVizibileMuncitori: true, procentTaxe: 0,
@@ -436,13 +436,32 @@ const GRADE_BIROU = ["Administrativ", "Contabilitate", "Secretariat", "Achiziți
 
 /* rolurile de firmă: dau acces la o parte din panoul de admin, printr-un cont personal.
    null = fără rol special = intră doar în vederea de muncitor/birou obișnuită. */
-const ROLURI_FIRMA = [
-  { cod: "administrator", nume: "Administrator firmă", desc: "acces complet, în afară de fișele angajaților" },
-  { cod: "secretar", nume: "Secretar / contabilitate", desc: "vede rapoartele: ore, cine a lucrat, bani" },
-  { cod: "achizitii", nume: "Achiziții", desc: "adaugă materiale și scule în stoc" },
-  { cod: "administrativ", nume: "Administrativ", desc: "verifică dotarea echipelor și camioanele, planing" },
+/* fiecare rol de firmă e un pachet de bife pe care-l definești tu.
+   grupate ca să fie ușor de citit într-un formular. */
+const GRUPURI_PERMISIUNI = [
+  { titlu: "Panou", chei: [["panou", "Vede panoul principal"]] },
+  { titlu: "Șantiere", chei: [
+    ["santiere", "Vede șantierele — cifrat, marjă, cine a lucrat"],
+    ["santiereEditare", "Poate adăuga șantiere, pontaje și materiale pe ele"],
+  ] },
+  { titlu: "Planing", chei: [["planing", "Vede și modifică planingul"]] },
+  { titlu: "Stoc", chei: [
+    ["stocMateriale", "Materiale — adaugă, scade, prețuri"],
+    ["stocScule", "Scule — adaugă, alocă pe echipe"],
+    ["stocAuto", "Camioane și utilaje — ITP, întreținere, combustibil"],
+  ] },
+  { titlu: "Cereri", chei: [["cereri", "Vede și aprobă cererile de pe teren"]] },
+  { titlu: "Rapoarte", chei: [
+    ["cifre", "Cifre și rentabilitate — marje, aport pe om"],
+    ["rapoarte", "Raport lunar pe fiecare angajat"],
+  ] },
+  { titlu: "Echipe", chei: [["dotare", "Verifică dotarea standard a echipelor"]] },
+  { titlu: "Oameni", chei: [
+    ["oameni", "Vede angajații și fișele lor"],
+    ["oameniEditare", "Poate adăuga, modifica sau șterge angajați"],
+  ] },
 ];
-const numeRolFirma = (cod) => ROLURI_FIRMA.find((r) => r.cod === cod)?.nume || null;
+const numeRol = (roluri, id) => (roluri || []).find((r) => r.id === id)?.nume || null;
 
 /* zile rămase până la o dată yyyy-mm-dd; null dacă lipsește */
 const zileRamase = (d) => {
@@ -1790,15 +1809,20 @@ function App() {
   const eu = db.angajati.find((a) => a.id === identitate.angajatId);
   /* dacă a intrat cu PIN-ul de firmă, e proprietarul, cu acces total.
      dacă a intrat cu contul lui personal și are un rol de firmă, accesul e restrâns la ce-i dă rolul. */
-  const rolFirma = identitate.angajatId ? (eu?.rolFirma || null) : null;
   const esteProprietar = esteAdmin && !identitate.angajatId;
+  /* dacă a intrat cu un cont personal, permisiunile vin din rolul atribuit fișei lui */
+  const rolActiv = identitate.angajatId ? (db.roluriFirma || []).find((r) => r.id === eu?.rolFirmaId) : null;
+  const permisiuni = esteProprietar ? null : (rolActiv?.permisiuni || {});
 
-  /* fiecare rol de firmă vede doar o parte din taburile principale */
-  const idTaburiPermise =
-    rolFirma === "secretar" ? ["panou", "santiere", "setari"]
-    : rolFirma === "achizitii" ? ["inventar"]
-    : rolFirma === "administrativ" ? ["planing", "inventar", "setari"]
-    : null; // administrator și proprietar văd tot
+  /* fiecare rol vede doar taburile pentru care are cel puțin o bifă relevantă */
+  const idTaburiPermise = esteProprietar ? null : [
+    permisiuni.panou && "panou",
+    (permisiuni.santiere || permisiuni.santiereEditare) && "santiere",
+    permisiuni.planing && "planing",
+    (permisiuni.stocMateriale || permisiuni.stocScule || permisiuni.stocAuto) && "inventar",
+    permisiuni.cereri && "cereri",
+    (permisiuni.cifre || permisiuni.rapoarte || permisiuni.dotare || permisiuni.oameni) && "setari",
+  ].filter(Boolean);
   /* dacă tabul curent nu e permis rolului, cad pe primul tab permis */
   const tabEfectiv = (!idTaburiPermise || idTaburiPermise.includes(tab)) ? tab : idTaburiPermise[0];
 
@@ -2372,12 +2396,27 @@ function App() {
   }
 
   /* ==================== VEDEREA ADMINULUI ==================== */
+  if (!esteProprietar && idTaburiPermise.length === 0)
+    return (
+      <div className="app"><style>{css}</style>
+        <div className="intrare">
+          <h1>Șantier <span>Manager</span></h1>
+          <div className="hazard" />
+          <div className="gol-msg">
+            Contul tău nu are niciun rol activ, sau rolul a fost șters. Cere-i proprietarului
+            să-ți atribuie un rol din fișa ta.
+          </div>
+          <button className="btn btn-mic" onClick={() => setIdent(null)}>Ieși din cont</button>
+        </div>
+      </div>
+    );
+
   return (
     <div className="app"><style>{css}</style>
       <div className="antet">
         <div className="antet-rand">
           <h1>{db.firma?.nume || <>Șantier <span>Manager</span></>}</h1>
-          <span className="rol-chip static">Admin</span>
+          <span className="rol-chip static">{esteProprietar ? "Admin" : (rolActiv?.nume || "Admin")}</span>
         </div>
         <div className="hazard" />
       </div>
@@ -2543,22 +2582,24 @@ function App() {
 
         {/* ---------- INVENTAR ---------- */}
         {tabEfectiv === "inventar" && (() => {
-          const subInvPermis =
-            rolFirma === "administrativ" ? "camioane"
-            : rolFirma === "achizitii" && subInv === "camioane" ? "materiale"
-            : subInv;
+          const poateMat = esteProprietar || !!permisiuni.stocMateriale;
+          const poateScu = esteProprietar || !!permisiuni.stocScule;
+          const poateAuto = esteProprietar || !!permisiuni.stocAuto;
+          const subInvPermis = (subInv === "materiale" && poateMat) || (subInv === "scule" && poateScu) || (subInv === "camioane" && poateAuto)
+            ? subInv
+            : (poateMat && "materiale") || (poateScu && "scule") || (poateAuto && "camioane") || "materiale";
           return (
           <>
             <div className="subtab">
-              {rolFirma !== "administrativ" && (
-                <>
-                  <button className={subInvPermis === "materiale" ? "activ" : ""}
-                    onClick={() => { setSubInv("materiale"); setFiltruCat(""); }}>Materiale</button>
-                  <button className={subInvPermis === "scule" ? "activ" : ""}
-                    onClick={() => { setSubInv("scule"); setFiltruCat(""); }}>Scule</button>
-                </>
+              {poateMat && (
+                <button className={subInvPermis === "materiale" ? "activ" : ""}
+                  onClick={() => { setSubInv("materiale"); setFiltruCat(""); }}>Materiale</button>
               )}
-              {rolFirma !== "achizitii" && (
+              {poateScu && (
+                <button className={subInvPermis === "scule" ? "activ" : ""}
+                  onClick={() => { setSubInv("scule"); setFiltruCat(""); }}>Scule</button>
+              )}
+              {poateAuto && (
                 <button className={subInvPermis === "camioane" ? "activ" : ""}
                   onClick={() => { setSubInv("camioane"); setFiltruCat(""); }}>
                   Auto{alerteCamioane.length > 0 && ` (${alerteCamioane.length})`}
@@ -2788,9 +2829,14 @@ function App() {
               <div className="meniu-set">
                 {SECTIUNI_SETARI
                   .filter(([id]) => {
-                    if (rolFirma === "secretar") return ["cifre", "rapoarte"].includes(id);
-                    if (rolFirma === "administrativ") return id === "dotare";
-                    return true; // administrator și proprietar văd tot
+                    if (esteProprietar) return true;
+                    if (id === "cifre") return !!permisiuni.cifre;
+                    if (id === "rapoarte") return !!permisiuni.rapoarte;
+                    if (id === "dotare") return !!permisiuni.dotare;
+                    if (id === "oameni") return !!permisiuni.oameni;
+                    if (id === "categorii" || id === "categoriiScule")
+                      return !!permisiuni.stocMateriale || !!permisiuni.stocScule;
+                    return false; // cont, invitații, backup, roluri — doar proprietarul
                   })
                   .map(([id, ico, lbl, desc]) => (
                   <button key={id} onClick={() => { setSubSet(id); setCauta(""); }}>
@@ -2822,12 +2868,12 @@ function App() {
             {subOam === "angajati" && (
               <>
                 <input className="cautare" placeholder="Caută angajat…" value={cauta} onChange={(e) => setCauta(e.target.value)} />
-                {esteProprietar && (
+                {(esteProprietar || permisiuni.oameniEditare) && (
                   <button className="btn btn-galben" onClick={() => setFoaie({ tip: "angajat" })}>+ Adaugă angajat</button>
                 )}
-                {rolFirma === "administrator" && (
+                {!esteProprietar && !permisiuni.oameniEditare && (
                   <div className="sub" style={{ marginBottom: 10 }}>
-                    Vezi fișele, dar doar proprietarul poate adăuga, modifica sau șterge angajați.
+                    Vezi fișele, dar nu le poți modifica — rolul tău nu are voie.
                   </div>
                 )}
                 <div style={{ height: 12 }} />
@@ -2839,7 +2885,7 @@ function App() {
                         <div className="sub">
                           {a.tip === "birou" ? "🏢 " : ""}{a.grad || "—"}
                           {a.tip !== "birou" && <> · {numeEchipa(a.echipaId)}</>}
-                          {a.rolFirma && <><br /><span style={{ color: "var(--galben)" }}>🔑 {numeRolFirma(a.rolFirma)}</span></>}
+                          {a.rolFirmaId && <><br /><span style={{ color: "var(--galben)" }}>🔑 {numeRol(db.roluriFirma, a.rolFirmaId)}</span></>}
                         </div>
                       </div>
                       <span className={"chip " + (a.tip === "birou" ? "gri" : "gri")}>Fișă →</span>
@@ -2894,12 +2940,12 @@ function App() {
         {/* ---------- ȘANTIERE ---------- */}
         {tabEfectiv === "santiere" && (
           <>
-            {rolFirma !== "secretar" && (
+            {(esteProprietar || permisiuni.santiereEditare) && (
               <button className="btn btn-galben" onClick={() => setFoaie({ tip: "santier" })}>+ Adaugă șantier</button>
             )}
-            {rolFirma === "secretar" && (
+            {!esteProprietar && !permisiuni.santiereEditare && (
               <div className="sub" style={{ marginBottom: 10 }}>
-                Vezi cifrele fiecărui șantier. Doar proprietarul sau administratorul pot modifica ceva aici.
+                Vezi cifrele fiecărui șantier. Rolul tău nu are voie să modifice nimic aici.
               </div>
             )}
             <div style={{ height: 12 }} />
@@ -2991,14 +3037,14 @@ function App() {
                     </div>
                   </div>
                   <div className="actiuni">
-                    {rolFirma !== "secretar" && !finalizat && db.angajati.length > 0 && (
+                    {(esteProprietar || permisiuni.santiereEditare) && !finalizat && db.angajati.length > 0 && (
                       <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "pontaj", item: s })}>+ Pontaj</button>
                     )}
-                    {rolFirma !== "secretar" && !finalizat && (
+                    {(esteProprietar || permisiuni.santiereEditare) && !finalizat && (
                       <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "consum", item: s })}>+ Material</button>
                     )}
                     {(s.adresaFull || s.adresa) && <ButonHarta adresa={s.adresaFull || s.adresa} mic />}
-                    {rolFirma !== "secretar" && (
+                    {(esteProprietar || permisiuni.santiereEditare) && (
                       <button className="btn btn-mic" onClick={() => setFoaie({ tip: "sarcini", item: s })}>
                         📷 De rezolvat{db.sarcini.filter((x) => x.santierId === s.id && x.status === "deschis").length > 0
                           ? ` (${db.sarcini.filter((x) => x.santierId === s.id && x.status === "deschis").length})` : ""}
@@ -3010,7 +3056,7 @@ function App() {
                       </button>
                     )}
                     <button className="btn btn-mic" onClick={() => setFoaie({ tip: "detaliiSantier", item: s })}>Detalii</button>
-                    {rolFirma !== "secretar" && (
+                    {(esteProprietar || permisiuni.santiereEditare) && (
                       <>
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "santier", item: s })}>Modifică</button>
                         <button className="btn btn-mic" onClick={() => salvSantier({ ...s, status: finalizat ? "activ" : "finalizat" })}>
@@ -3534,6 +3580,10 @@ function App() {
           </>
         )}
 
+        {tabEfectiv === "setari" && subSet === "roluri" && esteProprietar && (
+          <RoluriFirma db={db} onSalveaza={salveaza} cere={cere} setFoaie={setFoaie} />
+        )}
+
         {tabEfectiv === "setari" && subSet === "dotare" && (
           <Dotare db={db} onSalveaza={salveaza} setFoaie={setFoaie} cere={cere} />
         )}
@@ -3921,9 +3971,22 @@ function App() {
         <FormEchipa item={foaie.item} santiere={db.santiere.filter((x) => x.status !== "finalizat")}
           camioane={db.camioane} onSalveaza={salvEchipa} onClose={() => setFoaie(null)} />
       )}
+      {foaie?.tip === "rolNou" && (
+        <FormRol item={foaie.item}
+          onSalveaza={(rol) => {
+            salveaza({
+              ...db,
+              roluriFirma: rol.id
+                ? (db.roluriFirma || []).map((r) => (r.id === rol.id ? rol : r))
+                : [...(db.roluriFirma || []), { ...rol, id: uid() }],
+            });
+            setFoaie(null);
+          }}
+          onClose={() => setFoaie(null)} />
+      )}
       {foaie?.tip === "angajat" && (
         <FormAngajat item={foaie.item} echipe={db.echipe} esteProprietar={esteProprietar}
-          onSalveaza={salvAngajat} onClose={() => setFoaie(null)} />
+          roluriFirma={db.roluriFirma} onSalveaza={salvAngajat} onClose={() => setFoaie(null)} />
       )}
       {foaie?.tip === "fisa" && (
         <FisaAngajat
@@ -3932,7 +3995,8 @@ function App() {
           numeEchipa={numeEchipa}
           pontaj={db.pontaj}
           santiere={db.santiere}
-          doarCitire={!esteProprietar}
+          roluriFirma={db.roluriFirma}
+          doarCitire={!esteProprietar && !permisiuni.oameniEditare}
           onEdit={() => setFoaie({ tip: "angajat", item: foaie.item })}
           onMuta={(echipaId) => salvAngajat({ ...db.angajati.find((a) => a.id === foaie.item.id), echipaId })}
           onSterge={() => stergeAngajat(foaie.item.id)}
@@ -4457,6 +4521,109 @@ function CategoriiScule({ db, onSalveaza, cere }) {
         ))
       )}
     </>
+  );
+}
+
+function RoluriFirma({ db, onSalveaza, cere, setFoaie }) {
+  const roluri = db.roluriFirma || [];
+
+  const salvRol = (rol) => {
+    const lista = rol.id
+      ? roluri.map((r) => (r.id === rol.id ? rol : r))
+      : [...roluri, { ...rol, id: uid() }];
+    onSalveaza({ ...db, roluriFirma: lista });
+    setFoaie(null);
+  };
+
+  const stergeRol = (id) => {
+    const nrOameni = db.angajati.filter((a) => a.rolFirmaId === id).length;
+    cere(
+      nrOameni > 0
+        ? `Ștergi rolul? ${nrOameni} ${nrOameni === 1 ? "angajat rămâne" : "angajați rămân"} fără rol — intră normal, ca muncitor.`
+        : "Ștergi acest rol?",
+      () => onSalveaza({
+        ...db,
+        roluriFirma: roluri.filter((r) => r.id !== id),
+        angajati: db.angajati.map((a) => (a.rolFirmaId === id ? { ...a, rolFirmaId: null } : a)),
+      }),
+      "Șterge"
+    );
+  };
+
+  return (
+    <>
+      <div className="card">
+        <div className="titlu">🔑 Rolurile firmei</div>
+        <div className="sub">
+          Fiecare rol e un pachet de bife. Îl dai unui angajat din fișa lui, iar el intră cu
+          parola personală direct în partea din aplicație pe care i-o permiți — nimic mai mult.
+        </div>
+      </div>
+
+      <button className="btn btn-galben" onClick={() => setFoaie({ tip: "rolNou" })}>+ Rol nou</button>
+      <div style={{ height: 12 }} />
+
+      {roluri.length === 0 ? (
+        <div className="gol-msg">
+          Niciun rol încă. Creează unul — de exemplu „Secretariat", cu bifele pentru Cifre și
+          Rapoarte — apoi îl dai cuiva din fișa lui.
+        </div>
+      ) : (
+        roluri.map((r) => {
+          const nrOameni = db.angajati.filter((a) => a.rolFirmaId === r.id).length;
+          const bifate = Object.entries(r.permisiuni || {}).filter(([, v]) => v).length;
+          return (
+            <div className="card" key={r.id}>
+              <div className="card-rand">
+                <div>
+                  <div className="titlu">{r.nume}</div>
+                  <div className="sub">
+                    {bifate} {bifate === 1 ? "permisiune" : "permisiuni"} · {nrOameni} {nrOameni === 1 ? "angajat" : "angajați"}
+                  </div>
+                </div>
+              </div>
+              <div className="actiuni">
+                <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "rolNou", item: r })}>Modifică</button>
+                <button className="btn btn-mic pericol" onClick={() => stergeRol(r.id)}>Șterge</button>
+              </div>
+            </div>
+          );
+        })
+      )}
+    </>
+  );
+}
+
+function FormRol({ item, onSalveaza, onClose }) {
+  const [f, setF] = useState(item || { nume: "", permisiuni: {} });
+  const bifeaza = (cheie) =>
+    setF({ ...f, permisiuni: { ...f.permisiuni, [cheie]: !f.permisiuni[cheie] } });
+
+  return (
+    <Foaie titlu={item ? "Modifică rol" : "Rol nou"} onClose={onClose}>
+      <div className="camp">
+        <label>Numele rolului *</label>
+        <input value={f.nume} onChange={(e) => setF({ ...f, nume: e.target.value })}
+          placeholder="ex. Secretariat, Achiziții, Șef șantier" autoFocus />
+      </div>
+
+      {GRUPURI_PERMISIUNI.map((grup) => (
+        <div className="camp" key={grup.titlu}>
+          <label>{grup.titlu}</label>
+          {grup.chei.map(([cheie, descriere]) => (
+            <label key={cheie} className="rand-bifa">
+              <input type="checkbox" checked={!!f.permisiuni[cheie]} onChange={() => bifeaza(cheie)} />
+              <span>{descriere}</span>
+            </label>
+          ))}
+        </div>
+      ))}
+
+      <button className="btn btn-galben" disabled={!f.nume.trim()}
+        onClick={() => f.nume.trim() && onSalveaza(f)}>
+        Salvează rolul
+      </button>
+    </Foaie>
   );
 }
 
@@ -5160,12 +5327,12 @@ function EcranIntrare({ db, onIntra, onSeteazaPin }) {
                 onClick={() => {
                   if (!ales) return;
                   if (ales.pin) {
-                    if (pin === ales.pin) onIntra({ rol: ales.rolFirma ? "admin" : "muncitor", angajatId });
+                    if (pin === ales.pin) onIntra({ rol: ales.rolFirmaId ? "admin" : "muncitor", angajatId });
                     else setEroare(t("Parolă greșită. Dacă ai uitat-o, cere-i șefului să ți-o reseteze."));
                   } else {
                     if (pin.length < 4) return setEroare(t("Parola trebuie să aibă minim 4 caractere."));
                     onSeteazaPin(angajatId, pin);
-                    onIntra({ rol: ales.rolFirma ? "admin" : "muncitor", angajatId });
+                    onIntra({ rol: ales.rolFirmaId ? "admin" : "muncitor", angajatId });
                   }
                 }}>
                 {t("Intră")}
@@ -5571,7 +5738,7 @@ function FormEchipa({ item, santiere = [], camioane = [], onSalveaza, onClose })
   );
 }
 
-function FormAngajat({ item, echipe, esteProprietar, onSalveaza, onClose }) {
+function FormAngajat({ item, echipe, esteProprietar, roluriFirma = [], onSalveaza, onClose }) {
   const [f, setF] = useState(item || {
     nume: "", telefon: "", tip: "santier", grad: "Muncitor", echipaId: "",
     dataAngajare: "", tarifOra: "", tarif: "", salariuLunar: "", note: "",
@@ -5651,14 +5818,19 @@ function FormAngajat({ item, echipe, esteProprietar, onSalveaza, onClose }) {
       {esteProprietar && (
         <div className="camp">
           <label>Rol de firmă (opțional)</label>
-          <select value={f.rolFirma || ""} onChange={(e) => setF({ ...f, rolFirma: e.target.value || null })}>
-            <option value="">Fără — cont obișnuit</option>
-            {ROLURI_FIRMA.map((r) => <option key={r.cod} value={r.cod}>{r.nume}</option>)}
-          </select>
-          {f.rolFirma && (
+          {roluriFirma.length === 0 ? (
+            <div className="sub">
+              N-ai creat încă niciun rol. Le faci din Setări → Roluri și permisiuni.
+            </div>
+          ) : (
+            <select value={f.rolFirmaId || ""} onChange={(e) => setF({ ...f, rolFirmaId: e.target.value || null })}>
+              <option value="">Fără — cont obișnuit</option>
+              {roluriFirma.map((r) => <option key={r.id} value={r.id}>{r.nume}</option>)}
+            </select>
+          )}
+          {f.rolFirmaId && (
             <div className="sub" style={{ marginTop: 6 }}>
-              {ROLURI_FIRMA.find((r) => r.cod === f.rolFirma)?.desc}. Intră cu parola lui, dar
-              ajunge direct în panoul de admin, restrâns la atât.
+              Intră cu parola lui, dar ajunge direct în panoul de admin, restrâns la ce-i dă rolul ăsta.
             </div>
           )}
         </div>
@@ -5672,7 +5844,7 @@ function FormAngajat({ item, echipe, esteProprietar, onSalveaza, onClose }) {
   );
 }
 
-function FisaAngajat({ angajat, echipe, numeEchipa, pontaj, santiere, doarCitire, onEdit, onMuta, onSterge, onParola, onClose }) {
+function FisaAngajat({ angajat, echipe, numeEchipa, pontaj, santiere, roluriFirma = [], doarCitire, onEdit, onMuta, onSterge, onParola, onClose }) {
   if (!angajat) return null;
   const aleLui = pontaj.filter((p) => p.angajatId === angajat.id);
   const peSantier = {};
@@ -5688,8 +5860,8 @@ function FisaAngajat({ angajat, echipe, numeEchipa, pontaj, santiere, doarCitire
   return (
     <Foaie titlu={`Fișă: ${angajat.nume}`} onClose={onClose}>
       {eBirou && <div className="fisa-rand"><span className="k">Unde lucrează</span><b>🏢 La birou</b></div>}
-      {angajat.rolFirma && (
-        <div className="fisa-rand"><span className="k">Rol de firmă</span><b style={{ color: "var(--galben)" }}>🔑 {numeRolFirma(angajat.rolFirma)}</b></div>
+      {angajat.rolFirmaId && (
+        <div className="fisa-rand"><span className="k">Rol de firmă</span><b style={{ color: "var(--galben)" }}>🔑 {numeRol(roluriFirma, angajat.rolFirmaId)}</b></div>
       )}
       <div className="fisa-rand"><span className="k">Grad</span><b>{angajat.grad || "—"}</b></div>
       {!eBirou && <div className="fisa-rand"><span className="k">Echipă</span><b>{numeEchipa(angajat.echipaId)}</b></div>}
@@ -6060,6 +6232,7 @@ const SECTIUNI_SETARI = [
   ["cont", "🔑", "Firmă, program, acces", "date firmă, orar, PIN, limbă"],
   ["invitatii", "📨", "Invită muncitorii", "linkuri și parole"],
   ["backup", "💾", "Backup și curățenie", "salvare, restaurare, poze"],
+  ["roluri", "🔑", "Roluri și permisiuni", "cine ce poate face în aplicație"],
 ];
 
 const NUME_ZI = { MO: "Luni", TU: "Marți", WE: "Miercuri", TH: "Joi", FR: "Vineri", SA: "Sâmbătă", SU: "Duminică" };
