@@ -68,7 +68,7 @@ const gol = {
   dotare: [], verificari: [], categoriiMateriale: [], categoriiScule: [], roluriFirma: [],
   firma: null,
   alimentari: [],
-  setari: { pin: PIN_IMPLICIT, zilePoze: 30, zileCereri: 30, oreVizibileMuncitori: true, procentTaxe: 0,
+  setari: { pin: PIN_IMPLICIT, zilePoze: 30, zileCereri: 30, oreVizibileMuncitori: true, procentTaxe: 0, oreSaptamana: 35,
     program: { start: "07:30", final: "16:00", pauza: 60,
       zile: ["MO", "TU", "WE", "TH", "FR"], special: {} } },
   suplimentare: [],
@@ -415,6 +415,14 @@ const seSuprapun = (a, b) => {
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const azi = () => new Date().toLocaleDateString("ro-RO", { day: "2-digit", month: "2-digit", year: "numeric" });
+/* salariul lunar dintr-un tarif orar: ore pe săptămână × 52 săptămâni ÷ 12 luni */
+const salariuDinTarif = (tarifOra, oreSaptamana) => {
+  const t = Number(tarifOra) || 0;
+  const o = Number(oreSaptamana) || 0;
+  if (!t || !o) return 0;
+  return Math.round((t * o * 52) / 12);
+};
+
 /* costul real al unei ore lucrate, cu taxele patronale incluse */
 const costCuTaxe = (ore, tarifOra, procentTaxe) =>
   (Number(ore) || 0) * (Number(tarifOra) || 0) * (1 + (Number(procentTaxe) || 0) / 100);
@@ -431,8 +439,6 @@ const bani = (n) =>
 
 const DOMENII = ["Zidărie", "Fundații / terasamente", "Structură / dulgherie", "Acoperiș", "Finisaje", "Instalații", "Izolații", "Amenajări exterioare", "Demolări", "Diverse"];
 
-const GRADE = ["Muncitor", "Muncitor calificat", "Șef de echipă", "Operator utilaj", "Șofer", "Maistru", "Zidar", "Dulgher", "Fierar", "Finisor"];
-const GRADE_BIROU = ["Administrativ", "Contabilitate", "Secretariat", "Achiziții", "Manager", "Altă funcție"];
 
 /* rolurile de firmă: dau acces la o parte din panoul de admin, printr-un cont personal.
    null = fără rol special = intră doar în vederea de muncitor/birou obișnuită. */
@@ -460,7 +466,49 @@ const GRUPURI_PERMISIUNI = [
     ["oameni", "Vede angajații și fișele lor"],
     ["oameniEditare", "Poate adăuga, modifica sau șterge angajați"],
   ] },
+  { titlu: "Pe teren (contul de muncitor)", chei: [
+    ["consumStoc", "Notează de pe telefon ce materiale s-au consumat"],
+    ["cereMuncitori", "Poate cere oameni în plus pe șantierul lui"],
+  ] },
 ];
+
+/* rolurile implicite, create automat la prima pornire — le poți modifica sau șterge */
+const ROLURI_IMPLICITE = [
+  { id: "rol-muncitor", nume: "Muncitor", permisiuni: {} },
+  { id: "rol-calificat", nume: "Muncitor calificat", permisiuni: {} },
+  { id: "rol-zidar", nume: "Zidar", permisiuni: {} },
+  { id: "rol-dulgher", nume: "Dulgher", permisiuni: {} },
+  { id: "rol-fierar", nume: "Fierar", permisiuni: {} },
+  { id: "rol-finisor", nume: "Finisor", permisiuni: {} },
+  { id: "rol-sofer", nume: "Șofer", permisiuni: {} },
+  { id: "rol-operator", nume: "Operator utilaj", permisiuni: {} },
+  { id: "rol-sef", nume: "Șef de echipă", permisiuni: { consumStoc: true, cereMuncitori: true } },
+  { id: "rol-maistru", nume: "Maistru", permisiuni: { consumStoc: true, cereMuncitori: true } },
+  { id: "rol-secretariat", nume: "Secretariat", permisiuni: { panou: true, santiere: true, cifre: true, rapoarte: true } },
+  { id: "rol-achizitii", nume: "Achiziții", permisiuni: { stocMateriale: true, stocScule: true } },
+  { id: "rol-administrativ", nume: "Administrativ", permisiuni: { planing: true, stocAuto: true, dotare: true } },
+];
+/* baze create înainte de unificarea grad+rol: leg fiecare angajat de un rol
+   cu același nume, iar dacă nu există, îl creez. Rulează o singură dată, tăcut. */
+const migreaza = (d) => {
+  let roluri = (d.roluriFirma || []).length ? [...d.roluriFirma] : [...ROLURI_IMPLICITE];
+  let schimbat = !(d.roluriFirma || []).length;
+
+  const angajati = (d.angajati || []).map((a) => {
+    if (a.rolFirmaId || !a.grad) return a;
+    let rol = roluri.find((r) => r.nume === a.grad);
+    if (!rol) {
+      rol = { id: uid(), nume: a.grad, permisiuni: a.poateStoc ? { consumStoc: true } : {} };
+      roluri.push(rol);
+      schimbat = true;
+    }
+    schimbat = true;
+    return { ...a, rolFirmaId: rol.id };
+  });
+
+  return schimbat ? { ...d, roluriFirma: roluri, angajati } : d;
+};
+
 const numeRol = (roluri, id) => (roluri || []).find((r) => r.id === id)?.nume || null;
 
 /* zile rămase până la o dată yyyy-mm-dd; null dacă lipsește */
@@ -756,9 +804,14 @@ function App() {
         if (r?.value) {
           const d = JSON.parse(r.value);
           if (d.firma?.moneda) SIMBOL = d.firma.moneda.indexOf("lei") >= 0 ? "lei" : "€";
-          setDb({ ...gol, ...d, setari: { ...gol.setari, ...(d.setari || {}) } });
+          setDb(migreaza({ ...gol, ...d, setari: { ...gol.setari, ...(d.setari || {}) } }));
+        } else {
+          /* bază nouă, fără date salvate — pornesc cu rolurile implicite */
+          setDb(migreaza(gol));
         }
-      } catch (e) {}
+      } catch (e) {
+        setDb(migreaza(gol));
+      }
       try {
         const r = await stocare.get(ID_KEY);
         if (r?.value) setIdentitate(JSON.parse(r.value));
@@ -1235,20 +1288,26 @@ function App() {
   };
 
   /* utilaje comune: se urmăresc pe șantier, nu pe echipă */
-  const mutaUtilajComun = (sculaId, santierId) => {
-    const scula = db.scule.find((x) => x.id === sculaId);
+  const mutaUtilajComun = (utilajId, santierId) => {
+    const utilaj = db.camioane.find((x) => x.id === utilajId);
     const santier = db.santiere.find((x) => x.id === santierId);
-    const lista = db.scule.map((x) =>
-      x.id === sculaId ? { ...x, stare: "alocat", santierId, echipaId: null, dataAlocare: azi() } : x);
-    salveaza(cuJurnal({ ...db, scule: lista },
-      `${scula.nume} → mutat pe ${santier?.nume || "șantier"}`));
+    const lista = db.camioane.map((x) =>
+      x.id === utilajId ? { ...x, stare: "alocat", santierId, dataAlocare: azi() } : x);
+    salveaza(cuJurnal({ ...db, camioane: lista },
+      `${utilaj.nume} → mutat pe ${santier?.nume || "șantier"}`));
     setFoaie(null);
   };
-  const aduLaDepozitUtilaj = (sculaId) => {
-    const scula = db.scule.find((x) => x.id === sculaId);
-    const lista = db.scule.map((x) =>
-      x.id === sculaId ? { ...x, stare: "depozit", santierId: null, dataAlocare: null } : x);
-    salveaza(cuJurnal({ ...db, scule: lista }, `${scula.nume} ← adus la depozit`));
+  const aduLaDepozitUtilaj = (utilajId) => {
+    const utilaj = db.camioane.find((x) => x.id === utilajId);
+    const lista = db.camioane.map((x) =>
+      x.id === utilajId ? { ...x, stare: "depozit", santierId: null, dataAlocare: null } : x);
+    salveaza(cuJurnal({ ...db, camioane: lista }, `${utilaj.nume} ← adus la depozit`));
+  };
+  const trimiteServiceUtilaj = (utilajId) => {
+    const utilaj = db.camioane.find((x) => x.id === utilajId);
+    const lista = db.camioane.map((x) =>
+      x.id === utilajId ? { ...x, stare: "service", santierId: null, dataAlocare: null } : x);
+    salveaza(cuJurnal({ ...db, camioane: lista }, `${utilaj.nume} → trimis la service`));
   };
 
   /* angajați */
@@ -1823,7 +1882,12 @@ function App() {
     );
 
   const esteAdmin = identitate.rol === "admin";
-  const eu = db.angajati.find((a) => a.id === identitate.angajatId);
+  const euBrut = db.angajati.find((a) => a.id === identitate.angajatId);
+  /* atașez permisiunile rolului, ca să nu depindem nicăieri de textul gradului */
+  const eu = euBrut && {
+    ...euBrut,
+    permisiuniRol: (db.roluriFirma || []).find((r) => r.id === euBrut.rolFirmaId)?.permisiuni || {},
+  };
   /* dacă a intrat cu PIN-ul de firmă, e proprietarul, cu acces total.
      dacă a intrat cu contul lui personal și are un rol de firmă, accesul e restrâns la ce-i dă rolul. */
   const esteProprietar = esteAdmin && !identitate.angajatId;
@@ -1836,7 +1900,7 @@ function App() {
     permisiuni.panou && "panou",
     (permisiuni.santiere || permisiuni.santiereEditare) && "santiere",
     permisiuni.planing && "planing",
-    (permisiuni.stocMateriale || permisiuni.stocScule || permisiuni.stocAuto) && "inventar",
+    (permisiuni.stocMateriale || permisiuni.stocScule) && "inventar",
     permisiuni.cereri && "cereri",
     "setari", // mereu accesibil — aici stă și butonul de ieșire din cont
   ].filter(Boolean);
@@ -2014,39 +2078,38 @@ function App() {
           {/* ---------- SCULE ---------- */}
           {tabM === "scule" && !eBirou && (
             <>
-              {db.scule.filter((x) => x.comun).length > 0 && (
+
+              {db.camioane.filter((c) => c.tip === "utilaj").length > 0 && (
                 <>
-                  <div className="sectiune">🔧 Utilaje comune</div>
-                  <div className="sub" style={{ marginBottom: 10 }}>Se urmăresc pe locație — șantier sau depozit.</div>
-                  {db.scule.filter((x) => x.comun).map((s) => {
-                    const santierS = db.santiere.find((x) => x.id === s.santierId);
-                    const eSantierulMeu = s.stare === "alocat" && s.santierId === echipaMea?.santierId;
+                  <div className="sectiune">🏗 Utilaje comune</div>
+                  <div className="sub" style={{ marginBottom: 10 }}>Se urmăresc pe locație.</div>
+                  {db.camioane.filter((c) => c.tip === "utilaj").map((c) => {
+                    const santierC = db.santiere.find((x) => x.id === c.santierId);
+                    const eSantierulMeu = c.stare === "alocat" && c.santierId === echipaMea?.santierId;
                     const santierulMeuNume = db.santiere.find((x) => x.id === echipaMea?.santierId)?.nume || null;
                     return (
-                      <div className="card" key={s.id}>
+                      <div className="card" key={c.id}>
                         <div className="card-rand">
                           <div>
-                            <div className="titlu">{s.nume}</div>
+                            <div className="titlu">{c.nume}</div>
                             <div className="sub">
-                              {s.stare === "alocat"
+                              {c.stare === "alocat"
                                 ? <>🏗 <b style={{ color: eSantierulMeu ? "var(--verde)" : "var(--text)" }}>
-                                    {eSantierulMeu ? "la voi" : santierS?.nume || "șantier șters"}</b> din {s.dataAlocare}</>
-                                : s.stare === "service" ? "În service"
-                                : s.stare === "problema" ? "Cu problemă"
+                                    {eSantierulMeu ? "la voi" : santierC?.nume || "șantier șters"}</b> din {c.dataAlocare}</>
+                                : c.stare === "service" ? "În service"
                                 : "🏠 La depozit — liber"}
                             </div>
                           </div>
-                          <span className={"chip " + (s.stare === "problema" ? "alerta" : s.stare)}>
-                            {s.stare === "alocat" ? (eSantierulMeu ? "La voi" : "Pe șantier") : s.stare === "service" ? "Service"
-                              : s.stare === "problema" ? "Problemă" : "Liber"}
+                          <span className={"chip " + (c.stare || "depozit")}>
+                            {c.stare === "alocat" ? (eSantierulMeu ? "La voi" : "Pe șantier") : c.stare === "service" ? "Service" : "Liber"}
                           </span>
                         </div>
-                        {!eSantierulMeu && s.stare !== "problema" && s.stare !== "service" && (
+                        {!eSantierulMeu && c.stare !== "service" && (
                           <div className="actiuni">
                             <button className="btn btn-mic"
                               onClick={() => trimiteCerere({
                                 tip: "necesar",
-                                text: `Ne trebuie ${s.nume} la noi${santierulMeuNume ? ` pe ${santierulMeuNume}` : ""}${s.stare === "alocat" ? `, e acum pe ${santierS?.nume || "alt șantier"}` : ", e la depozit"}.`,
+                                text: `Ne trebuie ${c.nume} la noi${santierulMeuNume ? ` pe ${santierulMeuNume}` : ""}${c.stare === "alocat" ? `, e acum pe ${santierC?.nume || "alt șantier"}` : ", e la depozit"}.`,
                                 santierId: echipaMea?.santierId || null,
                                 santierNume: santierulMeuNume,
                                 linii: [], dataCeruta: null, oameniCeruti: null,
@@ -2513,7 +2576,7 @@ function App() {
                 <div className="sectiune">🚛 De rezolvat la mașini</div>
                 {alerteCamioane.map((a, i) => (
                   <div className={"card alerta-card" + (a.z < 0 ? " expirat" : "")} key={i}
-                    onClick={() => { setTab("inventar"); setSubInv("camioane"); }}>
+                    onClick={() => { setTab("setari"); setSubSet("auto"); }}>
                     <div className="card-rand">
                       <div>
                         <div className="titlu">{a.z < 0 ? "🔴" : "🟠"} {a.camion.nume}</div>
@@ -2649,10 +2712,9 @@ function App() {
         {tabEfectiv === "inventar" && (() => {
           const poateMat = esteProprietar || !!permisiuni.stocMateriale;
           const poateScu = esteProprietar || !!permisiuni.stocScule;
-          const poateAuto = esteProprietar || !!permisiuni.stocAuto;
-          const subInvPermis = (subInv === "materiale" && poateMat) || (subInv === "scule" && poateScu) || (subInv === "camioane" && poateAuto)
+          const subInvPermis = (subInv === "materiale" && poateMat) || (subInv === "scule" && poateScu)
             ? subInv
-            : (poateMat && "materiale") || (poateScu && "scule") || (poateAuto && "camioane") || "materiale";
+            : (poateMat && "materiale") || (poateScu && "scule") || "materiale";
           return (
           <>
             <div className="subtab">
@@ -2664,16 +2726,8 @@ function App() {
                 <button className={subInvPermis === "scule" ? "activ" : ""}
                   onClick={() => { setSubInv("scule"); setFiltruCat(""); }}>Scule</button>
               )}
-              {poateAuto && (
-                <button className={subInvPermis === "camioane" ? "activ" : ""}
-                  onClick={() => { setSubInv("camioane"); setFiltruCat(""); }}>
-                  Auto{alerteCamioane.length > 0 && ` (${alerteCamioane.length})`}
-                </button>
-              )}
             </div>
-            {subInvPermis !== "camioane" && (
-              <input className="cautare" placeholder="Caută…" value={cauta} onChange={(e) => setCauta(e.target.value)} />
-            )}
+            <input className="cautare" placeholder="Caută…" value={cauta} onChange={(e) => setCauta(e.target.value)} />
 
             {subInvPermis === "materiale" && (
               <>
@@ -2759,55 +2813,10 @@ function App() {
                 <button className="btn btn-galben" onClick={() => setFoaie({ tip: "scula" })}>+ Adaugă sculă</button>
                 <div style={{ height: 12 }} />
 
-                {(() => {
-                  const comune = db.scule.filter((x) => x.comun);
-                  if (comune.length === 0) return null;
-                  return (
-                    <>
-                      <div className="sectiune">🔧 Utilaje comune</div>
-                      <div className="sub" style={{ marginBottom: 10 }}>
-                        Se urmăresc pe locație — șantier sau depozit.
-                      </div>
-                      {comune.map((s) => {
-                        const santierS = db.santiere.find((x) => x.id === s.santierId);
-                        return (
-                          <div className="card" key={s.id}>
-                            <div className="card-rand">
-                              <div>
-                                <div className="titlu">{s.nume}</div>
-                                <div className="sub">
-                                  {s.stare === "alocat" ? <>🏗 <b>{santierS?.nume || "șantier șters"}</b> din {s.dataAlocare}</>
-                                    : s.stare === "service" ? "În service" : s.stare === "problema" ? "Cu problemă"
-                                    : "🏠 La depozit — liber"}
-                                </div>
-                              </div>
-                              <span className={"chip " + (s.stare === "problema" ? "alerta" : s.stare)}>
-                                {s.stare === "alocat" ? "Pe șantier" : s.stare === "service" ? "Service"
-                                  : s.stare === "problema" ? "Problemă" : "Liber"}
-                              </span>
-                            </div>
-                            <div className="actiuni">
-                              <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "mutaUtilaj", item: s })}>
-                                Mută
-                              </button>
-                              {s.stare === "alocat" && (
-                                <button className="btn btn-mic" onClick={() => aduLaDepozitUtilaj(s.id)}>Adu la depozit</button>
-                              )}
-                              {s.stare !== "service" ? (
-                                <button className="btn btn-mic" onClick={() => trimiteService(s.id)}>Service</button>
-                              ) : (
-                                <button className="btn btn-mic" onClick={() => aduLaDepozitUtilaj(s.id)}>Înapoi în depozit</button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </>
-                  );
-                })()}
+
 
                 {(() => {
-                  const cats = [...new Set(db.scule.filter((x) => !x.comun).map((x) => (x.categorie || "").trim()).filter(Boolean))].sort();
+                  const cats = [...new Set(db.scule.map((x) => (x.categorie || "").trim()).filter(Boolean))].sort();
                   if (cats.length === 0) return null;
                   return (
                     <div className="filtre">
@@ -2819,7 +2828,7 @@ function App() {
                     </div>
                   );
                 })()}
-                {filtrat(db.scule.filter((x) => !x.comun), ["nume", "cod", "categorie"])
+                {filtrat(db.scule, ["nume", "cod", "categorie"])
                   .filter((x) => !filtruCat || (x.categorie || "").trim() === filtruCat)
                   .sort((a, b) => {
                     const ord = { problema: 0, service: 1, alocat: 2, depozit: 3 };
@@ -2882,69 +2891,7 @@ function App() {
               </>
             )}
 
-            {subInvPermis === "camioane" && (() => {
-              const cardVehicul = (c) => {
-                const istoric = db.intretinere.filter((i) => i.camionId === c.id);
-                const costTotal = istoric.reduce((s, i) => s + (Number(i.cost) || 0), 0);
-                const expirari = [["ITP", c.itp], ["Asig.", c.asigurare], ["Revizie", c.revizie]]
-                  .filter(([, d]) => d)
-                  .map(([t, d]) => ({ t, d, z: zileRamase(d) }));
-                return (
-                  <div className="card" key={c.id}>
-                    <div className="card-rand">
-                      <div>
-                        <div className="titlu">{c.nume}</div>
-                        <div className="sub">
-                          {c.numar && <><span className="mono">{c.numar}</span> · </>}
-                          {c.km && <><b className="mono">{Number(c.km).toLocaleString("ro-RO")} km</b> · </>}
-                          cheltuieli totale: <b>{bani(costTotal)}</b>
-                        </div>
-                      </div>
-                      {expirari.some((e) => e.z <= 30)
-                        ? <span className="chip alerta">Verifică acte</span>
-                        : <span className="chip ok">În regulă</span>}
-                    </div>
-                    {expirari.length > 0 && (
-                      <div className="lista-in-card">
-                        {expirari.map((e, i) => (
-                          <div key={i}>
-                            {e.z <= 30 ? "🔴" : "🟢"} {e.t}: {dataRo(e.d)}
-                            {e.z !== null && <span style={{ color: e.z <= 30 ? "var(--rosu)" : "var(--mut)" }}> · {e.z < 0 ? `expirat de ${-e.z} zile` : `${e.z} zile`}</span>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="actiuni">
-                      <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "intretinere", item: c })}>+ Întreținere</button>
-                      <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "alimentare", item: c })}>⛽ Alimentare</button>
-                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "istoricCamion", item: c })}>Istoric ({istoric.length})</button>
-                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "camion", item: c })}>Modifică</button>
-                      <button className="btn btn-mic pericol" onClick={() => stergeGen("camioane", "Ștergi acest vehicul?")(c.id)}>Șterge</button>
-                    </div>
-                  </div>
-                );
-              };
-
-              const camioane = db.camioane.filter((c) => c.tip !== "utilaj");
-              const utilaje = db.camioane.filter((c) => c.tip === "utilaj");
-
-              return (
-                <>
-                  <button className="btn btn-galben" onClick={() => setFoaie({ tip: "camion" })}>+ Adaugă</button>
-                  <div style={{ height: 12 }} />
-
-                  <div className="sectiune">🚛 Camioane</div>
-                  {camioane.length === 0
-                    ? <div className="gol-msg">Niciun camion încă.</div>
-                    : camioane.map(cardVehicul)}
-
-                  <div className="sectiune">🏗 Utilaje</div>
-                  {utilaje.length === 0
-                    ? <div className="gol-msg">Niciun utilaj încă — betonieră, excavator, telescopic, dumper.</div>
-                    : utilaje.map(cardVehicul)}
-                </>
-              );
-            })()}
+            
 
           </>
           );
@@ -2961,8 +2908,9 @@ function App() {
                     if (id === "cifre") return !!permisiuni.cifre;
                     if (id === "rapoarte") return !!permisiuni.rapoarte;
                     if (id === "dotare") return !!permisiuni.dotare;
+                    if (id === "auto") return !!permisiuni.stocAuto;
                     if (id === "oameni") return !!permisiuni.oameni;
-                    if (id === "categorii" || id === "categoriiScule")
+                    if (id === "categorii")
                       return !!permisiuni.stocMateriale || !!permisiuni.stocScule;
                     return false; // cont, invitații, backup, roluri — doar proprietarul
                   });
@@ -3441,7 +3389,8 @@ function App() {
               {(() => {
                 const birou = db.angajati.filter((a) => a.tip === "birou");
                 if (birou.length === 0) return null;
-                const totalBirou = birou.reduce((s, a) => s + (Number(a.salariuLunar) || 0), 0);
+                const oreS = db.setari?.oreSaptamana ?? 35;
+                const totalBirou = birou.reduce((s, a) => s + salariuDinTarif(a.tarifOra, oreS), 0);
                 const totalBirouTaxe = totalBirou * (Number(db.setari?.procentTaxe) || 0) / 100;
                 return (
                   <>
@@ -3454,7 +3403,7 @@ function App() {
                       {birou.map((a) => (
                         <div className="fisa-rand" key={a.id}>
                           <span>{a.nume} <span className="k">· {a.grad || "—"}</span></span>
-                          <b className="mono">{a.salariuLunar ? bani(a.salariuLunar) : "—"}</b>
+                          <b className="mono">{a.tarifOra ? bani(salariuDinTarif(a.tarifOra, oreS)) : "—"}</b>
                         </div>
                       ))}
                       <div className="fisa-rand" style={{ borderBottom: "none", paddingTop: 10 }}>
@@ -3682,6 +3631,28 @@ function App() {
             </div>
 
             <div className="card">
+              <div className="titlu">📅 Normă întreagă</div>
+              <div className="sub">
+                Câte ore are o săptămână de lucru cu normă întreagă. Din asta se calculează
+                salariul lunar al celor de la birou, pornind de la costul lor orar.
+              </div>
+              <div className="camp" style={{ marginTop: 11, marginBottom: 4 }}>
+                <label>Ore pe săptămână</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <input type="number" step="0.5" style={{ maxWidth: 100 }}
+                    value={db.setari?.oreSaptamana ?? 35}
+                    onChange={(e) => salveaza({ ...db, setari: { ...db.setari, oreSaptamana: e.target.value } })}
+                    placeholder="ex. 35" />
+                  <span className="sub" style={{ marginTop: 0 }}>h/săptămână</span>
+                </div>
+              </div>
+              <div className="sub">
+                Un cost orar de 20 €/h înseamnă <b className="mono">
+                {bani(salariuDinTarif(20, db.setari?.oreSaptamana ?? 35))}</b>/lună brut.
+              </div>
+            </div>
+
+            <div className="card">
               <div className="titlu">Limba aplicației</div>
               <div className="sub">
                 Se aplică doar pe telefonul ăsta. Fiecare om își alege limba lui.
@@ -3719,16 +3690,132 @@ function App() {
           <RoluriFirma db={db} onSalveaza={salveaza} cere={cere} setFoaie={setFoaie} />
         )}
 
+        {tabEfectiv === "setari" && subSet === "auto" && (() => {
+              const cardCamion = (c) => {
+                const istoric = db.intretinere.filter((i) => i.camionId === c.id);
+                const costTotal = istoric.reduce((s, i) => s + (Number(i.cost) || 0), 0);
+                const expirari = [["ITP", c.itp], ["Asig.", c.asigurare], ["Revizie", c.revizie]]
+                  .filter(([, d]) => d)
+                  .map(([t, d]) => ({ t, d, z: zileRamase(d) }));
+                return (
+                  <div className="card" key={c.id}>
+                    <div className="card-rand">
+                      <div>
+                        <div className="titlu">{c.nume}</div>
+                        <div className="sub">
+                          {c.numar && <><span className="mono">{c.numar}</span> · </>}
+                          {c.km && <><b className="mono">{Number(c.km).toLocaleString("ro-RO")} km</b> · </>}
+                          cheltuieli totale: <b>{bani(costTotal)}</b>
+                        </div>
+                      </div>
+                      {expirari.some((e) => e.z <= 30)
+                        ? <span className="chip alerta">Verifică acte</span>
+                        : <span className="chip ok">În regulă</span>}
+                    </div>
+                    {expirari.length > 0 && (
+                      <div className="lista-in-card">
+                        {expirari.map((e, i) => (
+                          <div key={i}>
+                            {e.z <= 30 ? "🔴" : "🟢"} {e.t}: {dataRo(e.d)}
+                            {e.z !== null && <span style={{ color: e.z <= 30 ? "var(--rosu)" : "var(--mut)" }}> · {e.z < 0 ? `expirat de ${-e.z} zile` : `${e.z} zile`}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="actiuni">
+                      <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "intretinere", item: c })}>+ Întreținere</button>
+                      <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "alimentare", item: c })}>⛽ Alimentare</button>
+                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "istoricCamion", item: c })}>Istoric ({istoric.length})</button>
+                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "camion", item: c })}>Modifică</button>
+                      <button className="btn btn-mic pericol" onClick={() => stergeGen("camioane", "Ștergi acest vehicul?")(c.id)}>Șterge</button>
+                    </div>
+                  </div>
+                );
+              };
+
+              const cardUtilaj = (c) => {
+                const istoric = db.intretinere.filter((i) => i.camionId === c.id);
+                const costTotal = istoric.reduce((s, i) => s + (Number(i.cost) || 0), 0);
+                const expirari = [["ITP", c.itp], ["Asig.", c.asigurare], ["Revizie", c.revizie]]
+                  .filter(([, d]) => d)
+                  .map(([t, d]) => ({ t, d, z: zileRamase(d) }));
+                const santierC = db.santiere.find((x) => x.id === c.santierId);
+                return (
+                  <div className="card" key={c.id}>
+                    <div className="card-rand">
+                      <div>
+                        <div className="titlu">{c.nume}</div>
+                        <div className="sub">
+                          {c.stare === "alocat" ? <>🏗 <b>{santierC?.nume || "șantier șters"}</b> din {c.dataAlocare}</>
+                            : c.stare === "service" ? "În service"
+                            : "🏠 La depozit — liber"}
+                          {" · "}cheltuieli totale: <b>{bani(costTotal)}</b>
+                        </div>
+                      </div>
+                      {expirari.some((e) => e.z <= 30)
+                        ? <span className="chip alerta">Verifică acte</span>
+                        : <span className="chip ok">În regulă</span>}
+                    </div>
+                    {expirari.length > 0 && (
+                      <div className="lista-in-card">
+                        {expirari.map((e, i) => (
+                          <div key={i}>
+                            {e.z <= 30 ? "🔴" : "🟢"} {e.t}: {dataRo(e.d)}
+                            {e.z !== null && <span style={{ color: e.z <= 30 ? "var(--rosu)" : "var(--mut)" }}> · {e.z < 0 ? `expirat de ${-e.z} zile` : `${e.z} zile`}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="actiuni">
+                      <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "mutaUtilaj", item: c })}>Mută</button>
+                      {c.stare === "alocat" && (
+                        <button className="btn btn-mic" onClick={() => aduLaDepozitUtilaj(c.id)}>Adu la depozit</button>
+                      )}
+                      <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "intretinere", item: c })}>+ Întreținere</button>
+                      <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "alimentare", item: c })}>⛽ Alimentare</button>
+                      {c.stare !== "service" ? (
+                        <button className="btn btn-mic" onClick={() => trimiteServiceUtilaj(c.id)}>Service</button>
+                      ) : (
+                        <button className="btn btn-mic" onClick={() => aduLaDepozitUtilaj(c.id)}>Înapoi în depozit</button>
+                      )}
+                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "istoricCamion", item: c })}>Istoric ({istoric.length})</button>
+                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "camion", item: c })}>Modifică</button>
+                      <button className="btn btn-mic pericol" onClick={() => stergeGen("camioane", "Ștergi acest utilaj?")(c.id)}>Șterge</button>
+                    </div>
+                  </div>
+                );
+              };
+
+              const camioane = db.camioane.filter((c) => c.tip !== "utilaj");
+              const utilaje = db.camioane.filter((c) => c.tip === "utilaj");
+
+              return (
+                <>
+                  <button className="btn btn-galben" onClick={() => setFoaie({ tip: "camion" })}>+ Adaugă</button>
+                  <div style={{ height: 12 }} />
+
+                  <div className="sectiune">🚛 Camioane</div>
+                  {camioane.length === 0
+                    ? <div className="gol-msg">Niciun camion încă.</div>
+                    : camioane.map(cardCamion)}
+
+                  <div className="sectiune">🏗 Utilaje</div>
+                  <div className="sub" style={{ marginBottom: 10 }}>
+                    Betonieră, excavator, telescopic, dumper, schelă — se urmăresc pe locație, nu pe echipă.
+                  </div>
+                  {utilaje.length === 0
+                    ? <div className="gol-msg">Niciun utilaj încă.</div>
+                    : utilaje.map(cardUtilaj)}
+                </>
+              );
+            })()}
+
         {tabEfectiv === "setari" && subSet === "dotare" && (
           <Dotare db={db} onSalveaza={salveaza} setFoaie={setFoaie} cere={cere} />
         )}
 
         {tabEfectiv === "setari" && subSet === "categorii" && (
-          <CategoriiMateriale db={db} onSalveaza={salveaza} cere={cere} />
-        )}
-
-        {tabEfectiv === "setari" && subSet === "categoriiScule" && (
-          <CategoriiScule db={db} onSalveaza={salveaza} cere={cere} />
+          <CategoriiUnificate db={db} onSalveaza={salveaza} cere={cere} />
         )}
 
         {tabEfectiv === "setari" && subSet === "invitatii" && (
@@ -4121,7 +4208,8 @@ function App() {
       )}
       {foaie?.tip === "angajat" && (
         <FormAngajat item={foaie.item} echipe={db.echipe} esteProprietar={esteProprietar}
-          roluriFirma={db.roluriFirma} onSalveaza={salvAngajat} onClose={() => setFoaie(null)} />
+          roluriFirma={db.roluriFirma} oreSaptamana={db.setari?.oreSaptamana ?? 35}
+          onSalveaza={salvAngajat} onClose={() => setFoaie(null)} />
       )}
       {foaie?.tip === "fisa" && (
         <FisaAngajat
@@ -4131,6 +4219,7 @@ function App() {
           pontaj={db.pontaj}
           santiere={db.santiere}
           roluriFirma={db.roluriFirma}
+          oreSaptamana={db.setari?.oreSaptamana ?? 35}
           doarCitire={!esteProprietar && !permisiuni.oameniEditare}
           onEdit={() => setFoaie({ tip: "angajat", item: foaie.item })}
           onMuta={(echipaId) => salvAngajat({ ...db.angajati.find((a) => a.id === foaie.item.id), echipaId })}
@@ -4367,11 +4456,11 @@ function App() {
           ["santiere", "🏗", t("Șantiere"), 0],
           ["planing", "🗓", t("Planing"), 0],
           ["inventar", "▤", t("Stoc"),
-            stocScazut.length + db.scule.filter((x) => x.stare === "problema").length + alerteCamioane.length],
+            stocScazut.length + db.scule.filter((x) => x.stare === "problema").length],
           ["cereri", "✉", t("Cereri"),
             cereriNoi.length + db.suplimentare.filter((x) => x.status === "nou").length +
             db.alimentari.filter((x) => x.status === "nou").length],
-          ["setari", "⚙", t("Setări"), 0],
+          ["setari", "⚙", t("Setări"), alerteCamioane.length],
         ];
         const taburiPermise = idTaburiPermise
           ? toateTaburile.filter((x) => idTaburiPermise.includes(x[0]))
@@ -4474,6 +4563,21 @@ const zileDeLa = (dataISO) => {
   if (!dataISO) return null;
   return Math.floor((Date.now() - new Date(dataISO).getTime()) / 86400000);
 };
+
+function CategoriiUnificate({ db, onSalveaza, cere }) {
+  const [sub, setSub] = useState("materiale");
+  return (
+    <>
+      <div className="subtab">
+        <button className={sub === "materiale" ? "activ" : ""} onClick={() => setSub("materiale")}>Materiale</button>
+        <button className={sub === "scule" ? "activ" : ""} onClick={() => setSub("scule")}>Scule</button>
+      </div>
+      {sub === "materiale"
+        ? <CategoriiMateriale db={db} onSalveaza={onSalveaza} cere={cere} />
+        : <CategoriiScule db={db} onSalveaza={onSalveaza} cere={cere} />}
+    </>
+  );
+}
 
 function CategoriiMateriale({ db, onSalveaza, cere }) {
   const [nume, setNume] = useState("");
@@ -5844,12 +5948,6 @@ function FormScula({ item, categorii = [], onSalveaza, onClose }) {
         <div className="camp"><label>Preț achiziție (€)</label>
           <input type="number" step="0.01" value={f.pret} onChange={set("pret")} placeholder="ex. 220" /></div>
       </div>
-      <label className="rand-bifa" style={{ marginBottom: 11 }}>
-        <input type="checkbox" checked={!!f.comun} onChange={(e) => setF({ ...f, comun: e.target.checked })} />
-        <span>Utilaj comun
-          <span className="rb-sub">Se mută între echipe — betonieră, excavator, telescopic, dumper, schelă. Orice echipă vede cine îl are acum.</span>
-        </span>
-      </label>
       <button className="btn btn-galben" onClick={() => f.nume.trim() && onSalveaza({ ...f, pret: Number(f.pret) || 0 })}>Salvează</button>
     </Foaie>
   );
@@ -5898,17 +5996,22 @@ function FormEchipa({ item, santiere = [], camioane = [], onSalveaza, onClose })
   );
 }
 
-function FormAngajat({ item, echipe, esteProprietar, roluriFirma = [], onSalveaza, onClose }) {
+function FormAngajat({ item, echipe, esteProprietar, roluriFirma = [], oreSaptamana = 35, onSalveaza, onClose }) {
   const [f, setF] = useState(item || {
-    nume: "", telefon: "", tip: "santier", grad: "Muncitor", echipaId: "",
-    dataAngajare: "", tarifOra: "", tarif: "", salariuLunar: "", note: "",
+    nume: "", telefon: "", tip: "santier", rolFirmaId: "", grad: "", echipaId: "",
+    dataAngajare: "", tarifOra: "", tarif: "", note: "",
   });
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const eBirou = f.tip === "birou";
+  /* permisiunile rolului ales — decid ce bife apar mai jos */
+  const permisiuniRol = roluriFirma.find((r) => r.id === f.rolFirmaId)?.permisiuni || {};
 
-  const alegeTip = (tip) => {
-    const gradeNoi = tip === "birou" ? GRADE_BIROU : GRADE;
-    setF({ ...f, tip, grad: gradeNoi[0], echipaId: "" });
+  const alegeTip = (tip) => setF({ ...f, tip, echipaId: tip === "birou" ? "" : f.echipaId });
+
+  /* gradul afișat peste tot e chiar numele rolului */
+  const alegeRol = (rolId) => {
+    const rol = roluriFirma.find((r) => r.id === rolId);
+    setF({ ...f, rolFirmaId: rolId, grad: rol?.nume || "", poateStoc: undefined });
   };
 
   return (
@@ -5925,10 +6028,16 @@ function FormAngajat({ item, echipe, esteProprietar, roluriFirma = [], onSalveaz
         <input value={f.nume} onChange={set("nume")} placeholder="ex. Ionuț Popescu" /></div>
 
       <div className="rand2">
-        <div className="camp"><label>Grad / funcție</label>
-          <select value={f.grad} onChange={set("grad")}>
-            {(eBirou ? GRADE_BIROU : GRADE).map((g) => <option key={g}>{g}</option>)}
-          </select></div>
+        <div className="camp"><label>Funcție / rol</label>
+          {roluriFirma.length === 0 ? (
+            <div className="sub">Niciun rol definit — creează-le din Setări → Roluri și permisiuni.</div>
+          ) : (
+            <select value={f.rolFirmaId || ""} onChange={(e) => alegeRol(e.target.value)}>
+              <option value="">— fără —</option>
+              {roluriFirma.map((r) => <option key={r.id} value={r.id}>{r.nume}</option>)}
+            </select>
+          )}
+        </div>
         {!eBirou && (
           <div className="camp"><label>Echipă</label>
             <select value={f.echipaId || ""} onChange={set("echipaId")}>
@@ -5938,6 +6047,12 @@ function FormAngajat({ item, echipe, esteProprietar, roluriFirma = [], onSalveaz
         )}
       </div>
 
+      {f.rolFirmaId && Object.values(permisiuniRol).some(Boolean) && (
+        <div className="sub" style={{ marginTop: -4, marginBottom: 11, color: "var(--galben)" }}>
+          🔑 Rolul ăsta dă acces în aplicație — {Object.values(permisiuniRol).filter(Boolean).length} permisiuni.
+        </div>
+      )}
+
       <div className="rand2">
         <div className="camp"><label>Telefon</label>
           <input value={f.telefon} onChange={set("telefon")} placeholder="06…" /></div>
@@ -5945,25 +6060,24 @@ function FormAngajat({ item, echipe, esteProprietar, roluriFirma = [], onSalveaz
           <input type="date" value={f.dataAngajare} onChange={set("dataAngajare")} /></div>
       </div>
 
-      {eBirou ? (
-        <div className="rand2">
-          <div className="camp"><label>Salariu lunar (€)</label>
-            <input type="number" step="10" value={f.salariuLunar} onChange={set("salariuLunar")} placeholder="ex. 2200" /></div>
-          <div className="camp"><label>Detalii plată</label>
-            <input value={f.tarif} onChange={set("tarif")} placeholder="ex. net, cu tichete" /></div>
-        </div>
-      ) : (
-        <div className="rand2">
-          <div className="camp"><label>Cost orar (€/h) *pentru calcul</label>
-            <input type="number" step="0.5" value={f.tarifOra} onChange={set("tarifOra")} placeholder="ex. 22" /></div>
-          <div className="camp"><label>Salariu / detalii plată</label>
-            <input value={f.tarif} onChange={set("tarif")} placeholder="ex. 2400 €/lună net" /></div>
+      <div className="rand2">
+        <div className="camp"><label>Cost orar (€/h) *pentru calcul</label>
+          <input type="number" step="0.5" value={f.tarifOra} onChange={set("tarifOra")} placeholder="ex. 22" /></div>
+        <div className="camp"><label>Detalii plată</label>
+          <input value={f.tarif} onChange={set("tarif")} placeholder={eBirou ? "ex. net, cu tichete" : "ex. 2400 €/lună net"} /></div>
+      </div>
+
+      {eBirou && Number(f.tarifOra) > 0 && (
+        <div className="sub" style={{ marginTop: -4, marginBottom: 11 }}>
+          Salariu lunar calculat: <b style={{ color: "var(--galben)" }}>
+            {bani(salariuDinTarif(f.tarifOra, oreSaptamana))}</b>
+          {" "}({oreSaptamana}h/săptămână). Îl schimbi din Setări → Program.
         </div>
       )}
 
       {!eBirou && (
         <label className="rand-bifa" style={{ marginBottom: 11 }}>
-          <input type="checkbox" checked={f.poateStoc ?? f.grad === "Șef de echipă"}
+          <input type="checkbox" checked={f.poateStoc ?? !!permisiuniRol?.consumStoc}
             onChange={(e) => setF({ ...f, poateStoc: e.target.checked })} />
           <span>Poate scădea materiale din stoc
             <span className="rb-sub">Notează de pe telefonul lui ce s-a consumat pe șantier</span>
@@ -5975,36 +6089,15 @@ function FormAngajat({ item, echipe, esteProprietar, roluriFirma = [], onSalveaz
         <textarea rows={2} value={f.note} onChange={set("note")}
           placeholder={eBirou ? "ex. gestionează facturile, e liber vinerea" : "ex. Permis C, CACES nacelă, bun pe finisaje"} /></div>
 
-      {esteProprietar && (
-        <div className="camp">
-          <label>Rol de firmă (opțional)</label>
-          {roluriFirma.length === 0 ? (
-            <div className="sub">
-              N-ai creat încă niciun rol. Le faci din Setări → Roluri și permisiuni.
-            </div>
-          ) : (
-            <select value={f.rolFirmaId || ""} onChange={(e) => setF({ ...f, rolFirmaId: e.target.value || null })}>
-              <option value="">Fără — cont obișnuit</option>
-              {roluriFirma.map((r) => <option key={r.id} value={r.id}>{r.nume}</option>)}
-            </select>
-          )}
-          {f.rolFirmaId && (
-            <div className="sub" style={{ marginTop: 6 }}>
-              Intră cu parola lui, dar ajunge direct în panoul de admin, restrâns la ce-i dă rolul ăsta.
-            </div>
-          )}
-        </div>
-      )}
-
       <button className="btn btn-galben"
-        onClick={() => f.nume.trim() && onSalveaza({ ...f, poateStoc: eBirou ? false : (f.poateStoc ?? f.grad === "Șef de echipă") })}>
+        onClick={() => f.nume.trim() && onSalveaza({ ...f, poateStoc: eBirou ? false : (f.poateStoc ?? !!permisiuniRol?.consumStoc) })}>
         Salvează
       </button>
     </Foaie>
   );
 }
 
-function FisaAngajat({ angajat, echipe, numeEchipa, pontaj, santiere, roluriFirma = [], doarCitire, onEdit, onMuta, onSterge, onParola, onClose }) {
+function FisaAngajat({ angajat, echipe, numeEchipa, pontaj, santiere, roluriFirma = [], oreSaptamana = 35, doarCitire, onEdit, onMuta, onSterge, onParola, onClose }) {
   if (!angajat) return null;
   const aleLui = pontaj.filter((p) => p.angajatId === angajat.id);
   const peSantier = {};
@@ -6028,7 +6121,10 @@ function FisaAngajat({ angajat, echipe, numeEchipa, pontaj, santiere, roluriFirm
       <div className="fisa-rand"><span className="k">Telefon</span><b className="mono">{angajat.telefon || "—"}</b></div>
       <div className="fisa-rand"><span className="k">Angajat din</span><b>{dataRo(angajat.dataAngajare)}</b></div>
       {eBirou ? (
-        <div className="fisa-rand"><span className="k">Salariu lunar</span><b>{angajat.salariuLunar ? bani(angajat.salariuLunar) : "—"}</b></div>
+        <div className="fisa-rand">
+          <span className="k">Salariu lunar</span>
+          <b>{angajat.tarifOra ? bani(salariuDinTarif(angajat.tarifOra, oreSaptamana)) : "—"}</b>
+        </div>
       ) : (
         <div className="fisa-rand"><span className="k">Cost orar</span><b>{angajat.tarifOra ? bani(angajat.tarifOra) + "/h" : "—"}</b></div>
       )}
@@ -6208,7 +6304,7 @@ function FormAlimentare({ camion, santiere = [], onSalveaza, onClose }) {
 }
 
 function FormCerere({ eu, santiere = [], materiale = [], tipInitial, onTrimite, onClose }) {
-  const esteSefEchipa = eu?.grad === "Șef de echipă";
+  const esteSefEchipa = !!eu?.permisiuniRol?.cereMuncitori;
   const [tip, setTip] = useState(tipInitial || "problema");
   const [text, setText] = useState("");
   const [dataPlaning, setDataPlaning] = useState(aziISO());
@@ -6396,8 +6492,8 @@ const SECTIUNI_SETARI = [
   ["oameni", "👷", "Oameni și echipe", "angajați, fișe, echipe"],
   ["rapoarte", "📄", "Raport lunar", "ore și costuri pe fiecare om"],
   ["dotare", "🧰", "Dotare echipe", "sculele obligatorii, verificări"],
-  ["categorii", "🏷️", "Categorii materiale", "adaugă, redenumește, șterge"],
-  ["categoriiScule", "🗂️", "Categorii scule", "adaugă, redenumește, șterge"],
+  ["auto", "🚛", "Camioane și utilaje", "ITP, asigurări, revizii, locație"],
+  ["categorii", "🏷️", "Categorii", "materiale și scule — adaugă, redenumește, șterge"],
   ["cont", "🔑", "Firmă, program, acces", "date firmă, orar, PIN, limbă"],
   ["invitatii", "📨", "Invită muncitorii", "linkuri și parole"],
   ["backup", "💾", "Backup și curățenie", "salvare, restaurare, poze"],
