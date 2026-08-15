@@ -677,6 +677,9 @@ body{background:var(--asfalt)}
 .bulina{position:absolute;top:6px;right:calc(50% - 16px);background:var(--rosu);color:#fff;
   font-size:9px;font-weight:800;min-width:15px;height:15px;border-radius:8px;display:flex;
   align-items:center;justify-content:center;padding:0 3px}
+.confirmare-flash{background:#1E3328;border:1px solid var(--verde);color:var(--verde);
+  border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:14px;font-weight:700;
+  text-align:center}
 .gol-msg{text-align:center;color:var(--mut);padding:34px 20px;font-size:14px;line-height:1.65;
   background:var(--beton);border:1px dashed var(--linie);border-radius:12px;margin-bottom:11px}
 .jurnal-rand{border-left:2px solid var(--galben);padding:6px 0 6px 12px;margin-bottom:8px}
@@ -906,6 +909,7 @@ function App() {
   const [subSet, setSubSet] = useState(null);
   const [tabM, setTabM] = useState("azi");
   const [subScule, setSubScule] = useState("ale-mele");
+  const [confirmare, setConfirmare] = useState("");
   const [intrebare, setIntrebare] = useState(null); // {mesaj, onDa, eticheta}
   const cere = (mesaj, onDa, eticheta, onNu) => setIntrebare({ mesaj, onDa, eticheta, onNu });
   const [cauta, setCauta] = useState("");
@@ -1845,6 +1849,8 @@ function App() {
   const trimiteCerere = (c) => {
     salveaza({ ...db, cereri: [{ ...c, id: uid(), cand: azi(), candISO: new Date().toISOString(), status: "nou" }, ...db.cereri] });
     setFoaie(null);
+    setConfirmare("✓ Trimis la șef");
+    setTimeout(() => setConfirmare(""), 3000);
   };
 
   /* adminul trimite materialele cerute: se scad din stoc și intră pe șantier */
@@ -2163,6 +2169,7 @@ function App() {
         </div>
 
         <div className="continut">
+          {confirmare && <div className="confirmare-flash">{confirmare}</div>}
 
           {/* ---------- AZI ---------- */}
           {tabM === "azi" && !eBirou && (
@@ -2239,21 +2246,31 @@ function App() {
                             {c.stare === "alocat" ? (eSantierulMeu ? "La voi" : "Pe șantier") : c.stare === "service" ? "Service" : "Liber"}
                           </span>
                         </div>
-                        {!eSantierulMeu && c.stare !== "service" && (
-                          <div className="actiuni">
-                            <button className="btn btn-mic"
-                              onClick={() => trimiteCerere({
-                                tip: "necesar",
-                                text: `Ne trebuie ${c.nume} la noi${santierulMeuNume ? ` pe ${santierulMeuNume}` : ""}${c.stare === "alocat" ? `, e acum pe ${santierC?.nume || "alt șantier"}` : ", e la depozit"}.`,
-                                santierId: echipaMea?.santierId || null,
-                                santierNume: santierulMeuNume,
-                                linii: [], dataCeruta: null, oameniCeruti: null,
-                                autorId: eu?.id || null, autorNume: eu?.nume || "Necunoscut",
-                              })}>
-                              Cer utilajul ăsta
-                            </button>
-                          </div>
-                        )}
+                        {!eSantierulMeu && c.stare !== "service" && (() => {
+                          /* am cerut deja utilajul ăsta și cererea e încă deschisă? */
+                          const cerutDeja = db.cereri.some((x) =>
+                            x.status === "nou" && x.utilajId === c.id && x.autorId === identitate.angajatId);
+                          return (
+                            <div className="actiuni">
+                              {cerutDeja ? (
+                                <span className="chip alocat">✓ Cerut — așteaptă răspunsul șefului</span>
+                              ) : (
+                                <button className="btn btn-mic"
+                                  onClick={() => trimiteCerere({
+                                    tip: "necesar",
+                                    utilajId: c.id,
+                                    text: `Ne trebuie ${c.nume} la noi${santierulMeuNume ? ` pe ${santierulMeuNume}` : ""}${c.stare === "alocat" ? `, e acum pe ${santierC?.nume || "alt șantier"}` : ", e la depozit"}.`,
+                                    santierId: echipaMea?.santierId || null,
+                                    santierNume: santierulMeuNume,
+                                    linii: [], dataCeruta: null, oameniCeruti: null,
+                                    autorId: eu?.id || null, autorNume: eu?.nume || "Necunoscut",
+                                  })}>
+                                  Cer utilajul ăsta
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })}
