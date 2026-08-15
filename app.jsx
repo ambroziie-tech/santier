@@ -506,7 +506,20 @@ const migreaza = (d) => {
     return { ...a, rolFirmaId: rol.id };
   });
 
-  return schimbat ? { ...d, roluriFirma: roluri, angajati } : d;
+  /* vehiculele introduse înainte de separarea camioane/utilaje n-au câmpul "tip".
+     Le recunosc după denumire — restul rămân camioane, le poți schimba manual. */
+  const CUVINTE_UTILAJ = ["betonier", "excavator", "telescopic", "manitou", "dumper",
+    "schela", "schelă", "buldo", "miniexcavator", "compactoare", "placa", "placă",
+    "nacela", "nacelă", "stivuitor", "macara", "generator", "motostivuitor"];
+  const camioane = (d.camioane || []).map((c) => {
+    if (c.tip) return c;
+    const n = (c.nume || "").toLowerCase();
+    const eUtilaj = CUVINTE_UTILAJ.some((k) => n.includes(k));
+    schimbat = true;
+    return { ...c, tip: eUtilaj ? "utilaj" : "camion" };
+  });
+
+  return schimbat ? { ...d, roluriFirma: roluri, angajati, camioane } : d;
 };
 
 const numeRol = (roluri, id) => (roluri || []).find((r) => r.id === id)?.nume || null;
@@ -800,6 +813,7 @@ function App() {
   const [subOam, setSubOam] = useState("angajati");
   const [subSet, setSubSet] = useState(null);
   const [tabM, setTabM] = useState("azi");
+  const [subScule, setSubScule] = useState("ale-mele");
   const [intrebare, setIntrebare] = useState(null); // {mesaj, onDa, eticheta}
   const cere = (mesaj, onDa, eticheta, onNu) => setIntrebare({ mesaj, onDa, eticheta, onNu });
   const [cauta, setCauta] = useState("");
@@ -814,7 +828,14 @@ function App() {
         if (r?.value) {
           const d = JSON.parse(r.value);
           if (d.firma?.moneda) SIMBOL = d.firma.moneda.indexOf("lei") >= 0 ? "lei" : "€";
-          setDb(migreaza({ ...gol, ...d, setari: { ...gol.setari, ...(d.setari || {}) } }));
+          const brut = { ...gol, ...d, setari: { ...gol.setari, ...(d.setari || {}) } };
+          const migrat = migreaza(brut);
+          setDb(migrat);
+          /* dacă migrarea a schimbat ceva, o salvez o dată — altfel se reface la fiecare
+             deschidere și ceilalți n-o văd niciodată */
+          if (migrat !== brut) {
+            try { await stocare.set(DB_KEY, JSON.stringify(migrat), true); } catch (e) {}
+          }
         } else {
           /* bază nouă, fără date salvate — pornesc cu rolurile implicite */
           setDb(migreaza(gol));
@@ -2090,11 +2111,21 @@ function App() {
           {/* ---------- SCULE ---------- */}
           {tabM === "scule" && !eBirou && (
             <>
+              <div className="subtab">
+                <button className={subScule === "ale-mele" ? "activ" : ""}
+                  onClick={() => setSubScule("ale-mele")}>🔧 Ale echipei</button>
+                <button className={subScule === "comune" ? "activ" : ""}
+                  onClick={() => setSubScule("comune")}>🏗 Utilaje comune</button>
+              </div>
 
-              {db.camioane.filter((c) => c.tip === "utilaj").length > 0 && (
+              {subScule === "comune" && (
                 <>
-                  <div className="sectiune">🏗 Utilaje comune</div>
-                  <div className="sub" style={{ marginBottom: 10 }}>Se urmăresc pe locație.</div>
+                  <div className="sub" style={{ marginBottom: 10 }}>Unde se află fiecare acum.</div>
+                  {db.camioane.filter((c) => c.tip === "utilaj").length === 0 && (
+                    <div className="gol-msg">
+                      Niciun utilaj marcat încă. Șeful le poate marca din Setări → Camioane și utilaje.
+                    </div>
+                  )}
                   {db.camioane.filter((c) => c.tip === "utilaj").map((c) => {
                     const santierC = db.santiere.find((x) => x.id === c.santierId);
                     const eSantierulMeu = c.stare === "alocat" && c.santierId === echipaMea?.santierId;
@@ -2137,7 +2168,7 @@ function App() {
                 </>
               )}
 
-              {(() => {
+              {subScule === "ale-mele" && (() => {
                 const camioaneEchipa = db.camioane.filter((c) => (echipaMea?.camioaneIds || []).includes(c.id));
                 const aleMeleAlimentari = db.alimentari.filter((x) => x.autorId === identitate.angajatId);
                 if (camioaneEchipa.length === 0 && aleMeleAlimentari.length === 0) return null;
@@ -2197,6 +2228,7 @@ function App() {
                 );
               })()}
 
+              {subScule === "ale-mele" && (
               <div className="card">
                 <div className="titlu">🔧 {t("Sculele echipei tale")}</div>
                 <div className="sub">
@@ -2205,7 +2237,8 @@ function App() {
                   scrie la Cereri.
                 </div>
               </div>
-              {sculeEchipa.length === 0 ? (
+              )}
+              {subScule === "ale-mele" && (sculeEchipa.length === 0 ? (
                 <div className="gol-msg">Echipa ta n-are nicio sculă alocată acum.</div>
               ) : sculeEchipa.map((s) => (
                 <div className="card" key={s.id}>
@@ -2236,7 +2269,7 @@ function App() {
                     </div>
                   )}
                 </div>
-              ))}
+              )))}
             </>
           )}
 
