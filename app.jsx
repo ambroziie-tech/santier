@@ -2556,13 +2556,25 @@ function App() {
                     <div className="sectiune">Orele tale suplimentare</div>
                     {aleMele.map((x) => {
                       const sn = db.santiere.find((y) => y.id === x.santierId);
+                      const oreFinale = x.status === "aprobat" && x.oreAprobate !== undefined ? x.oreAprobate : x.ore;
+                      const modificat = x.status === "aprobat" && Number(x.oreAprobate) !== Number(x.ore);
                       return (
                         <div className="card" key={x.id}>
                           <div className="card-rand">
                             <div>
-                              <div className="titlu"><b className="mono">{x.ore}h</b> · {dataRo(x.data)}</div>
+                              <div className="titlu">
+                                <b className="mono">{oreFinale}h</b> · {dataRo(x.data)}
+                                {modificat && (
+                                  <span className="sub" style={{ marginLeft: 6, textDecoration: "line-through" }}>
+                                    {x.ore}h cerute
+                                  </span>
+                                )}
+                              </div>
                               <div className="sub">
                                 {sn?.nume || "—"}
+                                {modificat && x.notaAdmin && (
+                                  <><br /><span style={{ color: "var(--galben)" }}>Șeful a scris: {x.notaAdmin}</span></>
+                                )}
                                 {x.motivCerere && <><br />{x.motivCerere}</>}
                                 {x.status === "respins" && x.motiv && (
                                   <><br /><span style={{ color: "var(--rosu)" }}>Refuzat: {x.motiv}</span></>
@@ -4146,15 +4158,28 @@ function App() {
               const rand = (x) => {
                 const sn = db.santiere.find((y) => y.id === x.santierId);
                 const ang = db.angajati.find((a) => a.id === x.angajatId);
-                const cost = (Number(x.ore) || 0) * (Number(ang?.tarifOra) || 0);
+                /* după aprobare contează orele aprobate de tine, nu cele cerute inițial */
+                const oreFinale = x.status === "aprobat" && x.oreAprobate !== undefined ? x.oreAprobate : x.ore;
+                const modificat = x.status === "aprobat" && Number(x.oreAprobate) !== Number(x.ore);
+                const cost = (Number(oreFinale) || 0) * (Number(ang?.tarifOra) || 0);
                 return (
                   <div className="card" key={x.id} style={x.status !== "nou" ? { opacity: .7 } : null}>
                     <div className="card-rand">
                       <div>
-                        <div className="titlu">{x.nume} · <b className="mono">{x.ore}h</b></div>
+                        <div className="titlu">
+                          {x.nume} · <b className="mono">{oreFinale}h</b>
+                          {modificat && (
+                            <span className="sub" style={{ marginLeft: 6, textDecoration: "line-through" }}>
+                              {x.ore}h cerute
+                            </span>
+                          )}
+                        </div>
                         <div className="sub">
                           {dataRo(x.data)} · {sn?.nume || "—"}
                           {cost > 0 && <> · costă <b>{bani(cost)}</b></>}
+                          {modificat && x.notaAdmin && (
+                            <><br /><span style={{ color: "var(--galben)" }}>Ai scris: {x.notaAdmin}</span></>
+                          )}
                           {x.motivCerere && <><br />{x.motivCerere}</>}
                           {x.status === "respins" && x.motiv && (
                             <><br /><span style={{ color: "var(--rosu)" }}>Refuzat: {x.motiv}</span></>
