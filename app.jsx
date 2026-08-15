@@ -935,6 +935,7 @@ function App() {
   const [incarcat, setIncarcat] = useState(false);
   const [tab, setTab] = useState("panou");
   const [subInv, setSubInv] = useState("materiale");
+  const [subAuto, setSubAuto] = useState("camioane");
   const [filtruCat, setFiltruCat] = useState("");
   const [filtruCereri, setFiltruCereri] = useState("toate");
   const [sortSant, setSortSant] = useState("activitate");
@@ -942,6 +943,7 @@ function App() {
   const [subSet, setSubSet] = useState(null);
   const [tabM, setTabM] = useState("azi");
   const [subScule, setSubScule] = useState("ale-mele");
+  const [subComun, setSubComun] = useState("utilaje");
   const [confirmare, setConfirmare] = useState("");
   const [intrebare, setIntrebare] = useState(null); // {mesaj, onDa, eticheta}
   const cere = (mesaj, onDa, eticheta, onNu) => setIntrebare({ mesaj, onDa, eticheta, onNu });
@@ -2360,17 +2362,23 @@ function App() {
 
                 return (
                   <>
-                    {utilajeGrele.length > 0 && (
-                      <>
-                        <div className="sectiune">🏗 Utilaje grele</div>
-                        {utilajeGrele.map(cardLocatie)}
-                      </>
+                    <div className="subtab">
+                      <button className={subComun === "utilaje" ? "activ" : ""} onClick={() => setSubComun("utilaje")}>
+                        🏗 Utilaje{utilajeGrele.length > 0 && ` (${utilajeGrele.length})`}
+                      </button>
+                      <button className={subComun === "scule" ? "activ" : ""} onClick={() => setSubComun("scule")}>
+                        🔧 Scule{sculeComune.length > 0 && ` (${sculeComune.length})`}
+                      </button>
+                    </div>
+                    {subComun === "utilaje" && (
+                      utilajeGrele.length === 0
+                        ? <div className="gol-msg">Niciun utilaj marcat.</div>
+                        : utilajeGrele.map(cardLocatie)
                     )}
-                    {sculeComune.length > 0 && (
-                      <>
-                        <div className="sectiune">🔧 Scule comune</div>
-                        {sculeComune.map(cardLocatie)}
-                      </>
+                    {subComun === "scule" && (
+                      sculeComune.length === 0
+                        ? <div className="gol-msg">Nicio sculă comună marcată.</div>
+                        : sculeComune.map(cardLocatie)
                     )}
                   </>
                 );
@@ -4229,26 +4237,45 @@ function App() {
                   <button className="btn btn-galben" onClick={() => setFoaie({ tip: "camion" })}>+ Adaugă</button>
                   <div style={{ height: 12 }} />
 
-                  <div className="sectiune">🚛 Camioane</div>
-                  {camioane.length === 0
-                    ? <div className="gol-msg">Niciun camion încă.</div>
-                    : camioane.map(cardCamion)}
-
-                  <div className="sectiune">🏗 Utilaje grele</div>
-                  <div className="sub" style={{ marginBottom: 10 }}>
-                    Excavator, telescopic, dumper — se urmăresc pe locație, nu pe echipă.
+                  <div className="subtab">
+                    <button className={subAuto === "camioane" ? "activ" : ""} onClick={() => setSubAuto("camioane")}>
+                      🚛 Camioane{camioane.length > 0 && ` (${camioane.length})`}
+                    </button>
+                    <button className={subAuto === "utilaje" ? "activ" : ""} onClick={() => setSubAuto("utilaje")}>
+                      🏗 Utilaje{utilaje.length > 0 && ` (${utilaje.length})`}
+                    </button>
+                    <button className={subAuto === "scule" ? "activ" : ""} onClick={() => setSubAuto("scule")}>
+                      🔧 Scule{sculeComune.length > 0 && ` (${sculeComune.length})`}
+                    </button>
                   </div>
-                  {utilaje.length === 0
-                    ? <div className="gol-msg">Niciun utilaj încă.</div>
-                    : utilaje.map(cardUtilaj)}
 
-                  <div className="sectiune">🔧 Scule comune</div>
-                  <div className="sub" style={{ marginBottom: 10 }}>
-                    Vibrator, generator, bac de beton, betonieră mică — circulă între echipe după nevoie.
-                  </div>
-                  {sculeComune.length === 0
-                    ? <div className="gol-msg">Nicio sculă comună încă.</div>
-                    : sculeComune.map(cardUtilaj)}
+                  {subAuto === "camioane" && (
+                    camioane.length === 0
+                      ? <div className="gol-msg">Niciun camion încă.</div>
+                      : camioane.map(cardCamion)
+                  )}
+
+                  {subAuto === "utilaje" && (
+                    <>
+                      <div className="sub" style={{ marginBottom: 10 }}>
+                        Excavator, telescopic, dumper — se urmăresc pe locație, nu pe echipă.
+                      </div>
+                      {utilaje.length === 0
+                        ? <div className="gol-msg">Niciun utilaj încă.</div>
+                        : utilaje.map(cardUtilaj)}
+                    </>
+                  )}
+
+                  {subAuto === "scule" && (
+                    <>
+                      <div className="sub" style={{ marginBottom: 10 }}>
+                        Vibrator, generator, bac de beton, betonieră mică — circulă între echipe după nevoie.
+                      </div>
+                      {sculeComune.length === 0
+                        ? <div className="gol-msg">Nicio sculă comună încă.</div>
+                        : sculeComune.map(cardUtilaj)}
+                    </>
+                  )}
 
                   {(() => {
                     /* cheltuieli de întreținere/combustibil ale unor vehicule șterse între timp —
