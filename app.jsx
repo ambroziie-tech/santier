@@ -2299,65 +2299,82 @@ function App() {
                   onClick={() => setSubScule("comune")}>🏗 Utilaje comune</button>
               </div>
 
-              {subScule === "comune" && (
-                <>
-                  <div className="sub" style={{ marginBottom: 10 }}>Unde se află fiecare acum.</div>
-                  {db.camioane.filter((c) => c.tip === "utilaj").length === 0 && (
-                    <div className="gol-msg">
-                      Niciun utilaj marcat încă. Șeful le poate marca din Setări → Camioane și utilaje.
-                    </div>
-                  )}
-                  {db.camioane.filter((c) => c.tip === "utilaj").map((c) => {
-                    const santierC = db.santiere.find((x) => x.id === c.santierId);
-                    const eSantierulMeu = c.stare === "alocat" && c.santierId === echipaMea?.santierId;
-                    const santierulMeuNume = db.santiere.find((x) => x.id === echipaMea?.santierId)?.nume || null;
-                    return (
-                      <div className="card" key={c.id}>
-                        <div className="card-rand">
-                          <div>
-                            <div className="titlu">{c.nume}</div>
-                            <div className="sub">
-                              {c.stare === "alocat"
-                                ? <>🏗 <b style={{ color: eSantierulMeu ? "var(--verde)" : "var(--text)" }}>
-                                    {eSantierulMeu ? "la voi" : santierC?.nume || "șantier șters"}</b> din {c.dataAlocare}</>
-                                : c.stare === "service" ? "În service"
-                                : "🏠 La depozit — liber"}
-                            </div>
+              {subScule === "comune" && (() => {
+                const cardLocatie = (c) => {
+                  const santierC = db.santiere.find((x) => x.id === c.santierId);
+                  const eSantierulMeu = c.stare === "alocat" && c.santierId === echipaMea?.santierId;
+                  const santierulMeuNume = db.santiere.find((x) => x.id === echipaMea?.santierId)?.nume || null;
+                  const cerutDeja = db.cereri.some((x) =>
+                    x.status === "nou" && x.utilajId === c.id && x.autorId === identitate.angajatId);
+                  return (
+                    <div className="card" key={c.id}>
+                      <div className="card-rand">
+                        <div>
+                          <div className="titlu">{c.nume}</div>
+                          <div className="sub">
+                            {c.stare === "alocat"
+                              ? <>🏗 <b style={{ color: eSantierulMeu ? "var(--verde)" : "var(--text)" }}>
+                                  {eSantierulMeu ? "la voi" : santierC?.nume || "șantier șters"}</b> din {c.dataAlocare}</>
+                              : c.stare === "service" ? "În service"
+                              : "🏠 La depozit — liber"}
                           </div>
-                          <span className={"chip " + (c.stare || "depozit")}>
-                            {c.stare === "alocat" ? (eSantierulMeu ? "La voi" : "Pe șantier") : c.stare === "service" ? "Service" : "Liber"}
-                          </span>
                         </div>
-                        {!eSantierulMeu && c.stare !== "service" && (() => {
-                          /* am cerut deja utilajul ăsta și cererea e încă deschisă? */
-                          const cerutDeja = db.cereri.some((x) =>
-                            x.status === "nou" && x.utilajId === c.id && x.autorId === identitate.angajatId);
-                          return (
-                            <div className="actiuni">
-                              {cerutDeja ? (
-                                <span className="chip alocat">✓ Cerut — așteaptă răspunsul șefului</span>
-                              ) : (
-                                <button className="btn btn-mic"
-                                  onClick={() => trimiteCerere({
-                                    tip: "necesar",
-                                    utilajId: c.id,
-                                    text: `Ne trebuie ${c.nume} la noi${santierulMeuNume ? ` pe ${santierulMeuNume}` : ""}${c.stare === "alocat" ? `, e acum pe ${santierC?.nume || "alt șantier"}` : ", e la depozit"}.`,
-                                    santierId: echipaMea?.santierId || null,
-                                    santierNume: santierulMeuNume,
-                                    linii: [], dataCeruta: null, oameniCeruti: null,
-                                    autorId: eu?.id || null, autorNume: eu?.nume || "Necunoscut",
-                                  })}>
-                                  Cer utilajul ăsta
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })()}
+                        <span className={"chip " + (c.stare || "depozit")}>
+                          {c.stare === "alocat" ? (eSantierulMeu ? "La voi" : "Pe șantier") : c.stare === "service" ? "Service" : "Liber"}
+                        </span>
                       </div>
-                    );
-                  })}
-                </>
-              )}
+                      {!eSantierulMeu && c.stare !== "service" && (
+                        <div className="actiuni">
+                          {cerutDeja ? (
+                            <span className="chip alocat">✓ Cerut — așteaptă răspunsul șefului</span>
+                          ) : (
+                            <button className="btn btn-mic"
+                              onClick={() => trimiteCerere({
+                                tip: "necesar",
+                                utilajId: c.id,
+                                text: `Ne trebuie ${c.nume} la noi${santierulMeuNume ? ` pe ${santierulMeuNume}` : ""}${c.stare === "alocat" ? `, e acum pe ${santierC?.nume || "alt șantier"}` : ", e la depozit"}.`,
+                                santierId: echipaMea?.santierId || null,
+                                santierNume: santierulMeuNume,
+                                linii: [], dataCeruta: null, oameniCeruti: null,
+                                autorId: eu?.id || null, autorNume: eu?.nume || "Necunoscut",
+                              })}>
+                              Cer utilajul ăsta
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                };
+
+                const utilajeGrele = db.camioane.filter((c) => c.tip === "utilaj");
+                const sculeComune = db.camioane.filter((c) => c.tip === "scula");
+
+                if (utilajeGrele.length === 0 && sculeComune.length === 0) {
+                  return (
+                    <div className="gol-msg">
+                      Nimic marcat încă. Șeful le poate marca din Setări → Camioane și utilaje.
+                    </div>
+                  );
+                }
+
+                return (
+                  <>
+                    {utilajeGrele.length > 0 && (
+                      <>
+                        <div className="sectiune">🏗 Utilaje grele</div>
+                        {utilajeGrele.map(cardLocatie)}
+                      </>
+                    )}
+                    {sculeComune.length > 0 && (
+                      <>
+                        <div className="sectiune">🔧 Scule comune</div>
+                        {sculeComune.map(cardLocatie)}
+                      </>
+                    )}
+                  </>
+                );
+              })()}
 
               {subScule === "ale-mele" && (() => {
                 const camioaneEchipa = db.camioane.filter((c) => (echipaMea?.camioaneIds || []).includes(c.id));
@@ -4203,8 +4220,9 @@ function App() {
                 );
               };
 
-              const camioane = db.camioane.filter((c) => c.tip !== "utilaj");
+              const camioane = db.camioane.filter((c) => c.tip !== "utilaj" && c.tip !== "scula");
               const utilaje = db.camioane.filter((c) => c.tip === "utilaj");
+              const sculeComune = db.camioane.filter((c) => c.tip === "scula");
 
               return (
                 <>
@@ -4216,13 +4234,21 @@ function App() {
                     ? <div className="gol-msg">Niciun camion încă.</div>
                     : camioane.map(cardCamion)}
 
-                  <div className="sectiune">🏗 Utilaje</div>
+                  <div className="sectiune">🏗 Utilaje grele</div>
                   <div className="sub" style={{ marginBottom: 10 }}>
-                    Betonieră, excavator, telescopic, dumper, schelă — se urmăresc pe locație, nu pe echipă.
+                    Excavator, telescopic, dumper — se urmăresc pe locație, nu pe echipă.
                   </div>
                   {utilaje.length === 0
                     ? <div className="gol-msg">Niciun utilaj încă.</div>
                     : utilaje.map(cardUtilaj)}
+
+                  <div className="sectiune">🔧 Scule comune</div>
+                  <div className="sub" style={{ marginBottom: 10 }}>
+                    Vibrator, generator, bac de beton, betonieră mică — circulă între echipe după nevoie.
+                  </div>
+                  {sculeComune.length === 0
+                    ? <div className="gol-msg">Nicio sculă comună încă.</div>
+                    : sculeComune.map(cardUtilaj)}
 
                   {(() => {
                     /* cheltuieli de întreținere/combustibil ale unor vehicule șterse între timp —
@@ -6803,32 +6829,46 @@ function FormCamion({ item, onSalveaza, onClose }) {
   const [f, setF] = useState(item || { tip: "camion", nume: "", numar: "", km: "", itp: "", asigurare: "", revizie: "" });
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const eUtilaj = f.tip === "utilaj";
+  const eScula = f.tip === "scula";
+  const ePeLocatie = eUtilaj || eScula; // ambele se urmăresc pe șantier, nu pe echipă
   return (
     <Foaie titlu={item ? "Modifică" : "Adaugă"} onClose={onClose}>
       <div className="camp">
         <label>Ce fel de vehicul</label>
         <div className="subtab">
-          <button className={!eUtilaj ? "activ" : ""} onClick={() => setF({ ...f, tip: "camion" })}>🚛 Camion</button>
-          <button className={eUtilaj ? "activ" : ""} onClick={() => setF({ ...f, tip: "utilaj" })}>🏗 Utilaj</button>
+          <button className={f.tip === "camion" ? "activ" : ""} onClick={() => setF({ ...f, tip: "camion" })}>🚛 Camion</button>
+          <button className={eUtilaj ? "activ" : ""} onClick={() => setF({ ...f, tip: "utilaj" })}>🏗 Utilaj greu</button>
+          <button className={eScula ? "activ" : ""} onClick={() => setF({ ...f, tip: "scula" })}>🔧 Sculă comună</button>
+        </div>
+        <div className="sub" style={{ marginTop: 6 }}>
+          {eUtilaj ? "Excavator, telescopic, dumper — utilaj greu, urmărit pe șantier."
+            : eScula ? "Vibrator, generator, bac de beton, betonieră mică — sculă care circulă între echipe."
+            : "Camion sau furgon cu placă de înmatriculare, alocat sau nu unei echipe."}
         </div>
       </div>
       <div className="camp"><label>Denumire *</label>
         <input value={f.nume} onChange={set("nume")}
-          placeholder={eUtilaj ? "ex. Manitou MT 625" : "ex. Iveco Daily basculabil"} /></div>
+          placeholder={eUtilaj ? "ex. Excavator Kubota" : eScula ? "ex. Vibrator de beton" : "ex. Iveco Daily basculabil"} /></div>
       <div className="rand2">
-        <div className="camp"><label>{eUtilaj ? "Număr / serie (opțional)" : "Număr înmatriculare"}</label>
-          <input value={f.numar} onChange={set("numar")} placeholder={eUtilaj ? "ex. utilaj" : "ex. GA-123-BC"} /></div>
-        <div className="camp"><label>{eUtilaj ? "Ore de funcționare" : "Kilometraj"}</label>
-          <input type="number" value={f.km} onChange={set("km")} placeholder={eUtilaj ? "ex. 3200" : "ex. 184000"} /></div>
+        <div className="camp"><label>{ePeLocatie ? "Număr / serie (opțional)" : "Număr înmatriculare"}</label>
+          <input value={f.numar} onChange={set("numar")} placeholder={ePeLocatie ? "ex. utilaj" : "ex. GA-123-BC"} /></div>
+        {!eScula && (
+          <div className="camp"><label>{eUtilaj ? "Ore de funcționare" : "Kilometraj"}</label>
+            <input type="number" value={f.km} onChange={set("km")} placeholder={eUtilaj ? "ex. 3200" : "ex. 184000"} /></div>
+        )}
       </div>
-      <div className="camp"><label>{eUtilaj ? "ITP / inspecție (dacă are)" : "ITP / Contrôle technique valabil până la"}</label>
-        <input type="date" value={f.itp} onChange={set("itp")} /></div>
-      <div className="rand2">
-        <div className="camp"><label>Asigurare până la</label>
-          <input type="date" value={f.asigurare} onChange={set("asigurare")} /></div>
-        <div className="camp"><label>Următoarea revizie</label>
-          <input type="date" value={f.revizie} onChange={set("revizie")} /></div>
-      </div>
+      {!eScula && (
+        <>
+          <div className="camp"><label>{eUtilaj ? "ITP / inspecție (dacă are)" : "ITP / Contrôle technique valabil până la"}</label>
+            <input type="date" value={f.itp} onChange={set("itp")} /></div>
+          <div className="rand2">
+            <div className="camp"><label>Asigurare până la</label>
+              <input type="date" value={f.asigurare} onChange={set("asigurare")} /></div>
+            <div className="camp"><label>Următoarea revizie</label>
+              <input type="date" value={f.revizie} onChange={set("revizie")} /></div>
+          </div>
+        </>
+      )}
       <button className="btn btn-galben" onClick={() => f.nume.trim() && onSalveaza(f)}>Salvează</button>
     </Foaie>
   );
