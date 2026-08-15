@@ -3268,6 +3268,7 @@ function App() {
                         <div className="titlu">{a.nume}</div>
                         <div className="sub">
                           {a.tip === "birou" ? "🏢 " : ""}{a.grad || "—"}
+                          {a.arePermis && <> · 🚗</>}
                           {a.tip !== "birou" && <> · {numeEchipa(a.echipaId)}</>}
                           {a.rolFirmaId && <><br /><span style={{ color: "var(--galben)" }}>🔑 {numeRol(db.roluriFirma, a.rolFirmaId)}</span></>}
                         </div>
@@ -3495,6 +3496,60 @@ function App() {
                   );
                 })()}
               </div>
+
+              {(() => {
+                /* echipe care rămân fără nimeni cu permis, zi cu zi */
+                const zileSapt = [...Array(7)].map((_, k) => iso(adaugaZile(luni, k)));
+                const probleme = [];
+                db.echipe.forEach((e) => {
+                  const membri = db.angajati.filter((a) => a.echipaId === e.id);
+                  const cuPermis = membri.filter((a) => a.arePermis);
+                  if (cuPermis.length === 0) return; // echipa n-are șofer deloc — altă discuție
+                  zileSapt.forEach((zi) => {
+                    /* are echipa ceva planificat în ziua asta? */
+                    const arePlan = db.planificare.some((p) => p.data === zi && p.echipaId === e.id);
+                    if (!arePlan) return;
+                    if (firmaInchisa(db.inchideriFirma, zi)) return;
+                    const disponibili = cuPermis.filter((a) => !eInConcediu(db.concedii, a.id, zi));
+                    if (disponibili.length === 0) {
+                      probleme.push({ echipa: e, zi, plecati: cuPermis });
+                    }
+                  });
+                });
+                if (probleme.length === 0) return null;
+
+                /* grupez pe echipă, ca să nu repet aceeași echipă de 5 ori */
+                const peEchipa = {};
+                probleme.forEach((p) => {
+                  if (!peEchipa[p.echipa.id]) peEchipa[p.echipa.id] = { echipa: p.echipa, zile: [], plecati: p.plecati };
+                  peEchipa[p.echipa.id].zile.push(p.zi);
+                });
+
+                return (
+                  <div className="conflict" style={{ marginBottom: 14 }}>
+                    <b>🚗 Echipe fără șofer</b>
+                    {Object.values(peEchipa).map(({ echipa, zile: zileP, plecati }) => (
+                      <div key={echipa.id} style={{ marginBottom: 10 }}>
+                        <div className="cf-rand">
+                          <b>{echipa.nume}</b> n-are nimeni cu permis în{" "}
+                          {zileP.length === 1 ? dataRo(zileP[0]) : `${zileP.length} zile`}
+                          {zileP.length > 1 && <> ({dataRo(zileP[0])} – {dataRo(zileP[zileP.length - 1])})</>}
+                          {" "}— {plecati.map((a) => a.nume).join(", ")} {plecati.length === 1 ? "e plecat" : "sunt plecați"}.
+                        </div>
+                        <div className="actiuni" style={{ marginTop: 6 }}>
+                          <button className="btn btn-mic principal"
+                            onClick={() => setFoaie({ tip: "imprumutSofer", echipa, zile: zileP })}>
+                            Împrumută un șofer
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="cf-sfat">
+                      Împrumutul mută temporar un om cu permis din altă echipă, doar pentru zilele astea.
+                    </div>
+                  </div>
+                );
+              })()}
 
               {zile.map((d, i) => {
                 const zi = iso(d);
@@ -4705,6 +4760,7 @@ function App() {
           key={foaie.item?.id || foaie.data}
           item={foaie.item} data={foaie.data} santiere={db.santiere} echipe={db.echipe}
           angajati={db.angajati} planificare={db.planificare} program={db.setari?.program}
+          concedii={db.concedii} inchideri={db.inchideriFirma}
           onSalveaza={salvPlan} onSterge={stergePlan}
           onModificaAlta={(p) => setFoaie({ tip: "plan", item: p, data: p.data })}
           onSalveazaAlta={(p) => salveaza({
@@ -4743,6 +4799,25 @@ function App() {
         <Foaie titlu={`Refuzi ${foaie.item.ore}h pentru ${foaie.item.nume}?`} onClose={() => setFoaie(null)}>
           <MotivRefuz onTrimite={(m) => { respingeSuplimentare(foaie.item, m); setFoaie(null); }} />
         </Foaie>
+      )}
+      {foaie?.tip === "imprumutSofer" && (
+        <ImprumutSofer echipa={foaie.echipa} zile={foaie.zile}
+          angajati={db.angajati} echipe={db.echipe} concedii={db.concedii}
+          planificare={db.planificare} santiere={db.santiere}
+          onImprumuta={(angajatId) => {
+            const om = db.angajati.find((a) => a.id === angajatId);
+            /* îl adaug nominal în intrările echipei, pentru zilele problematice */
+            const planificare = db.planificare.map((p) => {
+              if (p.echipaId !== foaie.echipa.id || !foaie.zile.includes(p.data)) return p;
+              const ids = new Set(p.angajatIds || []);
+              ids.add(angajatId);
+              return { ...p, angajatIds: [...ids] };
+            });
+            salveaza(cuJurnal({ ...db, planificare },
+              `${om?.nume} împrumutat la ${foaie.echipa.nume} pentru ${foaie.zile.length} ${foaie.zile.length === 1 ? "zi" : "zile"}`));
+            setFoaie(null);
+          }}
+          onClose={() => setFoaie(null)} />
       )}
       {foaie?.tip === "concediuDirect" && (
         <FormConcediu angajati={db.angajati} program={db.setari?.program} inchideri={db.inchideriFirma}
@@ -6526,13 +6601,22 @@ function FormAngajat({ item, echipe, esteProprietar, roluriFirma = [], oreSaptam
       )}
 
       {!eBirou && (
-        <label className="rand-bifa" style={{ marginBottom: 11 }}>
-          <input type="checkbox" checked={f.poateStoc ?? !!permisiuniRol?.consumStoc}
-            onChange={(e) => setF({ ...f, poateStoc: e.target.checked })} />
-          <span>Poate scădea materiale din stoc
-            <span className="rb-sub">Notează de pe telefonul lui ce s-a consumat pe șantier</span>
-          </span>
-        </label>
+        <>
+          <label className="rand-bifa" style={{ marginBottom: 11 }}>
+            <input type="checkbox" checked={f.poateStoc ?? !!permisiuniRol?.consumStoc}
+              onChange={(e) => setF({ ...f, poateStoc: e.target.checked })} />
+            <span>Poate scădea materiale din stoc
+              <span className="rb-sub">Notează de pe telefonul lui ce s-a consumat pe șantier</span>
+            </span>
+          </label>
+          <label className="rand-bifa" style={{ marginBottom: 11 }}>
+            <input type="checkbox" checked={!!f.arePermis}
+              onChange={(e) => setF({ ...f, arePermis: e.target.checked })} />
+            <span>🚗 Are permis de conducere
+              <span className="rb-sub">Poate duce camionul echipei — fiecare echipă are nevoie de cel puțin unul</span>
+            </span>
+          </label>
+        </>
       )}
 
       <div className="camp"><label>Note{eBirou ? "" : " (calificări, permis, observații)"}</label>
@@ -6580,10 +6664,16 @@ function FisaAngajat({ angajat, echipe, numeEchipa, pontaj, santiere, roluriFirm
       )}
       <div className="fisa-rand"><span className="k">Plată</span><b>{angajat.tarif || "—"}</b></div>
       {!eBirou && (
-        <div className="fisa-rand">
-          <span className="k">Poate scădea din stoc</span>
-          <b style={{ color: angajat.poateStoc ? "var(--verde)" : "var(--mut)" }}>{angajat.poateStoc ? "Da" : "Nu"}</b>
-        </div>
+        <>
+          <div className="fisa-rand">
+            <span className="k">Poate scădea din stoc</span>
+            <b style={{ color: angajat.poateStoc ? "var(--verde)" : "var(--mut)" }}>{angajat.poateStoc ? "Da" : "Nu"}</b>
+          </div>
+          <div className="fisa-rand">
+            <span className="k">Permis de conducere</span>
+            <b style={{ color: angajat.arePermis ? "var(--verde)" : "var(--mut)" }}>{angajat.arePermis ? "🚗 Da" : "Nu"}</b>
+          </div>
+        </>
       )}
       <div className="fisa-rand"><span className="k">Cont aplicație</span><b style={{ color: angajat.pin ? "var(--verde)" : "var(--mut)" }}>{angajat.pin ? "Parolă setată" : "Fără parolă"}</b></div>
       {!eBirou && (
@@ -7087,6 +7177,102 @@ function ProgramLucru({ program, onSchimba }) {
         </div>
       )}
     </>
+  );
+}
+
+function ImprumutSofer({ echipa, zile, angajati, echipe, concedii, planificare, santiere, onImprumuta, onClose }) {
+  /* candidați: au permis, nu sunt din echipa asta, sunt liberi în toate zilele problematice */
+  const candidati = angajati
+    .filter((a) => a.arePermis && a.echipaId !== echipa.id && a.tip !== "birou")
+    .map((a) => {
+      const zileInConcediu = zile.filter((z) => eInConcediu(concedii, a.id, z));
+      /* dacă îl iau de la echipa lui, aia rămâne fără șofer? */
+      const echipaLui = echipe.find((e) => e.id === a.echipaId);
+      const altiSoferi = echipaLui
+        ? angajati.filter((x) => x.echipaId === echipaLui.id && x.arePermis && x.id !== a.id)
+        : [];
+      const lasaGol = echipaLui && zile.some((z) =>
+        planificare.some((p) => p.data === z && p.echipaId === echipaLui.id) &&
+        altiSoferi.every((x) => eInConcediu(concedii, x.id, z)));
+      return { a, echipaLui, zileInConcediu, lasaGol, altiSoferi };
+    })
+    .sort((x, y) => (x.lasaGol ? 1 : 0) - (y.lasaGol ? 1 : 0) || x.zileInConcediu.length - y.zileInConcediu.length);
+
+  const buni = candidati.filter((c) => c.zileInConcediu.length === 0);
+  const partiali = candidati.filter((c) => c.zileInConcediu.length > 0);
+
+  return (
+    <Foaie titlu={`Șofer pentru ${echipa.nume}`} onClose={onClose}>
+      <div className="sub" style={{ marginBottom: 14 }}>
+        Pentru {zile.length === 1 ? dataRo(zile[0]) : `${zile.length} zile`}
+        {zile.length > 1 && <>, {dataRo(zile[0])} – {dataRo(zile[zile.length - 1])}</>}.
+        Omul ales apare în planingul echipei pe zilele astea, dar rămâne în echipa lui.
+      </div>
+
+      {candidati.length === 0 ? (
+        <div className="gol-msg">
+          Nimeni cu permis nu e disponibil. Marchează pe cineva ca având permis din fișa lui,
+          sau mută lucrarea în altă zi.
+        </div>
+      ) : (
+        <>
+          {buni.map(({ a, echipaLui, lasaGol, altiSoferi }) => (
+            <div className="card" key={a.id}>
+              <div className="card-rand">
+                <div>
+                  <div className="titlu">🚗 {a.nume}</div>
+                  <div className="sub">
+                    {a.grad || "—"} · {echipaLui ? echipaLui.nume : "fără echipă"}
+                    {lasaGol && (
+                      <><br /><span style={{ color: "var(--galben)" }}>
+                        ⚠ Dacă îl iei, {echipaLui.nume} rămâne fără șofer
+                      </span></>
+                    )}
+                    {!lasaGol && echipaLui && altiSoferi.length > 0 && (
+                      <><br /><span style={{ color: "var(--verde)" }}>
+                        Echipa lui rămâne acoperită ({altiSoferi.length} {altiSoferi.length === 1 ? "șofer" : "șoferi"})
+                      </span></>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="actiuni">
+                <button className={"btn btn-mic" + (lasaGol ? "" : " principal")}
+                  onClick={() => onImprumuta(a.id)}>
+                  Îl împrumut
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {partiali.length > 0 && (
+            <>
+              <div className="sectiune">Disponibili doar parțial</div>
+              {partiali.map(({ a, echipaLui, zileInConcediu }) => (
+                <div className="card" key={a.id} style={{ opacity: .7 }}>
+                  <div className="card-rand">
+                    <div>
+                      <div className="titlu">{a.nume}</div>
+                      <div className="sub">
+                        {echipaLui ? echipaLui.nume : "fără echipă"} ·{" "}
+                        <span style={{ color: "var(--rosu)" }}>
+                          e în concediu {zileInConcediu.length} din {zile.length} zile
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="actiuni">
+                    <button className="btn btn-mic" onClick={() => onImprumuta(a.id)}>
+                      Îl pun oricum
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </>
+      )}
+    </Foaie>
   );
 }
 
@@ -8066,7 +8252,7 @@ function GestioneazaMembri({ echipa, angajati, echipe, onSalveaza, onClose }) {
   );
 }
 
-function FormPlan({ item, data, santiere, echipe, angajati, planificare, program, onSalveaza, onSterge, onModificaAlta, onSalveazaAlta, onInlocuieste, onImparte, onCere, onClose }) {
+function FormPlan({ item, data, santiere, echipe, angajati, planificare, program, concedii = [], inchideri = [], onSalveaza, onSterge, onModificaAlta, onSalveazaAlta, onInlocuieste, onImparte, onCere, onClose }) {
   const [f, setF] = useState(
     item || { data, santierId: santiere.filter((s) => s.status !== "finalizat")[0]?.id || "",
       echipaId: "", angajatIds: [],
@@ -8090,6 +8276,18 @@ function FormPlan({ item, data, santiere, echipe, angajati, planificare, program
 
   const aiMei = oameniiDin(f);
   const oraOk = minute(f.oraStart) !== null && minute(f.oraFinal) !== null && minute(f.oraFinal) > minute(f.oraStart);
+
+  /* cine dintre ei e în concediu aprobat chiar în ziua asta */
+  const inConcediu = [...aiMei]
+    .map((id) => {
+      const c = (concedii || []).find((x) => x.angajatId === id && x.status === "aprobat"
+        && f.data >= x.start && f.data <= x.final);
+      return c ? { a: angajati.find((y) => y.id === id), c } : null;
+    })
+    .filter((x) => x && x.a);
+
+  /* firma e închisă în ziua asta? */
+  const inchidereaZilei = (inchideri || []).find((x) => f.data >= x.start && f.data <= x.final);
 
   /* conflict = aceeași zi, ALT șantier, oameni comuni, ore care se calcă.
      Pe același șantier nu e conflict — omul e oricum acolo. */
@@ -8119,7 +8317,7 @@ function FormPlan({ item, data, santiere, echipe, angajati, planificare, program
       });
     });
 
-  const valid = f.santierId && oraOk && conflicte.length === 0;
+  const valid = f.santierId && oraOk && conflicte.length === 0 && inConcediu.length === 0;
 
   /* pot împărți ziua doar dacă intervalul meu încape în al lor, lăsând ceva pe măcar o parte */
   const potImparti = (c) => {
@@ -8178,12 +8376,25 @@ function FormPlan({ item, data, santiere, echipe, angajati, planificare, program
 
       <div className="camp">
         <label>Oameni în plus (din alte echipe)</label>
-        {suplimentari.map((a) => (
-          <label key={a.id} className="rand-bifa">
-            <input type="checkbox" checked={(f.angajatIds || []).includes(a.id)} onChange={() => comuta(a.id)} />
-            <span>{a.nume}<span className="rb-sub">{a.grad || "—"}</span></span>
-          </label>
-        ))}
+        {suplimentari.map((a) => {
+          const conc = (concedii || []).find((x) => x.angajatId === a.id && x.status === "aprobat"
+            && f.data >= x.start && f.data <= x.final);
+          return (
+            <label key={a.id} className="rand-bifa" style={conc ? { opacity: .55 } : null}>
+              <input type="checkbox" disabled={!!conc}
+                checked={(f.angajatIds || []).includes(a.id)} onChange={() => !conc && comuta(a.id)} />
+              <span>
+                {a.nume}
+                {a.arePermis && <span style={{ color: "var(--galben)" }}> 🚗</span>}
+                <span className="rb-sub">
+                  {conc
+                    ? `🏖 în concediu până pe ${dataRo(conc.final)}`
+                    : (a.grad || "—")}
+                </span>
+              </span>
+            </label>
+          );
+        })}
       </div>
 
       <div className="camp">
@@ -8201,6 +8412,43 @@ function FormPlan({ item, data, santiere, echipe, angajati, planificare, program
               <b className="mono">{c.ore}</b>. Poți salva oricum — o să fie două intrări pentru aceeași zi.
             </div>
           ))}
+        </div>
+      )}
+
+      {inchidereaZilei && (
+        <div className="conflict">
+          <b>🏖 Firma e închisă în ziua asta</b>
+          <div className="cf-rand">
+            {inchidereaZilei.motiv || "Închis"} · {dataRo(inchidereaZilei.start)} – {dataRo(inchidereaZilei.final)}.
+          </div>
+          <div className="cf-sfat">Poți salva oricum, dacă e o excepție.</div>
+        </div>
+      )}
+
+      {inConcediu.length > 0 && (
+        <div className="conflict">
+          <b>⛔ {inConcediu.length === 1 ? "E în concediu" : "Sunt în concediu"}</b>
+          {inConcediu.map(({ a, c }, i) => (
+            <div key={i} className="cf-rand">
+              <b>{a.nume}</b> — {numeTipConcediu(c.tip).nume.toLowerCase()},{" "}
+              {dataRo(c.start)} – {dataRo(c.final)}.
+            </div>
+          ))}
+          <div className="cf-sfat">
+            Scoate-i din listă sau alege altă zi. Dacă e din echipă, folosește
+            „Oameni în plus" ca să pui pe altcineva în locul lui.
+          </div>
+          <div className="actiuni">
+            <button className="btn btn-mic"
+              onClick={() => {
+                /* scot din echipă doar prin listă nominală: pun toți membrii mai puțin cei în concediu */
+                const idsConcediu = inConcediu.map((x) => x.a.id);
+                const raman = [...aiMei].filter((id) => !idsConcediu.includes(id));
+                setF({ ...f, echipaId: "", angajatIds: raman });
+              }}>
+              Scoate-i pe cei în concediu
+            </button>
+          </div>
         </div>
       )}
 
