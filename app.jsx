@@ -511,6 +511,16 @@ const migreaza = (d) => {
 
 const numeRol = (roluri, id) => (roluri || []).find((r) => r.id === id)?.nume || null;
 
+/* permisiunile care dau acces la panoul de admin — cele de teren (consumStoc,
+   cereMuncitori) nu contează, alea se folosesc în vederea normală de muncitor */
+const PERMISIUNI_PANOU = ["panou", "santiere", "santiereEditare", "planing",
+  "stocMateriale", "stocScule", "stocAuto", "cereri", "cifre", "rapoarte", "dotare",
+  "oameni", "oameniEditare"];
+const areAccesPanou = (db, angajat) => {
+  const p = (db.roluriFirma || []).find((r) => r.id === angajat?.rolFirmaId)?.permisiuni || {};
+  return PERMISIUNI_PANOU.some((k) => p[k]);
+};
+
 /* zile rămase până la o dată yyyy-mm-dd; null dacă lipsește */
 const zileRamase = (d) => {
   if (!d) return null;
@@ -1881,7 +1891,9 @@ function App() {
       </div>
     );
 
-  const esteAdmin = identitate.rol === "admin";
+  /* sesiunile salvate înainte pot avea rol "admin" memorat greșit — verific permisiunile reale */
+  const esteAdmin = identitate.rol === "admin" &&
+    (!identitate.angajatId || areAccesPanou(db, db.angajati.find((a) => a.id === identitate.angajatId)));
   const euBrut = db.angajati.find((a) => a.id === identitate.angajatId);
   /* atașez permisiunile rolului, ca să nu depindem nicăieri de textul gradului */
   const eu = euBrut && {
@@ -5585,12 +5597,12 @@ function EcranIntrare({ db, onIntra, onSeteazaPin }) {
                 onClick={() => {
                   if (!ales) return;
                   if (ales.pin) {
-                    if (pin === ales.pin) onIntra({ rol: ales.rolFirmaId ? "admin" : "muncitor", angajatId });
+                    if (pin === ales.pin) onIntra({ rol: areAccesPanou(db, ales) ? "admin" : "muncitor", angajatId });
                     else setEroare(t("Parolă greșită. Dacă ai uitat-o, cere-i șefului să ți-o reseteze."));
                   } else {
                     if (pin.length < 4) return setEroare(t("Parola trebuie să aibă minim 4 caractere."));
                     onSeteazaPin(angajatId, pin);
-                    onIntra({ rol: ales.rolFirmaId ? "admin" : "muncitor", angajatId });
+                    onIntra({ rol: areAccesPanou(db, ales) ? "admin" : "muncitor", angajatId });
                   }
                 }}>
                 {t("Intră")}
