@@ -590,7 +590,7 @@ body{background:var(--asfalt)}
 .hazard{height:5px;margin-top:9px;border-radius:3px;
   background:repeating-linear-gradient(45deg,var(--galben) 0 10px,#1a1a1a 10px 20px)}
 .continut{padding:8px 16px}
-.card{background:var(--beton);border:1px solid var(--linie);border-radius:12px;padding:14px;margin-bottom:10px}
+.card{background:var(--beton);border:1px solid var(--linie);border-radius:12px;padding:15px;margin-bottom:11px}
 .card.apasabil{cursor:pointer}
 .card-rand{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .titlu{font-weight:700;font-size:15px}
@@ -611,14 +611,15 @@ body{background:var(--asfalt)}
 .stat.atentie .nr{color:var(--rosu)}
 .stat.bani .nr{color:var(--verde);font-size:19px}
 .stat.bani.atentie .nr{color:var(--rosu)}
-.sectiune{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:18px 0 8px}
+.sectiune{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:22px 0 9px}
+.sectiune:first-child{margin-top:4px}
 .btn{font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;border:none;border-radius:9px;
   padding:11px 16px;cursor:pointer}
 .btn-galben{background:var(--galben);color:#17191D;width:100%}
-.btn-mic{font-size:12.5px;padding:7px 12px;background:var(--beton2);color:var(--text);border:1px solid var(--linie)}
+.btn-mic{font-size:12.5px;padding:9px 13px;background:var(--beton2);color:var(--text);border:1px solid var(--linie)}
 .btn-mic.principal{background:var(--galben);color:#17191D;border-color:var(--galben)}
 .btn-mic.pericol{color:var(--rosu)}
-.actiuni{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.actiuni{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .cautare{width:100%;background:var(--beton);border:1px solid var(--linie);color:var(--text);
   border-radius:10px;padding:11px 14px;font-size:14px;font-family:'Archivo',sans-serif;margin-bottom:12px}
 .cautare:focus{outline:2px solid var(--galben);outline-offset:-1px}
@@ -647,7 +648,7 @@ body{background:var(--asfalt)}
 .filtre button.activ{background:var(--galben-int);border-color:var(--galben);color:var(--galben)}
 .subtab{display:flex;gap:8px;margin-bottom:12px}
 .subtab button{flex:1;background:var(--beton);border:1px solid var(--linie);color:var(--mut);
-  font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;padding:9px;border-radius:9px;cursor:pointer}
+  font-family:'Archivo',sans-serif;font-weight:700;font-size:13.5px;padding:11px 8px;border-radius:9px;cursor:pointer}
 .subtab button.activ{background:var(--galben-int);border-color:var(--galben);color:var(--galben)}
 .voal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40}
 .foaie{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--beton);
@@ -659,10 +660,10 @@ body{background:var(--asfalt)}
 .foaie-x{flex:none;width:34px;height:34px;border-radius:50%;background:var(--beton2);
   border:1px solid var(--linie);color:var(--text);font-size:16px;line-height:1;cursor:pointer}
 .foaie h2{font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
-.camp{margin-bottom:11px}
+.camp{margin-bottom:13px}
 .camp label{display:block;font-size:12px;font-weight:600;color:var(--mut);margin-bottom:5px}
 .camp input,.camp select,.camp textarea{width:100%;background:var(--asfalt);border:1px solid var(--linie);
-  color:var(--text);border-radius:9px;padding:10px 12px;font-size:14.5px;font-family:'Archivo',sans-serif}
+  color:var(--text);border-radius:9px;padding:12px 13px;font-size:15px;font-family:'Archivo',sans-serif}
 .camp input:focus,.camp select:focus,.camp textarea:focus{outline:2px solid var(--galben);outline-offset:-1px}
 .rand2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .nav{position:fixed;bottom:0;left:0;right:0;max-width:560px;margin:0 auto;background:var(--beton);
@@ -676,7 +677,8 @@ body{background:var(--asfalt)}
 .bulina{position:absolute;top:6px;right:calc(50% - 16px);background:var(--rosu);color:#fff;
   font-size:9px;font-weight:800;min-width:15px;height:15px;border-radius:8px;display:flex;
   align-items:center;justify-content:center;padding:0 3px}
-.gol-msg{text-align:center;color:var(--mut);padding:30px 16px;font-size:14px;line-height:1.6}
+.gol-msg{text-align:center;color:var(--mut);padding:34px 20px;font-size:14px;line-height:1.65;
+  background:var(--beton);border:1px dashed var(--linie);border-radius:12px;margin-bottom:11px}
 .jurnal-rand{border-left:2px solid var(--galben);padding:6px 0 6px 12px;margin-bottom:8px}
 .jurnal-rand .cand{font-size:11px;color:var(--mut)}
 .jurnal-rand .ce{font-size:13.5px;margin-top:2px;line-height:1.45}
@@ -776,6 +778,96 @@ body{background:var(--asfalt)}
 @media (prefers-reduced-motion:no-preference){
   .foaie{animation:urca .22s ease}
   @keyframes urca{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+}
+
+/* ============================================================
+   TABLETĂ — de la 640px: mai mult aer, carduri pe două coloane
+   ============================================================ */
+@media (min-width:640px){
+  .app{max-width:720px;padding-bottom:calc(100px + env(safe-area-inset-bottom, 0px))}
+  .continut{padding:12px 24px}
+  .antet{padding:calc(env(safe-area-inset-top, 0px) + 18px) 24px 12px}
+  .antet h1{font-size:22px}
+  .card{padding:16px 18px;margin-bottom:12px;border-radius:14px}
+  .titlu{font-size:16px}
+  .sub{font-size:13.5px}
+  .grila-stat{grid-template-columns:repeat(3,1fr);gap:12px}
+  .stat{padding:16px}
+  .stat .nr{font-size:26px}
+  .stat.bani .nr{font-size:21px}
+  .sectiune{font-size:13px;margin:24px 0 10px}
+  .foaie{max-width:640px;border-radius:18px 18px 0 0;padding:22px 24px calc(30px + env(safe-area-inset-bottom, 0px))}
+  .nav{max-width:720px}
+  .nav button{font-size:11.5px;min-height:62px}
+  .nav .ico{font-size:23px}
+  .btn{font-size:15px;padding:12px 18px}
+  .btn-mic{font-size:13.5px;padding:8px 14px}
+  .camp input,.camp select,.camp textarea{font-size:15px;padding:12px 14px}
+  .rand2{gap:14px}
+  .meniu-set button{padding:16px 18px;font-size:15.5px}
+}
+
+/* ============================================================
+   DESKTOP — de la 1024px: bara laterală în loc de navigare jos,
+   conținutul în două coloane, ferestrele centrate
+   ============================================================ */
+@media (min-width:1024px){
+  .app{
+    max-width:none;padding-bottom:0;
+    display:grid;grid-template-columns:236px minmax(0,1fr);
+    grid-template-areas:"nav antet" "nav continut";
+    grid-template-rows:auto 1fr;
+    min-height:100vh;
+  }
+  .antet{
+    grid-area:antet;position:sticky;top:0;
+    padding:22px 32px 14px;max-width:1100px;
+  }
+  .antet h1{font-size:24px}
+  .continut{grid-area:continut;padding:8px 32px 48px;max-width:1100px}
+
+  /* navigarea devine coloană laterală */
+  .nav{
+    grid-area:nav;position:sticky;top:0;left:auto;right:auto;bottom:auto;
+    max-width:none;height:100vh;flex-direction:column;justify-content:flex-start;
+    border-top:none;border-right:1px solid var(--linie);padding:22px 12px;gap:4px;
+  }
+  .nav button{
+    flex:none;flex-direction:row;justify-content:flex-start;gap:12px;
+    padding:12px 14px;border-radius:10px;font-size:14.5px;min-height:0;text-align:left;
+  }
+  .nav button:hover{background:var(--beton2);color:var(--text)}
+  .nav button.activ{background:var(--galben-int);color:var(--galben)}
+  .nav .ico{font-size:19px}
+  .bulina{position:static;margin-left:auto}
+
+  .grila-stat{grid-template-columns:repeat(4,1fr)}
+
+  /* pe ecran lat, cardurile din liste stau două pe rând — dar doar cele scurte,
+     ca să nu se rupă cele cu multe butoane sau conținut bogat */
+  .lista-2col{display:grid;grid-template-columns:repeat(2,1fr);gap:0 14px;align-items:start}
+
+  /* ferestrele nu mai urcă de jos, ci apar centrate */
+  .foaie{
+    position:fixed;top:50%;left:50%;right:auto;bottom:auto;
+    transform:translate(-50%,-50%);max-width:620px;width:calc(100% - 64px);
+    max-height:86vh;border-radius:16px;border:1px solid var(--linie);border-top:2px solid var(--galben);
+    padding:24px 26px 28px;
+  }
+  .card{transition:border-color .12s ease}
+  .card.apasabil:hover{border-color:var(--galben)}
+  .btn,.btn-mic,.nav button,.meniu-set button{transition:background .12s ease,border-color .12s ease}
+  .btn-galben{max-width:420px}
+}
+
+/* ecrane foarte late — nu las conținutul să se întindă la infinit */
+@media (min-width:1500px){
+  .antet,.continut{margin-left:auto;margin-right:auto}
+}
+
+@media (min-width:1024px) and (prefers-reduced-motion:no-preference){
+  .foaie{animation:apare .16s ease}
+  @keyframes apare{from{transform:translate(-50%,-46%);opacity:0}to{transform:translate(-50%,-50%);opacity:1}}
 }
 `;
 
@@ -3005,6 +3097,7 @@ function App() {
                   </div>
                 )}
                 <div style={{ height: 12 }} />
+                <div className="lista-2col">
                 {filtrat(db.angajati, ["nume", "grad"]).map((a) => (
                   <div className="card apasabil" key={a.id} onClick={() => setFoaie({ tip: "fisa", item: a })}>
                     <div className="card-rand">
@@ -3020,6 +3113,7 @@ function App() {
                     </div>
                   </div>
                 ))}
+                </div>
                 {db.angajati.length === 0 && <div className="gol-msg">Niciun angajat. Adaugă oamenii ca să-i poți pune pe echipe și ca ei să poată intra în aplicație.</div>}
               </>
             )}
