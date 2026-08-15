@@ -71,7 +71,7 @@ const gol = {
   setari: { pin: PIN_IMPLICIT, zilePoze: 30, zileCereri: 30, oreVizibileMuncitori: true, procentTaxe: 0, oreSaptamana: 35,
     program: { start: "07:30", final: "16:00", pauza: 60,
       zile: ["MO", "TU", "WE", "TH", "FR"], special: {} } },
-  suplimentare: [],
+  suplimentare: [], concedii: [], inchideriFirma: [],
 };
 
 const aziISO = () => new Date().toISOString().slice(0, 10);
@@ -473,6 +473,39 @@ const GRUPURI_PERMISIUNI = [
 ];
 
 /* rolurile implicite, create automat la prima pornire — le poți modifica sau șterge */
+const TIPURI_CONCEDIU = [
+  { cod: "odihna", nume: "Concediu de odihnă", ico: "🏖" },
+  { cod: "zi-libera", nume: "Zi liberă", ico: "📅" },
+  { cod: "medical", nume: "Concediu medical", ico: "🏥" },
+  { cod: "fara-plata", nume: "Fără plată", ico: "📄" },
+  { cod: "eveniment", nume: "Eveniment familial", ico: "👨‍👩‍👧" },
+];
+const numeTipConcediu = (cod) => TIPURI_CONCEDIU.find((t) => t.cod === cod) || TIPURI_CONCEDIU[0];
+
+/* zilele lucrătoare dintr-un interval, ținând cont de programul firmei */
+const zileLucratoareIntre = (start, final, program) => {
+  if (!start || !final) return 0;
+  const p = program || {};
+  const zileLucru = p.zile || ["MO", "TU", "WE", "TH", "FR"];
+  const coduri = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
+  let n = 0;
+  const d = new Date(start), sf = new Date(final);
+  while (d <= sf) {
+    if (zileLucru.includes(coduri[(d.getDay() + 6) % 7])) n++;
+    d.setDate(d.getDate() + 1);
+  }
+  return n;
+};
+
+/* e cineva în concediu aprobat la data asta? */
+const eInConcediu = (concedii, angajatId, dataISO) =>
+  (concedii || []).some((c) => c.angajatId === angajatId && c.status === "aprobat"
+    && dataISO >= c.start && dataISO <= c.final);
+
+/* firma e închisă la data asta? */
+const firmaInchisa = (inchideri, dataISO) =>
+  (inchideri || []).find((x) => dataISO >= x.start && dataISO <= x.final) || null;
+
 const ROLURI_IMPLICITE = [
   { id: "rol-muncitor", nume: "Muncitor", permisiuni: {} },
   { id: "rol-calificat", nume: "Muncitor calificat", permisiuni: {} },
@@ -1523,6 +1556,55 @@ function App() {
     }, `Suplimentare aprobate: ${sup.nume} · ${sup.ore}h pe ${santier?.nume || "șantier"} (${dataRo(sup.data)})`));
   };
 
+  /* ---------- concedii ---------- */
+  const cereConcediu = (c) => {
+    salveaza({ ...db, concedii: [
+      { ...c, id: uid(), status: "nou", trimisLa: new Date().toISOString() }, ...db.concedii] });
+    setFoaie(null);
+    setConfirmare("✓ Cererea de concediu a plecat la șef");
+    setTimeout(() => setConfirmare(""), 3000);
+  };
+
+  const aprobaConcediu = (c) => {
+    const zile = zileLucratoareIntre(c.start, c.final, db.setari?.program);
+    salveaza(cuJurnal({
+      ...db,
+      concedii: db.concedii.map((x) =>
+        x.id === c.id ? { ...x, status: "aprobat", raspunsLa: new Date().toISOString() } : x),
+    }, `Concediu aprobat: ${c.nume} · ${dataRo(c.start)} – ${dataRo(c.final)} (${zile} zile)`));
+  };
+
+  const respingeConcediu = (c, motiv) =>
+    salveaza({ ...db, concedii: db.concedii.map((x) =>
+      x.id === c.id ? { ...x, status: "respins", motiv: motiv || "", raspunsLa: new Date().toISOString() } : x) });
+
+  const stergeConcediu = (id) => cere("Ștergi această cerere de concediu?", () =>
+    salveaza({ ...db, concedii: db.concedii.filter((x) => x.id !== id) }), "Șterge");
+
+  /* adminul adaugă concediu direct, fără cerere */
+  const adaugaConcediuDirect = (c) => {
+    const zile = zileLucratoareIntre(c.start, c.final, db.setari?.program);
+    salveaza(cuJurnal({
+      ...db,
+      concedii: [{ ...c, id: uid(), status: "aprobat", trimisLa: new Date().toISOString(),
+        raspunsLa: new Date().toISOString(), pusDeAdmin: true }, ...db.concedii],
+    }, `Concediu trecut: ${c.nume} · ${dataRo(c.start)} – ${dataRo(c.final)} (${zile} zile)`));
+    setFoaie(null);
+  };
+
+  /* ---------- închiderea firmei ---------- */
+  const salvInchidere = (x) => {
+    const lista = x.id
+      ? db.inchideriFirma.map((y) => (y.id === x.id ? x : y))
+      : [...db.inchideriFirma, { ...x, id: uid() }];
+    salveaza(cuJurnal({ ...db, inchideriFirma: lista },
+      `Firma închisă: ${x.motiv || "vacanță"} · ${dataRo(x.start)} – ${dataRo(x.final)}`));
+    setFoaie(null);
+  };
+
+  const stergeInchidere = (id) => cere("Ștergi această perioadă de închidere?", () =>
+    salveaza({ ...db, inchideriFirma: db.inchideriFirma.filter((x) => x.id !== id) }), "Șterge");
+
   const respingeSuplimentare = (sup, motiv) =>
     salveaza({ ...db, suplimentare: db.suplimentare.map((x) =>
       x.id === sup.id ? { ...x, status: "respins", motiv: motiv || "", raspunsLa: new Date().toISOString() } : x) });
@@ -2547,6 +2629,49 @@ function App() {
                   ⏱ Am stat peste program
                 </button>
               )}
+              <div className="actiuni" style={{ marginTop: 9 }}>
+                <button className="btn btn-mic" style={{ flex: 1 }}
+                  onClick={() => setFoaie({ tip: "cerereConcediu", tipInitial: "zi-libera", oZi: true })}>
+                  📅 Cer o zi liberă
+                </button>
+                <button className="btn btn-mic" style={{ flex: 1 }}
+                  onClick={() => setFoaie({ tip: "cerereConcediu" })}>
+                  🏖 Cer concediu
+                </button>
+              </div>
+
+              {(() => {
+                const aleMele = db.concedii.filter((x) => x.angajatId === identitate.angajatId);
+                if (aleMele.length === 0) return null;
+                return (
+                  <>
+                    <div className="sectiune">Concediile tale</div>
+                    {aleMele.map((x) => {
+                      const tip = numeTipConcediu(x.tip);
+                      const zile = zileLucratoareIntre(x.start, x.final, db.setari?.program);
+                      return (
+                        <div className="card" key={x.id}>
+                          <div className="card-rand">
+                            <div>
+                              <div className="titlu">{tip.ico} {dataRo(x.start)} – {dataRo(x.final)}</div>
+                              <div className="sub">
+                                {tip.nume} · <b>{zile} {zile === 1 ? "zi lucrătoare" : "zile lucrătoare"}</b>
+                                {x.motivCerere && <><br />{x.motivCerere}</>}
+                                {x.status === "respins" && x.motiv && (
+                                  <><br /><span style={{ color: "var(--rosu)" }}>Refuzat: {x.motiv}</span></>
+                                )}
+                              </div>
+                            </div>
+                            <span className={"chip " + (x.status === "aprobat" ? "ok" : x.status === "respins" ? "alerta" : "alocat")}>
+                              {x.status === "aprobat" ? "Aprobat" : x.status === "respins" ? "Refuzat" : "În așteptare"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                );
+              })()}
 
               {!eBirou && (() => {
                 const aleMele = db.suplimentare.filter((x) => x.angajatId === identitate.angajatId);
@@ -2654,6 +2779,14 @@ function App() {
             onSalveaza={(tip, note) => raporteazaScula(foaie.item.id, tip, note, eu?.nume)}
             onClose={() => setFoaie(null)} />
         )}
+        {foaie?.tip === "cerereConcediu" && (
+          <FormConcediu eu={eu} program={db.setari?.program}
+            inchideri={db.inchideriFirma}
+            tipInitial={foaie.tipInitial} oZi={foaie.oZi}
+            concediiExistente={db.concedii}
+            onTrimite={(c) => cereConcediu({ ...c, angajatId: eu?.id, nume: eu?.nume })}
+            onClose={() => setFoaie(null)} />
+        )}
         {foaie?.tip === "suplimentare" && (
           <FormSuplimentare eu={eu} santiere={foaie.santiere} program={db.setari?.program}
             onTrimite={cereSuplimentare} onClose={() => setFoaie(null)} />
@@ -2677,7 +2810,8 @@ function App() {
             ["cereri", "✉", t("Cereri"),
               cereriDeschise.length +
               db.suplimentare.filter((x) => x.angajatId === identitate.angajatId && x.status === "nou").length +
-              db.alimentari.filter((x) => x.autorId === identitate.angajatId && x.status === "nou").length],
+              db.alimentari.filter((x) => x.autorId === identitate.angajatId && x.status === "nou").length +
+              db.concedii.filter((x) => x.angajatId === identitate.angajatId && x.status === "nou").length],
           ]).map(([id, ico, lbl, badge]) => (
             <button key={id} className={tabMEfectiv === id ? "activ" : ""} onClick={() => setTabM(id)}>
               {badge > 0 && <span className="bulina">{badge}</span>}
@@ -3369,12 +3503,15 @@ function App() {
                   .sort((a, b) => (minute(a.oraStart) || 0) - (minute(b.oraStart) || 0));
                 const eAzi = zi === iso(new Date());
                 const weekend = i >= 5;
+                const inchis = firmaInchisa(db.inchideriFirma, zi);
+                const plecati = db.concedii.filter((c) => c.status === "aprobat" && zi >= c.start && zi <= c.final);
                 return (
-                  <div className="zi-plan" key={zi}>
+                  <div className="zi-plan" key={zi} style={inchis ? { opacity: .6 } : null}>
                     <div className="zi-antet">
                       <div>
                         <b style={{ color: eAzi ? "var(--galben)" : weekend ? "var(--mut)" : "var(--text)" }}>{zileTrad()[i]}</b>
                         <span className="mono" style={{ color: "var(--mut)", fontSize: 12, marginLeft: 7 }}>{d.getDate()}.{String(d.getMonth() + 1).padStart(2, "0")}</span>
+                        {inchis && <span className="chip alerta" style={{ marginLeft: 8 }}>🏖 {inchis.motiv || "Închis"}</span>}
                       </div>
                       <div style={{ display: "flex", gap: 6 }}>
                         {intrari.length > 0 && (
@@ -3389,6 +3526,11 @@ function App() {
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "plan", data: zi })}>+</button>
                       </div>
                     </div>
+                    {plecati.length > 0 && (
+                      <div className="sub" style={{ color: "var(--galben)", padding: "4px 0" }}>
+                        🏖 În concediu: {plecati.map((c) => c.nume).join(", ")}
+                      </div>
+                    )}
                     {intrari.length === 0 ? (
                       <div className="zi-gol">—</div>
                     ) : intrari.map((p) => {
@@ -3799,6 +3941,43 @@ function App() {
             </div>
 
             <div className="card">
+              <div className="titlu">🏖 Închiderea firmei</div>
+              <div className="sub">
+                Perioadele în care nu se lucrează deloc — vacanța de vară, sărbătorile de iarnă.
+                Apar în planing pentru toată lumea și nu se pot pune lucrări atunci.
+              </div>
+              <div className="actiuni">
+                <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "inchidere" })}>
+                  + Adaugă perioadă
+                </button>
+              </div>
+              {(db.inchideriFirma || []).length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  {db.inchideriFirma
+                    .slice()
+                    .sort((a, b) => a.start.localeCompare(b.start))
+                    .map((x) => {
+                      const zile = zileLucratoareIntre(x.start, x.final, db.setari?.program);
+                      const trecut = x.final < aziISO();
+                      return (
+                        <div className="fisa-rand" key={x.id} style={trecut ? { opacity: .55 } : null}>
+                          <span>
+                            {x.motiv || "Închis"}
+                            <span className="k"> · {dataRo(x.start)} – {dataRo(x.final)}</span>
+                          </span>
+                          <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <b className="mono">{zile} {zile === 1 ? "zi" : "zile"}</b>
+                            <button className="btn btn-mic" onClick={() => setFoaie({ tip: "inchidere", item: x })}>✎</button>
+                            <button className="btn btn-mic pericol" onClick={() => stergeInchidere(x.id)}>✕</button>
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+
+            <div className="card">
               <div className="titlu">📅 Normă întreagă</div>
               <div className="sub">
                 Câte ore are o săptămână de lucru cu normă întreagă. Din asta se calculează
@@ -4146,7 +4325,7 @@ function App() {
         {tabEfectiv === "cereri" && (
           <>
             <div className="filtre">
-              {[["toate", "Toate"], ["ore", "⏱ Ore"], ["combustibil", "⛽ Combustibil"], ["planing", "🗓 Planing"], ["resurse", "👷 Muncitori"], ["necesar", "📦 Necesar"], ["problema", "⚠ Probleme"]].map(([id, et]) => (
+              {[["toate", "Toate"], ["ore", "⏱ Ore"], ["concediu", "🏖 Concedii"], ["combustibil", "⛽ Combustibil"], ["planing", "🗓 Planing"], ["resurse", "👷 Muncitori"], ["necesar", "📦 Necesar"], ["problema", "⚠ Probleme"]].map(([id, et]) => (
                 <button key={id} className={filtruCereri === id ? "activ" : ""}
                   onClick={() => setFiltruCereri(id)}>{et}</button>
               ))}
@@ -4220,6 +4399,81 @@ function App() {
               );
             })()}
 
+            {(filtruCereri === "toate" || filtruCereri === "concediu") && (() => {
+              const noiC = db.concedii.filter((x) => x.status === "nou");
+              const vechiC = db.concedii.filter((x) => x.status !== "nou").slice(0, 8);
+              if (db.concedii.length === 0) return null;
+              const randC = (x) => {
+                const tip = numeTipConcediu(x.tip);
+                const zile = zileLucratoareIntre(x.start, x.final, db.setari?.program);
+                /* cine mai e plecat în aceeași perioadă */
+                const suprapuneri = db.concedii.filter((y) =>
+                  y.id !== x.id && y.status === "aprobat" &&
+                  y.start <= x.final && y.final >= x.start);
+                return (
+                  <div className="card" key={x.id} style={x.status !== "nou" ? { opacity: .7 } : null}>
+                    <div className="card-rand">
+                      <div>
+                        <div className="titlu">{tip.ico} {x.nume}</div>
+                        <div className="sub">
+                          {dataRo(x.start)} – {dataRo(x.final)} · <b>{zile} {zile === 1 ? "zi" : "zile"}</b> · {tip.nume}
+                          {x.pusDeAdmin && <> · <span style={{ color: "var(--mut)" }}>trecut de tine</span></>}
+                          {x.motivCerere && <><br />{x.motivCerere}</>}
+                          {x.status === "nou" && suprapuneri.length > 0 && (
+                            <><br /><span style={{ color: "var(--galben)" }}>
+                              ⚠ În aceeași perioadă mai lipsesc: {suprapuneri.map((y) => y.nume).join(", ")}
+                            </span></>
+                          )}
+                          {x.status === "respins" && x.motiv && (
+                            <><br /><span style={{ color: "var(--rosu)" }}>Refuzat: {x.motiv}</span></>
+                          )}
+                        </div>
+                      </div>
+                      <span className={"chip " + (x.status === "aprobat" ? "ok" : x.status === "respins" ? "alerta" : "alocat")}>
+                        {x.status === "aprobat" ? "Aprobat" : x.status === "respins" ? "Refuzat" : "De aprobat"}
+                      </span>
+                    </div>
+                    {x.status === "nou" && (
+                      <div className="actiuni">
+                        <button className="btn btn-mic principal"
+                          onClick={() => cere(
+                            `Aprobi concediul lui ${x.nume}, ${dataRo(x.start)} – ${dataRo(x.final)}? Sunt ${zile} zile lucrătoare.`,
+                            () => aprobaConcediu(x), "Aprobă")}>
+                          Aprobă
+                        </button>
+                        <button className="btn btn-mic" onClick={() => setFoaie({ tip: "respingeConcediu", item: x })}>
+                          Refuză
+                        </button>
+                        <button className="btn btn-mic pericol" onClick={() => stergeConcediu(x.id)}>Șterge</button>
+                      </div>
+                    )}
+                    {x.status === "aprobat" && (
+                      <div className="actiuni">
+                        <button className="btn btn-mic pericol" onClick={() => stergeConcediu(x.id)}>Anulează concediul</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              };
+              return (
+                <>
+                  <div className="sectiune">🏖 Concedii {noiC.length > 0 && `(${noiC.length} de aprobat)`}</div>
+                  <button className="btn btn-mic" style={{ marginBottom: 10 }}
+                    onClick={() => setFoaie({ tip: "concediuDirect" })}>
+                    + Trec eu un concediu
+                  </button>
+                  {noiC.map(randC)}
+                  {noiC.length === 0 && <div className="gol-msg">Nimic de aprobat.</div>}
+                  {vechiC.length > 0 && (
+                    <>
+                      <div className="sectiune">Concedii aprobate și refuzate</div>
+                      {vechiC.map(randC)}
+                    </>
+                  )}
+                </>
+              );
+            })()}
+
             {(filtruCereri === "toate" || filtruCereri === "combustibil") && (() => {
               const noiA = db.alimentari.filter((x) => x.status === "nou");
               const vechiA = db.alimentari.filter((x) => x.status !== "nou").slice(0, 6);
@@ -4278,7 +4532,7 @@ function App() {
               );
             })()}
 
-            {(filtruCereri === "toate" || (filtruCereri !== "ore" && filtruCereri !== "combustibil")) &&
+            {(filtruCereri === "toate" || !["ore", "combustibil", "concediu"].includes(filtruCereri)) &&
               <div className="sectiune">
                 {filtruCereri === "necesar" ? "📦 Cereri de materiale"
                   : filtruCereri === "problema" ? "⚠ Probleme raportate"
@@ -4290,7 +4544,7 @@ function App() {
               <div className="gol-msg">Nimic raportat. Muncitorii intră cu contul lor și trimit probleme sau ce le lipsește — apare doar aici, la tine.</div>
             ) : db.cereri
               .filter((c) => filtruCereri === "toate" || filtruCereri === c.tip)
-              .filter(() => filtruCereri !== "ore" && filtruCereri !== "combustibil")
+              .filter(() => !["ore", "combustibil", "concediu"].includes(filtruCereri))
               .map((c) => {
               const areLinii = Array.isArray(c.linii) && c.linii.length > 0;
               return (
@@ -4490,6 +4744,20 @@ function App() {
           <MotivRefuz onTrimite={(m) => { respingeSuplimentare(foaie.item, m); setFoaie(null); }} />
         </Foaie>
       )}
+      {foaie?.tip === "concediuDirect" && (
+        <FormConcediu angajati={db.angajati} program={db.setari?.program} inchideri={db.inchideriFirma}
+          concediiExistente={db.concedii}
+          onTrimite={(c) => adaugaConcediuDirect(c)} onClose={() => setFoaie(null)} />
+      )}
+      {foaie?.tip === "respingeConcediu" && (
+        <Foaie titlu={`Refuzi concediul lui ${foaie.item.nume}?`} onClose={() => setFoaie(null)}>
+          <MotivRefuz onTrimite={(m) => { respingeConcediu(foaie.item, m); setFoaie(null); }} />
+        </Foaie>
+      )}
+      {foaie?.tip === "inchidere" && (
+        <FormInchidere item={foaie.item} program={db.setari?.program}
+          onSalveaza={salvInchidere} onClose={() => setFoaie(null)} />
+      )}
       {foaie?.tip === "aprobaAlimentare" && (
         <AprobaAlimentare al={foaie.item}
           camion={db.camioane.find((c) => c.id === foaie.item.camionId)}
@@ -4640,7 +4908,8 @@ function App() {
             stocScazut.length + db.scule.filter((x) => x.stare === "problema").length],
           ["cereri", "✉", t("Cereri"),
             cereriNoi.length + db.suplimentare.filter((x) => x.status === "nou").length +
-            db.alimentari.filter((x) => x.status === "nou").length],
+            db.alimentari.filter((x) => x.status === "nou").length +
+            db.concedii.filter((x) => x.status === "nou").length],
           ["setari", "⚙", t("Setări"), alerteCamioane.length],
         ];
         const taburiPermise = idTaburiPermise
@@ -6818,6 +7087,180 @@ function ProgramLucru({ program, onSchimba }) {
         </div>
       )}
     </>
+  );
+}
+
+function FormConcediu({ eu, angajati, program, inchideri = [], tipInitial, oZi,
+  concediiExistente = [], onTrimite, onClose }) {
+  const eAdmin = Array.isArray(angajati);
+  const [angajatId, setAngajatId] = useState(eAdmin ? (angajati[0]?.id || "") : (eu?.id || ""));
+  const [tip, setTip] = useState(tipInitial || "odihna");
+  const [start, setStart] = useState(aziISO());
+  const [final, setFinal] = useState(aziISO());
+  const [motivCerere, setMotivCerere] = useState("");
+  /* modul "o singură zi": un câmp de dată, restul se completează singur */
+  const [singuraZi, setSinguraZi] = useState(!!oZi);
+
+  const finalReal = singuraZi ? start : final;
+  const zile = zileLucratoareIntre(start, finalReal, program);
+  const invers = finalReal < start;
+  const valid = start && finalReal && !invers && zile > 0 && (!eAdmin || angajatId);
+
+  /* am cerut deja ceva care se suprapune cu perioada asta? */
+  const mieSuprapus = concediiExistente.find((c) =>
+    c.angajatId === (eAdmin ? angajatId : eu?.id) && c.status !== "respins" &&
+    c.start <= finalReal && c.final >= start);
+
+  /* se suprapune cu o perioadă în care firma e închisă oricum? */
+  const inchidereSuprapusa = (inchideri || []).find((x) => start <= x.final && final >= x.start);
+
+  return (
+    <Foaie titlu={eAdmin ? "Trece un concediu" : (singuraZi ? "Cerere de zi liberă" : "Cerere de concediu")} onClose={onClose}>
+      {eAdmin && (
+        <div className="camp">
+          <label>Pentru cine</label>
+          <select value={angajatId} onChange={(e) => setAngajatId(e.target.value)}>
+            {angajati.map((a) => <option key={a.id} value={a.id}>{a.nume}</option>)}
+          </select>
+        </div>
+      )}
+
+      <div className="camp">
+        <label>Ce fel de concediu</label>
+        <select value={tip} onChange={(e) => setTip(e.target.value)}>
+          {TIPURI_CONCEDIU.map((t) => <option key={t.cod} value={t.cod}>{t.ico} {t.nume}</option>)}
+        </select>
+      </div>
+
+      <div className="subtab" style={{ marginBottom: 12 }}>
+        <button className={singuraZi ? "activ" : ""} onClick={() => setSinguraZi(true)}>O singură zi</button>
+        <button className={!singuraZi ? "activ" : ""} onClick={() => setSinguraZi(false)}>Mai multe zile</button>
+      </div>
+
+      {singuraZi ? (
+        <div className="camp">
+          <label>În ce zi</label>
+          <input type="date" value={start} onChange={(e) => { setStart(e.target.value); setFinal(e.target.value); }} />
+        </div>
+      ) : (
+        <div className="rand2">
+          <div className="camp">
+            <label>De la</label>
+            <input type="date" value={start} onChange={(e) => {
+              setStart(e.target.value);
+              if (final < e.target.value) setFinal(e.target.value);
+            }} />
+          </div>
+          <div className="camp">
+            <label>Până la (inclusiv)</label>
+            <input type="date" value={final} min={start} onChange={(e) => setFinal(e.target.value)} />
+          </div>
+        </div>
+      )}
+
+      {invers ? (
+        <div className="sub" style={{ color: "var(--rosu)", marginBottom: 11 }}>
+          Data de final trebuie să fie după cea de start.
+        </div>
+      ) : zile === 0 ? (
+        <div className="sub" style={{ color: "var(--galben)", marginBottom: 11 }}>
+          ⚠ {singuraZi ? "Ziua asta nu e zi lucrătoare" : "Perioada asta n-are nicio zi lucrătoare"} —
+          nu e nevoie de cerere.
+        </div>
+      ) : (
+        <div className="rezumat" style={{ marginBottom: 12 }}>
+          <div>
+            <div className="rz-nr mono">{zile}</div>
+            <div className="rz-lbl">{zile === 1 ? "zi lucrătoare" : "zile lucrătoare"}</div>
+          </div>
+        </div>
+      )}
+
+      {mieSuprapus && (
+        <div className="sub" style={{ color: "var(--galben)", marginBottom: 11 }}>
+          ⚠ Ai deja o cerere pe perioada asta ({dataRo(mieSuprapus.start)} – {dataRo(mieSuprapus.final)},{" "}
+          {mieSuprapus.status === "aprobat" ? "aprobată" : "în așteptare"}).
+        </div>
+      )}
+
+      {inchidereSuprapusa && (
+        <div className="sub" style={{ color: "var(--galben)", marginBottom: 11 }}>
+          ⚠ În perioada asta firma e închisă oricum ({inchidereSuprapusa.motiv || "vacanță"},{" "}
+          {dataRo(inchidereSuprapusa.start)} – {dataRo(inchidereSuprapusa.final)}).
+        </div>
+      )}
+
+      <div className="camp">
+        <label>{eAdmin ? "Observații" : "De ce (opțional)"}</label>
+        <textarea rows={2} value={motivCerere} onChange={(e) => setMotivCerere(e.target.value)}
+          placeholder={eAdmin ? "ex. anunțat verbal săptămâna trecută" : "ex. plec la nuntă în țară"} />
+      </div>
+
+      {!eAdmin && (
+        <div className="sub" style={{ marginBottom: 12 }}>Cererea ajunge la șef, care o aprobă sau o refuză.</div>
+      )}
+
+      <button className="btn btn-galben" disabled={!valid}
+        onClick={() => valid && onTrimite({
+          angajatId: eAdmin ? angajatId : eu?.id,
+          nume: eAdmin ? angajati.find((a) => a.id === angajatId)?.nume : eu?.nume,
+          tip, start, final: finalReal, motivCerere: motivCerere.trim(),
+        })}>
+        {eAdmin ? "Trece concediul" : (singuraZi ? "Cer ziua asta liberă" : "Trimite cererea")}
+      </button>
+    </Foaie>
+  );
+}
+
+function FormInchidere({ item, program, onSalveaza, onClose }) {
+  const [f, setF] = useState(item || { motiv: "", start: aziISO(), final: aziISO() });
+  const zile = zileLucratoareIntre(f.start, f.final, program);
+  const invers = f.final < f.start;
+  const valid = f.start && f.final && !invers;
+
+  return (
+    <Foaie titlu={item ? "Modifică perioada" : "Firma e închisă"} onClose={onClose}>
+      <div className="camp">
+        <label>Motiv</label>
+        <input value={f.motiv} onChange={(e) => setF({ ...f, motiv: e.target.value })}
+          placeholder="ex. Vacanța de vară, Sărbătorile de iarnă" autoFocus />
+      </div>
+
+      <div className="rand2">
+        <div className="camp">
+          <label>De la</label>
+          <input type="date" value={f.start} onChange={(e) => {
+            const v = e.target.value;
+            setF({ ...f, start: v, final: f.final < v ? v : f.final });
+          }} />
+        </div>
+        <div className="camp">
+          <label>Până la (inclusiv)</label>
+          <input type="date" value={f.final} min={f.start} onChange={(e) => setF({ ...f, final: e.target.value })} />
+        </div>
+      </div>
+
+      {invers ? (
+        <div className="sub" style={{ color: "var(--rosu)", marginBottom: 11 }}>
+          Data de final trebuie să fie după cea de start.
+        </div>
+      ) : (
+        <div className="rezumat" style={{ marginBottom: 12 }}>
+          <div>
+            <div className="rz-nr mono">{zile}</div>
+            <div className="rz-lbl">{zile === 1 ? "zi lucrătoare" : "zile lucrătoare"} închise</div>
+          </div>
+        </div>
+      )}
+
+      <div className="sub" style={{ marginBottom: 12 }}>
+        Perioada apare în planing la toată lumea, marcată cu roșu.
+      </div>
+
+      <button className="btn btn-galben" disabled={!valid} onClick={() => valid && onSalveaza(f)}>
+        Salvează
+      </button>
+    </Foaie>
   );
 }
 
