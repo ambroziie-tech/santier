@@ -3740,9 +3740,24 @@ function App() {
                   <span className="k">Materiale fără destinație</span>
                   <b className="mono" style={{ color: pierderiTotal > 0 ? "var(--rosu)" : "var(--mut)" }}>−{bani(pierderiTotal)}</b>
                 </div>
-                {cheltuieliAutoTotal > 0 && (
-                  <div className="fisa-rand"><span className="k">Auto (întreținere + combustibil)</span><b className="mono">−{bani(cheltuieliAutoTotal)}</b></div>
-                )}
+                {cheltuieliAutoTotal > 0 && (() => {
+                  const idVeh = new Set(db.camioane.map((c) => c.id));
+                  const orfan = db.intretinere.filter((i) => !idVeh.has(i.camionId))
+                    .reduce((s, i) => s + (Number(i.cost) || 0), 0);
+                  return (
+                    <div className="fisa-rand">
+                      <span className="k">
+                        Auto (întreținere + combustibil)
+                        {orfan > 0 && (
+                          <span style={{ display: "block", color: "var(--galben)", fontWeight: 400, fontSize: 12 }}>
+                            {bani(orfan)} de la vehicule șterse — le cureți din Setări → Auto
+                          </span>
+                        )}
+                      </span>
+                      <b className="mono">−{bani(cheltuieliAutoTotal)}</b>
+                    </div>
+                  );
+                })()}
                 <div className="fisa-rand" style={{ borderBottom: "none", paddingTop: 12 }}>
                   <span className="k"><b>Marjă netă</b></span>
                   <b className="mono" style={{ fontSize: 18, color: marjaTotala >= 0 ? "var(--verde)" : "var(--rosu)" }}>
@@ -4208,6 +4223,58 @@ function App() {
                   {utilaje.length === 0
                     ? <div className="gol-msg">Niciun utilaj încă.</div>
                     : utilaje.map(cardUtilaj)}
+
+                  {(() => {
+                    /* cheltuieli de întreținere/combustibil ale unor vehicule șterse între timp —
+                       rămân ca istoric în cifre, dar aici le poți curăța dacă nu le mai vrei */
+                    const idVehicule = new Set(db.camioane.map((c) => c.id));
+                    const orfane = db.intretinere.filter((i) => !idVehicule.has(i.camionId));
+                    if (orfane.length === 0) return null;
+                    const totalOrfan = orfane.reduce((s, i) => s + (Number(i.cost) || 0), 0);
+                    return (
+                      <>
+                        <div className="sectiune">🗑 Cheltuieli fără vehicul</div>
+                        <div className="card">
+                          <div className="sub" style={{ marginTop: 0 }}>
+                            {orfane.length} {orfane.length === 1 ? "cheltuială rămasă" : "cheltuieli rămase"} de la
+                            vehicule pe care le-ai șters — de-aia încă apar în Cifre, la marjă.
+                            Rămân ca istoric până le ștergi și pe ele.
+                          </div>
+                          <div className="fisa-rand" style={{ borderBottom: "none", paddingTop: 6 }}>
+                            <span className="k"><b>Total</b></span>
+                            <b className="mono" style={{ color: "var(--rosu)" }}>{bani(totalOrfan)}</b>
+                          </div>
+                          <div className="actiuni">
+                            <button className="btn btn-mic pericol"
+                              onClick={() => cere(
+                                `Ștergi definitiv toate cele ${orfane.length} cheltuieli, totalizând ${bani(totalOrfan)}? Nu se poate anula.`,
+                                () => salveaza(cuJurnal({
+                                  ...db,
+                                  intretinere: db.intretinere.filter((i) => idVehicule.has(i.camionId)),
+                                }, `Curățate ${orfane.length} cheltuieli auto fără vehicul (${bani(totalOrfan)})`)),
+                                "Șterge tot")}>
+                              Șterge tot ({bani(totalOrfan)})
+                            </button>
+                          </div>
+                        </div>
+                        {orfane.map((i) => (
+                          <div className="fisa-rand" key={i.id}>
+                            <span>
+                              {i.tip}
+                              <span className="k"> · {i.data}</span>
+                            </span>
+                            <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                              <b className="mono">{bani(i.cost)}</b>
+                              <button className="btn btn-mic pericol"
+                                onClick={() => salveaza({ ...db, intretinere: db.intretinere.filter((x) => x.id !== i.id) })}>
+                                ✕
+                              </button>
+                            </span>
+                          </div>
+                        ))}
+                      </>
+                    );
+                  })()}
                 </>
               );
             })()}
