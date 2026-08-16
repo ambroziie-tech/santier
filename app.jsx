@@ -2910,6 +2910,11 @@ function App() {
               <div className="stat bani"><div className="nr">{bani(costManoperaTotal)}</div><div className="lbl">Manoperă pontată (total)</div></div>
             </div>
 
+            <button className="btn btn-mic pericol" style={{ width: "100%", marginBottom: 14 }}
+              onClick={() => setFoaie({ tip: "concediuDirect", tipInitial: "absenta", oZi: true })}>
+              🚫 N-a venit cineva astăzi
+            </button>
+
             {alerteCamioane.length > 0 && (
               <>
                 <div className="sectiune">🚛 De rezolvat la mașini</div>
@@ -4601,7 +4606,6 @@ function App() {
             {(filtruCereri === "toate" || filtruCereri === "concediu") && (() => {
               const noiC = db.concedii.filter((x) => x.status === "nou");
               const vechiC = db.concedii.filter((x) => x.status !== "nou").slice(0, 8);
-              if (db.concedii.length === 0) return null;
               const randC = (x) => {
                 const tip = numeTipConcediu(x.tip);
                 const zile = zileLucratoareIntre(x.start, x.final, db.setari?.program);
