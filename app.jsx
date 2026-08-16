@@ -950,6 +950,7 @@ function App() {
   const cere = (mesaj, onDa, eticheta, onNu) => setIntrebare({ mesaj, onDa, eticheta, onNu });
   const [cauta, setCauta] = useState("");
   const [saptamana, setSaptamana] = useState(0);
+  const [ziColapsata, setZiColapsata] = useState({});
   const [foaie, setFoaie] = useState(null);
 
   /* încărcare: baza de date e comună (shared), identitatea e pe telefonul fiecăruia */
@@ -3609,13 +3610,28 @@ function App() {
                 const weekend = i >= 5;
                 const inchis = firmaInchisa(db.inchideriFirma, zi);
                 const plecati = db.concedii.filter((c) => c.status === "aprobat" && zi >= c.start && zi <= c.final);
+                const restransa = !!ziColapsata[zi];
+
+                /* grupez echipele care merg pe același șantier, ca numele lui să nu se repete */
+                const grupuri = [];
+                intrari.forEach((p) => {
+                  let g = grupuri.find((x) => x.santierId === p.santierId);
+                  if (!g) { g = { santierId: p.santierId, intrari: [] }; grupuri.push(g); }
+                  g.intrari.push(p);
+                });
+
                 return (
                   <div className="zi-plan" key={zi} style={inchis ? { opacity: .6 } : null}>
                     <div className="zi-antet">
-                      <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                        onClick={() => setZiColapsata((prev) => ({ ...prev, [zi]: !prev[zi] }))}>
+                        <span style={{ color: "var(--mut)", fontSize: 11, transform: restransa ? "rotate(-90deg)" : "none", display: "inline-block" }}>▾</span>
                         <b style={{ color: eAzi ? "var(--galben)" : weekend ? "var(--mut)" : "var(--text)" }}>{zileTrad()[i]}</b>
-                        <span className="mono" style={{ color: "var(--mut)", fontSize: 12, marginLeft: 7 }}>{d.getDate()}.{String(d.getMonth() + 1).padStart(2, "0")}</span>
-                        {inchis && <span className="chip alerta" style={{ marginLeft: 8 }}>🏖 {inchis.motiv || "Închis"}</span>}
+                        <span className="mono" style={{ color: "var(--mut)", fontSize: 12 }}>{d.getDate()}.{String(d.getMonth() + 1).padStart(2, "0")}</span>
+                        {inchis && <span className="chip alerta" style={{ marginLeft: 2 }}>🏖 {inchis.motiv || "Închis"}</span>}
+                        {restransa && intrari.length > 0 && (
+                          <span className="sub" style={{ marginTop: 0 }}>· {intrari.length} {intrari.length === 1 ? "intrare" : "intrări"}</span>
+                        )}
                       </div>
                       <div style={{ display: "flex", gap: 6 }}>
                         {intrari.length > 0 && (
@@ -3630,51 +3646,55 @@ function App() {
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "plan", data: zi })}>+</button>
                       </div>
                     </div>
-                    {plecati.filter((c) => c.tip !== "absenta").length > 0 && (
+                    {!restransa && plecati.filter((c) => c.tip !== "absenta").length > 0 && (
                       <div className="sub" style={{ color: "var(--galben)", padding: "4px 0" }}>
                         🏖 În concediu: {plecati.filter((c) => c.tip !== "absenta").map((c) => c.nume).join(", ")}
                       </div>
                     )}
-                    {plecati.filter((c) => c.tip === "absenta").length > 0 && (
+                    {!restransa && plecati.filter((c) => c.tip === "absenta").length > 0 && (
                       <div className="sub" style={{ color: "var(--rosu)", padding: "4px 0" }}>
                         🚫 N-au venit: {plecati.filter((c) => c.tip === "absenta").map((c) => c.nume).join(", ")}
                       </div>
                     )}
-                    {intrari.length === 0 ? (
+                    {!restransa && (intrari.length === 0 ? (
                       <div className="zi-gol">—</div>
-                    ) : intrari.map((p) => {
-                      const s = db.santiere.find((x) => x.id === p.santierId);
-                      const ech = db.echipe.find((x) => x.id === p.echipaId);
-                      const oameni = (p.angajatIds || []).map((id) => db.angajati.find((a) => a.id === id)?.nume).filter(Boolean);
+                    ) : grupuri.map((g) => {
+                      const s = db.santiere.find((x) => x.id === g.santierId);
                       return (
-                        <div className="plan-item" key={p.id} onClick={() => setFoaie({ tip: "plan", item: p, data: zi })}>
+                        <div className="plan-item" key={g.santierId || "fara-santier"}>
                           <div className="pi-cap">
                             <div className="titlu" style={{ fontSize: 14 }}>🏗 {s ? s.nume : "Șantier șters"}</div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                              <span className="chip alocat mono">{interval(p)}</span>
-                              <button className="btn-sterge-plan"
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  cere(`Ștergi ${s ? s.nume : "intrarea"} de ${interval(p)} din ${dataRo(zi)}?`,
-                                    () => salveaza({ ...db, planificare: db.planificare.filter((x) => x.id !== p.id) }),
-                                    "Șterge");
-                                }}>✕</button>
-                            </div>
+                            {(s?.adresaFull || s?.adresa) && <ButonHarta adresa={s.adresaFull || s.adresa} mic />}
                           </div>
-                          <div className="sub">
-                            {ech && <>Echipa {ech.nume}</>}
-                            {oameni.length > 0 && <>{ech ? " + " : ""}{oameni.join(", ")}</>}
-                            {!ech && oameni.length === 0 && "Fără oameni alocați"}
-                            {p.note && <><br />{p.note}</>}
-                          </div>
-                          {(s?.adresaFull || s?.adresa) && (
-                            <div style={{ marginTop: 7 }}>
-                              <ButonHarta adresa={s.adresaFull || s.adresa} mic />
-                            </div>
-                          )}
+                          {g.intrari.map((p) => {
+                            const ech = db.echipe.find((x) => x.id === p.echipaId);
+                            const oameni = (p.angajatIds || []).map((id) => db.angajati.find((a) => a.id === id)?.nume).filter(Boolean);
+                            return (
+                              <div key={p.id} style={{ padding: "7px 0", borderTop: g.intrari.indexOf(p) > 0 ? "1px solid var(--linie)" : "none" }}
+                                onClick={() => setFoaie({ tip: "plan", item: p, data: zi })}>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 7, cursor: "pointer" }}>
+                                  <span className="sub" style={{ marginTop: 0 }}>
+                                    {ech ? <b style={{ color: "var(--text)" }}>{ech.nume}</b> : "Fără echipă"}
+                                    {oameni.length > 0 && <> · {oameni.join(", ")}</>}
+                                  </span>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                                    <span className="chip alocat mono">{interval(p)}</span>
+                                    <button className="btn-sterge-plan"
+                                      onClick={(ev) => {
+                                        ev.stopPropagation();
+                                        cere(`Ștergi ${ech ? ech.nume : "intrarea"} de ${interval(p)} din ${dataRo(zi)}?`,
+                                          () => salveaza({ ...db, planificare: db.planificare.filter((x) => x.id !== p.id) }),
+                                          "Șterge");
+                                      }}>✕</button>
+                                  </div>
+                                </div>
+                                {p.note && <div className="sub" style={{ marginTop: 3 }}>{p.note}</div>}
+                              </div>
+                            );
+                          })}
                         </div>
                       );
-                    })}
+                    }))}
                   </div>
                 );
               })}
