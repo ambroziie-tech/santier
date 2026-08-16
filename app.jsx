@@ -3610,7 +3610,9 @@ function App() {
                 const weekend = i >= 5;
                 const inchis = firmaInchisa(db.inchideriFirma, zi);
                 const plecati = db.concedii.filter((c) => c.status === "aprobat" && zi >= c.start && zi <= c.final);
-                const restransa = !!ziColapsata[zi];
+                /* implicit: doar azi rămâne deschisă — trecutul și ce urmează pornesc restrânse,
+                   dar dacă ai atins tu vreodată ziua, îți respect alegerea */
+                const restransa = zi in ziColapsata ? ziColapsata[zi] : !eAzi;
 
                 /* grupez echipele care merg pe același șantier, ca numele lui să nu se repete */
                 const grupuri = [];
