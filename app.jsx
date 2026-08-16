@@ -479,6 +479,7 @@ const TIPURI_CONCEDIU = [
   { cod: "medical", nume: "Concediu medical", ico: "🏥" },
   { cod: "fara-plata", nume: "Fără plată", ico: "📄" },
   { cod: "eveniment", nume: "Eveniment familial", ico: "👨‍👩‍👧" },
+  { cod: "absenta", nume: "Absență nemotivată", ico: "🚫" },
 ];
 const numeTipConcediu = (cod) => TIPURI_CONCEDIU.find((t) => t.cod === cod) || TIPURI_CONCEDIU[0];
 
@@ -1598,11 +1599,12 @@ function App() {
   /* adminul adaugă concediu direct, fără cerere */
   const adaugaConcediuDirect = (c) => {
     const zile = zileLucratoareIntre(c.start, c.final, db.setari?.program);
+    const eticheta = c.tip === "absenta" ? "Absență" : "Concediu trecut";
     salveaza(cuJurnal({
       ...db,
       concedii: [{ ...c, id: uid(), status: "aprobat", trimisLa: new Date().toISOString(),
         raspunsLa: new Date().toISOString(), pusDeAdmin: true }, ...db.concedii],
-    }, `Concediu trecut: ${c.nume} · ${dataRo(c.start)} – ${dataRo(c.final)} (${zile} zile)`));
+    }, `${eticheta}: ${c.nume} · ${dataRo(c.start)} – ${dataRo(c.final)} (${zile} zile)`));
     setFoaie(null);
   };
 
@@ -3623,9 +3625,14 @@ function App() {
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "plan", data: zi })}>+</button>
                       </div>
                     </div>
-                    {plecati.length > 0 && (
+                    {plecati.filter((c) => c.tip !== "absenta").length > 0 && (
                       <div className="sub" style={{ color: "var(--galben)", padding: "4px 0" }}>
-                        🏖 În concediu: {plecati.map((c) => c.nume).join(", ")}
+                        🏖 În concediu: {plecati.filter((c) => c.tip !== "absenta").map((c) => c.nume).join(", ")}
+                      </div>
+                    )}
+                    {plecati.filter((c) => c.tip === "absenta").length > 0 && (
+                      <div className="sub" style={{ color: "var(--rosu)", padding: "4px 0" }}>
+                        🚫 N-au venit: {plecati.filter((c) => c.tip === "absenta").map((c) => c.nume).join(", ")}
                       </div>
                     )}
                     {intrari.length === 0 ? (
@@ -4650,10 +4657,15 @@ function App() {
               return (
                 <>
                   <div className="sectiune">🏖 Concedii {noiC.length > 0 && `(${noiC.length} de aprobat)`}</div>
-                  <button className="btn btn-mic" style={{ marginBottom: 10 }}
-                    onClick={() => setFoaie({ tip: "concediuDirect" })}>
-                    + Trec eu un concediu
-                  </button>
+                  <div className="actiuni" style={{ marginBottom: 10 }}>
+                    <button className="btn btn-mic" onClick={() => setFoaie({ tip: "concediuDirect" })}>
+                      + Trec eu un concediu
+                    </button>
+                    <button className="btn btn-mic pericol"
+                      onClick={() => setFoaie({ tip: "concediuDirect", tipInitial: "absenta", oZi: true })}>
+                      🚫 N-a venit cineva
+                    </button>
+                  </div>
                   {noiC.map(randC)}
                   {noiC.length === 0 && <div className="gol-msg">Nimic de aprobat.</div>}
                   {vechiC.length > 0 && (
@@ -4963,7 +4975,7 @@ function App() {
       )}
       {foaie?.tip === "concediuDirect" && (
         <FormConcediu angajati={db.angajati} program={db.setari?.program} inchideri={db.inchideriFirma}
-          concediiExistente={db.concedii}
+          concediiExistente={db.concedii} tipInitial={foaie.tipInitial} oZi={foaie.oZi}
           onTrimite={(c) => adaugaConcediuDirect(c)} onClose={() => setFoaie(null)} />
       )}
       {foaie?.tip === "respingeConcediu" && (
@@ -7484,7 +7496,7 @@ function FormConcediu({ eu, angajati, program, inchideri = [], tipInitial, oZi,
   const inchidereSuprapusa = (inchideri || []).find((x) => start <= x.final && final >= x.start);
 
   return (
-    <Foaie titlu={eAdmin ? "Trece un concediu" : (singuraZi ? "Cerere de zi liberă" : "Cerere de concediu")} onClose={onClose}>
+    <Foaie titlu={tip === "absenta" ? "N-a venit la muncă" : eAdmin ? "Trece un concediu" : (singuraZi ? "Cerere de zi liberă" : "Cerere de concediu")} onClose={onClose}>
       {eAdmin && (
         <div className="camp">
           <label>Pentru cine</label>
@@ -7575,7 +7587,7 @@ function FormConcediu({ eu, angajati, program, inchideri = [], tipInitial, oZi,
           nume: eAdmin ? angajati.find((a) => a.id === angajatId)?.nume : eu?.nume,
           tip, start, final: finalReal, motivCerere: motivCerere.trim(),
         })}>
-        {eAdmin ? "Trece concediul" : (singuraZi ? "Cer ziua asta liberă" : "Trimite cererea")}
+        {tip === "absenta" ? "Marchează absența" : eAdmin ? "Trece concediul" : (singuraZi ? "Cer ziua asta liberă" : "Trimite cererea")}
       </button>
     </Foaie>
   );
@@ -8610,7 +8622,9 @@ function FormPlan({ item, data, santiere, echipe, angajati, planificare, program
 
       {inConcediu.length > 0 && (
         <div className="conflict">
-          <b>⛔ {inConcediu.length === 1 ? "E în concediu" : "Sunt în concediu"}</b>
+          <b>⛔ {inConcediu.every(({ c }) => c.tip === "absenta")
+            ? (inConcediu.length === 1 ? "N-a venit la muncă" : "N-au venit la muncă")
+            : (inConcediu.length === 1 ? "E indisponibil" : "Sunt indisponibili")}</b>
           {inConcediu.map(({ a, c }, i) => (
             <div key={i} className="cf-rand">
               <b>{a.nume}</b> — {numeTipConcediu(c.tip).nume.toLowerCase()},{" "}
