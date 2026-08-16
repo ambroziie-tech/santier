@@ -1448,6 +1448,18 @@ function App() {
     const lista = db.scule.map((x) => x.id === sculaId ? { ...x, stare: "service", echipaId: null, dataAlocare: null } : x);
     salveaza(cuJurnal({ ...db, scule: lista }, `${scula.nume} → trimisă la service`));
   };
+  /* revine reparată — aici afli de obicei cât a costat */
+  const finalizeazaService = (sculaId, cost, nota) => {
+    const scula = db.scule.find((x) => x.id === sculaId);
+    const c = Number(cost) || 0;
+    const lista = db.scule.map((x) => x.id === sculaId
+      ? { ...x, stare: "depozit", echipaId: null, dataAlocare: null,
+          costServiceTotal: (Number(x.costServiceTotal) || 0) + c }
+      : x);
+    salveaza(cuJurnal({ ...db, scule: lista },
+      `${scula.nume} ← revenită din service${c > 0 ? ` · ${bani(c)}` : ""}${nota ? ` (${nota})` : ""}`));
+    setFoaie(null);
+  };
 
   /* utilaje comune: se urmăresc pe șantier, nu pe echipă */
   const mutaUtilajComun = (utilajId, santierId) => {
@@ -3172,6 +3184,9 @@ function App() {
                           {s.stare === "problema" ? <>La <b>{numeEchipa(s.echipaId)}</b></>
                             : s.stare === "alocat" ? <>La <b>{numeEchipa(s.echipaId)}</b> din {s.dataAlocare}</>
                             : s.stare === "service" ? "În service" : "În depozit"}
+                          {Number(s.costServiceTotal) > 0 && (
+                            <> · <span style={{ color: "var(--galben)" }}>cheltuit reparații: {bani(s.costServiceTotal)}</span></>
+                          )}
                           {s.problema && (
                             <><br /><span style={{ color: "var(--rosu)" }}>
                               ⚠ {s.problema.tip}{s.problema.note && ` — ${s.problema.note}`}
@@ -3206,6 +3221,8 @@ function App() {
                       )}
                       {s.stare !== "service" && s.stare !== "problema"
                         ? <button className="btn btn-mic" onClick={() => trimiteService(s.id)}>Service</button>
+                        : s.stare === "service"
+                        ? <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "finalService", item: s })}>A revenit reparată</button>
                         : <button className="btn btn-mic" onClick={() => returneazaScula(s.id)}>Înapoi în depozit</button>}
                       <button className="btn btn-mic" onClick={() => setFoaie({ tip: "scula", item: s })}>Modifică</button>
                       <button className="btn btn-mic pericol" onClick={() => stergeGen("scule", "Ștergi această sculă?")(s.id)}>Șterge</button>
@@ -4798,6 +4815,11 @@ function App() {
       )}
       {foaie?.tip === "scula" && (
         <FormScula item={foaie.item} categorii={categoriiScule} onSalveaza={salvScula} onClose={() => setFoaie(null)} />
+      )}
+      {foaie?.tip === "finalService" && (
+        <FormFinalService scula={foaie.item}
+          onFinalizeaza={(cost, nota) => finalizeazaService(foaie.item.id, cost, nota)}
+          onClose={() => setFoaie(null)} />
       )}
       {foaie?.tip === "echipa" && (
         <FormEchipa item={foaie.item} santiere={db.santiere.filter((x) => x.status !== "finalizat")}
@@ -6555,6 +6577,33 @@ function FormMaterial({ item, santiere = [], categorii = [], onSalveaza, onClose
       <button className="btn btn-galben"
         onClick={() => f.nume.trim() && onSalveaza({ ...f, cant: Number(f.cant) || 0, pret: Number(f.pret) || 0 }, dest)}>
         Salvează
+      </button>
+    </Foaie>
+  );
+}
+
+function FormFinalService({ scula, onFinalizeaza, onClose }) {
+  const [cost, setCost] = useState("");
+  const [nota, setNota] = useState("");
+  const costPana = Number(scula.costServiceTotal) || 0;
+
+  return (
+    <Foaie titlu={`A revenit: ${scula.nume}`} onClose={onClose}>
+      <div className="camp">
+        <label>Cât te-a costat reparația (€)</label>
+        <input type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)}
+          placeholder="ex. 45" autoFocus />
+      </div>
+      <div className="sub" style={{ marginBottom: 12 }}>
+        Lasă gol dacă a fost gratuit (garanție) sau nu știi încă suma.
+        {costPana > 0 && <> Ai mai cheltuit cu ea până acum: <b>{bani(costPana)}</b>.</>}
+      </div>
+      <div className="camp">
+        <label>Ce s-a reparat (opțional)</label>
+        <input value={nota} onChange={(e) => setNota(e.target.value)} placeholder="ex. schimbat perii motor" />
+      </div>
+      <button className="btn btn-galben" onClick={() => onFinalizeaza(cost, nota.trim())}>
+        {cost ? `Marchează reparată · ${bani(cost)}` : "Marchează reparată"}
       </button>
     </Foaie>
   );
