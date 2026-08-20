@@ -22,9 +22,11 @@
     #pornire b { color:#F5B301; display:block; font-size:18px; margin-bottom:14px; }
     #stare div { padding:3px 0; font-family:ui-monospace,monospace; font-size:12px; }
     #stare .ok { color:#4CAF7D; } #stare .rau { color:#E5564D; }
-    #eroare { margin-top:18px; padding:12px; border:1px solid #E5564D; border-radius:9px;
+    #eroare { margin:0 auto; max-width:520px; padding:12px; border:1px solid #E5564D; border-radius:9px;
       color:#E5564D; font-family:ui-monospace,monospace; font-size:12px;
-      white-space:pre-wrap; word-break:break-word; display:none; }
+      white-space:pre-wrap; word-break:break-word; display:none;
+      background:#17191D; position:fixed; top:12px; left:12px; right:12px; z-index:99999;
+      max-height:70vh; overflow:auto; box-shadow:0 4px 24px rgba(0,0,0,.6); }
   </style>
 </head>
 <body>
@@ -32,13 +34,24 @@
     <div id="pornire">
       <b>Șantier Manager</b>
       <div id="stare"></div>
-      <div id="eroare"></div>
+    </div>
+  </div>
+  <div id="eroare">
+    <div id="eroare-text"></div>
+    <div style="margin-top:10px; display:flex; gap:8px">
+      <button onclick="location.reload()" style="background:#E5564D; color:#fff; border:none;
+        padding:7px 12px; border-radius:6px; font-family:ui-monospace,monospace; font-size:12px;
+        cursor:pointer">Reîncarcă</button>
+      <button onclick="document.getElementById('eroare').style.display='none'" style="background:transparent;
+        color:#E5564D; border:1px solid #E5564D; padding:7px 12px; border-radius:6px;
+        font-family:ui-monospace,monospace; font-size:12px; cursor:pointer">Ascunde</button>
     </div>
   </div>
 
   <script>
     var stare = document.getElementById("stare");
     var cutieEroare = document.getElementById("eroare");
+    var textEroare = document.getElementById("eroare-text");
     function pas(t, ok) {
       var d = document.createElement("div");
       d.className = ok === false ? "rau" : (ok ? "ok" : "");
@@ -47,7 +60,7 @@
     }
     function aratEroare(t) {
       cutieEroare.style.display = "block";
-      cutieEroare.textContent += t + "\n\n";
+      textEroare.textContent += t + "\n\n";
     }
     window.addEventListener("error", function (e) {
       aratEroare("EROARE: " + (e.message || e));
