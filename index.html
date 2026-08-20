@@ -15,8 +15,10 @@
 
   <style>
     html, body { margin: 0; padding: 0; background: #17191D; }
-    #pornire { color:#8B919C; font-family:system-ui,sans-serif; padding:50px 20px;
-      font-size:14px; max-width:560px; margin:0 auto; }
+    #pornire { color:#8B919C; font-family:system-ui,sans-serif; font-size:14px;
+      max-width:560px; margin:0 auto;
+      padding:calc(env(safe-area-inset-top, 0px) + 40px) 20px
+              calc(env(safe-area-inset-bottom, 0px) + 40px); }
     #pornire b { color:#F5B301; display:block; font-size:18px; margin-bottom:14px; }
     #stare div { padding:3px 0; font-family:ui-monospace,monospace; font-size:12px; }
     #stare .ok { color:#4CAF7D; } #stare .rau { color:#E5564D; }
@@ -73,11 +75,31 @@
     pas("Supabase " + (typeof window.supabase !== "undefined" ? "OK" : "LIPSESTE"), typeof window.supabase !== "undefined");
     pas("Babel " + (typeof Babel !== "undefined" ? "OK" : "LIPSESTE"), typeof Babel !== "undefined");
 
+    // aduc intai traducerile (fisier separat, plain JS, fara Babel) — trebuie sa
+    // existe inaintea lui app.jsx, care le foloseste imediat cum porneste
+    function aduTraduceri() {
+      pas("aduc traduceri.js (fara memorie cache)...");
+      return fetch("./traduceri.js?v=" + Date.now(), { cache: "no-store" })
+        .then(function (r) {
+          if (!r.ok) throw new Error("traduceri.js nu s-a putut descarca (cod " + r.status + ")");
+          return r.text();
+        })
+        .then(function (cod) {
+          (0, eval)(cod);
+          pas("traduceri.js adus: " + Math.round(cod.length / 1024) + " KB", true);
+        })
+        .catch(function (e) {
+          // fara traduceri, aplicatia tot merge — ramane doar in romana
+          pas("traduceri.js n-a mers (" + (e.message || e) + "), continui doar cu romana", false);
+          (0, eval)("const TRAD = {};");
+        });
+    }
+
     // aduc app.jsx eu, cu ocolirea memoriei browserului, si il curat de eventuale
     // linii "import"/"export" ramase din varianta pentru Claude
-    (function () {
+    aduTraduceri().then(function () {
       pas("aduc app.jsx (fara memorie cache)...");
-      fetch("./app.jsx?v=" + Date.now(), { cache: "no-store" })
+      return fetch("./app.jsx?v=" + Date.now(), { cache: "no-store" })
         .then(function (r) {
           if (!r.ok) throw new Error("app.jsx nu s-a putut descarca (cod " + r.status + ")");
           return r.text();
@@ -117,7 +139,7 @@
           pas("a esuat", false);
           aratEroare(e.message || String(e));
         });
-    })();
+    });
 
     setTimeout(function () {
       if (document.getElementById("pornire")) pas("aplicatia tot nu a pornit", false);
