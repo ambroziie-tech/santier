@@ -191,6 +191,166 @@ const TRAD = {
     "ore": "heures",
     "Luni": "Lundi", "Marți": "Mardi", "Miercuri": "Mercredi", "Joi": "Jeudi",
     "Vineri": "Vendredi", "Sâmbătă": "Samedi", "Duminică": "Dimanche",
+    /* --- adăugate: roluri, concedii, utilaje, planing, categorii, taxe --- */
+    "Roluri și permisiuni": "Rôles et permissions",
+    "cine ce poate face în aplicație": "qui peut faire quoi dans l'appli",
+    "🔑 Rolurile firmei": "🔑 Les rôles de l'entreprise",
+    "+ Rol nou": "+ Nouveau rôle",
+    "Rol nou": "Nouveau rôle",
+    "Modifică rol": "Modifier le rôle",
+    "Numele rolului *": "Nom du rôle *",
+    "Salvează rolul": "Enregistrer le rôle",
+    "permisiune": "permission",
+    "permisiuni": "permissions",
+    "angajat": "employé",
+    "angajați": "employés",
+    "Vede panoul principal": "Voit le tableau de bord",
+    "Vede șantierele — cifrat, marjă, cine a lucrat": "Voit les chantiers — chiffre d'affaires, marge, qui a travaillé",
+    "Poate adăuga șantiere, pontaje și materiale pe ele": "Peut ajouter des chantiers, des heures et des matériaux",
+    "Vede și modifică planingul": "Voit et modifie le planning",
+    "Materiale — adaugă, scade, prețuri": "Matériaux — ajoute, retire, prix",
+    "Scule — adaugă, alocă pe echipe": "Outils — ajoute, alloue aux équipes",
+    "Camioane și utilaje — ITP, întreținere, combustibil": "Camions et engins — contrôle technique, entretien, carburant",
+    "Vede și aprobă cererile de pe teren": "Voit et approuve les demandes du terrain",
+    "Rapoarte": "Rapports",
+    "Cifre și rentabilitate — marje, aport pe om": "Chiffres et rentabilité — marges, apport par personne",
+    "Raport lunar pe fiecare angajat": "Rapport mensuel par employé",
+    "Echipe": "Équipes",
+    "Verifică dotarea standard a echipelor": "Vérifie l'équipement standard des équipes",
+    "Oameni": "Personnes",
+    "Vede angajații și fișele lor": "Voit les employés et leurs fiches",
+    "Poate adăuga, modifica sau șterge angajați": "Peut ajouter, modifier ou supprimer des employés",
+    "Pe teren (contul de muncitor)": "Sur le terrain (compte ouvrier)",
+    "Notează de pe telefon ce materiale s-au consumat": "Note depuis le téléphone les matériaux consommés",
+    "Poate cere oameni în plus pe șantierul lui": "Peut demander du personnel supplémentaire sur son chantier",
+    "Vezi fișele, dar doar proprietarul poate adăuga, modifica sau șterge angajați.": "Tu vois les fiches, mais seul le propriétaire peut ajouter, modifier ou supprimer des employés.",
+    "Vezi fișele, dar nu le poți modifica — rolul tău nu are voie.": "Tu vois les fiches, mais tu ne peux pas les modifier — ton rôle ne le permet pas.",
+    "Doar proprietarul poate modifica sau șterge angajați.": "Seul le propriétaire peut modifier ou supprimer des employés.",
+    "Funcție / rol": "Fonction / rôle",
+    "— fără —": "— aucun —",
+    "N-ai creat încă niciun rol. Le faci din Setări → Roluri și permisiuni.": "Tu n'as pas encore créé de rôle. Fais-le depuis Réglages → Rôles et permissions.",
+    "Niciun rol definit — creează-le din Setări → Roluri și permisiuni.": "Aucun rôle défini — crée-les depuis Réglages → Rôles et permissions.",
+    "Concediu de odihnă": "Congé payé",
+    "Zi liberă": "Jour de congé",
+    "Concediu medical": "Arrêt maladie",
+    "Fără plată": "Sans solde",
+    "Eveniment familial": "Événement familial",
+    "Absență nemotivată": "Absence injustifiée",
+    "🏖 Cer concediu": "🏖 Demander un congé",
+    "📅 Cer o zi liberă": "📅 Demander un jour de congé",
+    "Concediile tale": "Tes congés",
+    "zi lucrătoare": "jour ouvré",
+    "zile lucrătoare": "jours ouvrés",
+    "Aprobat": "Approuvé",
+    "Refuzat": "Refusé",
+    "În așteptare": "En attente",
+    "N-a venit la muncă": "N'est pas venu travailler",
+    "Trece un concediu": "Enregistrer un congé",
+    "Cerere de zi liberă": "Demande de jour de congé",
+    "Cerere de concediu": "Demande de congé",
+    "O singură zi": "Un seul jour",
+    "Mai multe zile": "Plusieurs jours",
+    "În ce zi": "Quel jour",
+    "De la": "Du",
+    "Până la (inclusiv)": "Au (inclus)",
+    "Data de final trebuie să fie după cea de start.": "La date de fin doit être après celle de début.",
+    "Ce fel de concediu": "Quel type de congé",
+    "Pentru cine": "Pour qui",
+    "Observații": "Observations",
+    "De ce (opțional)": "Pourquoi (facultatif)",
+    "Cererea ajunge la șef, care o aprobă sau o refuză.": "La demande arrive au chef, qui l'approuve ou la refuse.",
+    "Marchează absența": "Marquer l'absence",
+    "Trece concediul": "Enregistrer le congé",
+    "Cer ziua asta liberă": "Demander ce jour de congé",
+    "Trimite cererea": "Envoyer la demande",
+    "🏖 Concedii": "🏖 Congés",
+    "de aprobat": "à approuver",
+    "+ Trec eu un concediu": "+ J'enregistre un congé",
+    "🚫 N-a venit cineva": "🚫 Quelqu'un n'est pas venu",
+    "🚫 N-a venit cineva astăzi": "🚫 Quelqu'un n'est pas venu aujourd'hui",
+    "Nimic de aprobat.": "Rien à approuver.",
+    "Concedii aprobate și refuzate": "Congés approuvés et refusés",
+    "Aprobă": "Approuver",
+    "Refuză": "Refuser",
+    "Anulează concediul": "Annuler le congé",
+    "🏖 În concediu": "🏖 En congé",
+    "🚫 N-au venit": "🚫 Ne sont pas venus",
+    "E indisponibil": "Est indisponible",
+    "Sunt indisponibili": "Sont indisponibles",
+    "Ce fel de vehicul": "Quel type de véhicule",
+    "🚛 Camion": "🚛 Camion",
+    "🏗 Utilaj greu": "🏗 Engin lourd",
+    "🔧 Sculă comună": "🔧 Outil partagé",
+    "Excavator, telescopic, dumper — utilaj greu, urmărit pe șantier.": "Pelleteuse, télescopique, dumper — engin lourd, suivi par chantier.",
+    "Vibrator, generator, bac de beton, betonieră mică — sculă care circulă între echipe.": "Vibreur, groupe électrogène, bac à béton, petite bétonnière — outil qui circule entre équipes.",
+    "Camion sau furgon cu placă de înmatriculare, alocat sau nu unei echipe.": "Camion ou fourgon immatriculé, assigné ou non à une équipe.",
+    "Denumire *": "Nom *",
+    "Număr / serie (opțional)": "Numéro / série (facultatif)",
+    "Număr înmatriculare": "Numéro d'immatriculation",
+    "Ore de funcționare": "Heures de fonctionnement",
+    "Kilometraj": "Kilométrage",
+    "Asigurare până la": "Assurance jusqu'au",
+    "Următoarea revizie": "Prochaine révision",
+    "Betonieră, excavator, telescopic, dumper, schelă — se urmăresc pe locație, nu pe echipă.": "Bétonnière, pelleteuse, télescopique, dumper, échafaudage — suivis par emplacement, pas par équipe.",
+    "Utilaje comune": "Engins partagés",
+    "Utilaje grele": "Engins lourds",
+    "Scule comune": "Outils partagés",
+    "Se urmăresc pe locație.": "Suivis par emplacement.",
+    "Cer utilajul ăsta": "Je demande cet engin",
+    "✓ Cerut — așteaptă răspunsul șefului": "✓ Demandé — en attente de réponse du chef",
+    "Camioane și utilaje": "Camions et engins",
+    "Mută": "Déplacer",
+    "Adu la depozit": "Ramener au dépôt",
+    "Înapoi în depozit": "Retour au dépôt",
+    "Service": "Atelier",
+    "A revenit reparată": "De retour, réparé",
+    "Cât te-a costat reparația (€)": "Combien t'a coûté la réparation (€)",
+    "Ce s-a reparat (opțional)": "Qu'est-ce qui a été réparé (facultatif)",
+    "Marchează reparată": "Marquer réparé",
+    "Împrumută un șofer": "Emprunter un chauffeur",
+    "Echipe fără șofer": "Équipes sans chauffeur",
+    "Îl împrumut": "Je l'emprunte",
+    "Îl pun oricum": "Je le mets quand même",
+    "Disponibili doar parțial": "Disponibles partiellement",
+    "Golește ziua": "Vider la journée",
+    "Golește": "Vider",
+    "Categorii": "Catégories",
+    "materiale și scule — adaugă, redenumește, șterge": "matériaux et outils — ajoute, renomme, supprime",
+    "Firmă, program, acces": "Entreprise, horaires, accès",
+    "Normă întreagă": "Temps plein",
+    "Ore pe săptămână": "Heures par semaine",
+    "Taxe pe salarii": "Charges sur salaires",
+    "Închiderea firmei": "Fermeture de l'entreprise",
+    "Adaugă perioadă": "Ajouter une période",
+    "Firma e închisă": "L'entreprise est fermée",
+    "Cifre și rentabilitate": "Chiffres et rentabilité",
+    "marje, aport pe om, pierderi": "marges, apport par personne, pertes",
+    "Oameni și echipe": "Personnes et équipes",
+    "angajați, fișe, echipe": "employés, fiches, équipes",
+    "Raport lunar": "Rapport mensuel",
+    "ore și costuri pe fiecare om": "heures et coûts par personne",
+    "Dotare echipe": "Équipement des équipes",
+    "sculele obligatorii, verificări": "outils obligatoires, vérifications",
+    "ITP, asigurări, revizii, locație": "contrôle technique, assurances, révisions, emplacement",
+    "date firmă, orar, PIN, limbă": "données entreprise, horaires, code, langue",
+    "Invită muncitorii": "Inviter les ouvriers",
+    "linkuri și parole": "liens et mots de passe",
+    "Backup și curățenie": "Sauvegarde et nettoyage",
+    "salvare, restaurare, poze": "sauvegarde, restauration, photos",
+    "🔧 Ale echipei": "🔧 De l'équipe",
+    "🏗 Utilaje comune": "🏗 Engins partagés",
+    "🏗 Utilaje": "🏗 Engins",
+    "🔧 Scule": "🔧 Outils",
+    "🚛 Camioane": "🚛 Camions",
+    "Niciun camion încă.": "Aucun camion pour l'instant.",
+    "Niciun utilaj încă.": "Aucun engin pour l'instant.",
+    "Nicio sculă comună încă.": "Aucun outil partagé pour l'instant.",
+    "Excavator, telescopic, dumper — se urmăresc pe locație, nu pe echipă.": "Pelleteuse, télescopique, dumper — suivis par emplacement, pas par équipe.",
+    "Vibrator, generator, bac de beton, betonieră mică — circulă între echipe după nevoie.": "Vibreur, groupe électrogène, bac à béton, petite bétonnière — circulent entre équipes selon le besoin.",
+    "Ștergi această cerere de concediu?": "Supprimer cette demande de congé ?",
+    "Ștergi acest vehicul?": "Supprimer ce véhicule ?",
+    "Ștergi acest utilaj?": "Supprimer cet engin ?",
+    "Ștergi acest rol?": "Supprimer ce rôle ?",
   },
   en: {
     "Alege limba": "Choose your language",
@@ -275,6 +435,166 @@ const TRAD = {
     "ore": "hours",
     "Luni": "Monday", "Marți": "Tuesday", "Miercuri": "Wednesday", "Joi": "Thursday",
     "Vineri": "Friday", "Sâmbătă": "Saturday", "Duminică": "Sunday",
+    /* --- added: roles, leave, equipment, planning, categories, taxes --- */
+    "Roluri și permisiuni": "Roles and permissions",
+    "cine ce poate face în aplicație": "who can do what in the app",
+    "🔑 Rolurile firmei": "🔑 Company roles",
+    "+ Rol nou": "+ New role",
+    "Rol nou": "New role",
+    "Modifică rol": "Edit role",
+    "Numele rolului *": "Role name *",
+    "Salvează rolul": "Save role",
+    "permisiune": "permission",
+    "permisiuni": "permissions",
+    "angajat": "employee",
+    "angajați": "employees",
+    "Vede panoul principal": "Sees the dashboard",
+    "Vede șantierele — cifrat, marjă, cine a lucrat": "Sees sites — revenue, margin, who worked",
+    "Poate adăuga șantiere, pontaje și materiale pe ele": "Can add sites, hours and materials",
+    "Vede și modifică planingul": "Sees and edits the planning",
+    "Materiale — adaugă, scade, prețuri": "Materials — add, remove, prices",
+    "Scule — adaugă, alocă pe echipe": "Tools — add, assign to teams",
+    "Camioane și utilaje — ITP, întreținere, combustibil": "Trucks and equipment — inspection, maintenance, fuel",
+    "Vede și aprobă cererile de pe teren": "Sees and approves field requests",
+    "Rapoarte": "Reports",
+    "Cifre și rentabilitate — marje, aport pe om": "Figures and profitability — margins, contribution per person",
+    "Raport lunar pe fiecare angajat": "Monthly report per employee",
+    "Echipe": "Teams",
+    "Verifică dotarea standard a echipelor": "Checks teams' standard kit",
+    "Oameni": "People",
+    "Vede angajații și fișele lor": "Sees employees and their profiles",
+    "Poate adăuga, modifica sau șterge angajați": "Can add, edit or delete employees",
+    "Pe teren (contul de muncitor)": "In the field (worker account)",
+    "Notează de pe telefon ce materiale s-au consumat": "Logs consumed materials from the phone",
+    "Poate cere oameni în plus pe șantierul lui": "Can request extra workers on their site",
+    "Vezi fișele, dar doar proprietarul poate adăuga, modifica sau șterge angajați.": "You see the profiles, but only the owner can add, edit, or delete employees.",
+    "Vezi fișele, dar nu le poți modifica — rolul tău nu are voie.": "You see the profiles, but can't edit them — your role doesn't allow it.",
+    "Doar proprietarul poate modifica sau șterge angajați.": "Only the owner can edit or delete employees.",
+    "Funcție / rol": "Role / position",
+    "— fără —": "— none —",
+    "N-ai creat încă niciun rol. Le faci din Setări → Roluri și permisiuni.": "You haven't created any role yet. Do it from Settings → Roles and permissions.",
+    "Niciun rol definit — creează-le din Setări → Roluri și permisiuni.": "No role defined — create them from Settings → Roles and permissions.",
+    "Concediu de odihnă": "Paid leave",
+    "Zi liberă": "Day off",
+    "Concediu medical": "Sick leave",
+    "Fără plată": "Unpaid",
+    "Eveniment familial": "Family event",
+    "Absență nemotivată": "Unexcused absence",
+    "🏖 Cer concediu": "🏖 Request leave",
+    "📅 Cer o zi liberă": "📅 Request a day off",
+    "Concediile tale": "Your leave",
+    "zi lucrătoare": "working day",
+    "zile lucrătoare": "working days",
+    "Aprobat": "Approved",
+    "Refuzat": "Rejected",
+    "În așteptare": "Pending",
+    "N-a venit la muncă": "Didn't come to work",
+    "Trece un concediu": "Log a leave",
+    "Cerere de zi liberă": "Day-off request",
+    "Cerere de concediu": "Leave request",
+    "O singură zi": "Single day",
+    "Mai multe zile": "Multiple days",
+    "În ce zi": "Which day",
+    "De la": "From",
+    "Până la (inclusiv)": "To (inclusive)",
+    "Data de final trebuie să fie după cea de start.": "The end date must be after the start date.",
+    "Ce fel de concediu": "What kind of leave",
+    "Pentru cine": "For whom",
+    "Observații": "Notes",
+    "De ce (opțional)": "Why (optional)",
+    "Cererea ajunge la șef, care o aprobă sau o refuză.": "The request goes to your manager, who approves or rejects it.",
+    "Marchează absența": "Mark absence",
+    "Trece concediul": "Log the leave",
+    "Cer ziua asta liberă": "Request this day off",
+    "Trimite cererea": "Send request",
+    "🏖 Concedii": "🏖 Leave",
+    "de aprobat": "to approve",
+    "+ Trec eu un concediu": "+ Log a leave myself",
+    "🚫 N-a venit cineva": "🚫 Someone didn't show up",
+    "🚫 N-a venit cineva astăzi": "🚫 Someone didn't show up today",
+    "Nimic de aprobat.": "Nothing to approve.",
+    "Concedii aprobate și refuzate": "Approved and rejected leave",
+    "Aprobă": "Approve",
+    "Refuză": "Reject",
+    "Anulează concediul": "Cancel leave",
+    "🏖 În concediu": "🏖 On leave",
+    "🚫 N-au venit": "🚫 Didn't show up",
+    "E indisponibil": "Is unavailable",
+    "Sunt indisponibili": "Are unavailable",
+    "Ce fel de vehicul": "What kind of vehicle",
+    "🚛 Camion": "🚛 Truck",
+    "🏗 Utilaj greu": "🏗 Heavy equipment",
+    "🔧 Sculă comună": "🔧 Shared tool",
+    "Excavator, telescopic, dumper — utilaj greu, urmărit pe șantier.": "Excavator, telehandler, dumper — heavy equipment, tracked by site.",
+    "Vibrator, generator, bac de beton, betonieră mică — sculă care circulă între echipe.": "Vibrator, generator, concrete tub, small mixer — tool that moves between teams.",
+    "Camion sau furgon cu placă de înmatriculare, alocat sau nu unei echipe.": "Truck or van with a plate, assigned or not to a team.",
+    "Denumire *": "Name *",
+    "Număr / serie (opțional)": "Number / serial (optional)",
+    "Număr înmatriculare": "Registration number",
+    "Ore de funcționare": "Operating hours",
+    "Kilometraj": "Mileage",
+    "Asigurare până la": "Insurance until",
+    "Următoarea revizie": "Next service",
+    "Betonieră, excavator, telescopic, dumper, schelă — se urmăresc pe locație, nu pe echipă.": "Mixer, excavator, telehandler, dumper, scaffolding — tracked by location, not by team.",
+    "Utilaje comune": "Shared equipment",
+    "Utilaje grele": "Heavy equipment",
+    "Scule comune": "Shared tools",
+    "Se urmăresc pe locație.": "Tracked by location.",
+    "Cer utilajul ăsta": "Request this equipment",
+    "✓ Cerut — așteaptă răspunsul șefului": "✓ Requested — awaiting manager's reply",
+    "Camioane și utilaje": "Trucks and equipment",
+    "Mută": "Move",
+    "Adu la depozit": "Bring to depot",
+    "Înapoi în depozit": "Back to depot",
+    "Service": "Service",
+    "A revenit reparată": "Back, repaired",
+    "Cât te-a costat reparația (€)": "How much did the repair cost (€)",
+    "Ce s-a reparat (opțional)": "What was repaired (optional)",
+    "Marchează reparată": "Mark repaired",
+    "Împrumută un șofer": "Borrow a driver",
+    "Echipe fără șofer": "Teams without a driver",
+    "Îl împrumut": "Borrow them",
+    "Îl pun oricum": "Assign anyway",
+    "Disponibili doar parțial": "Partially available",
+    "Golește ziua": "Clear the day",
+    "Golește": "Clear",
+    "Categorii": "Categories",
+    "materiale și scule — adaugă, redenumește, șterge": "materials and tools — add, rename, delete",
+    "Firmă, program, acces": "Company, schedule, access",
+    "Normă întreagă": "Full time",
+    "Ore pe săptămână": "Hours per week",
+    "Taxe pe salarii": "Payroll taxes",
+    "Închiderea firmei": "Company closure",
+    "Adaugă perioadă": "Add period",
+    "Firma e închisă": "The company is closed",
+    "Cifre și rentabilitate": "Figures and profitability",
+    "marje, aport pe om, pierderi": "margins, contribution per person, losses",
+    "Oameni și echipe": "People and teams",
+    "angajați, fișe, echipe": "employees, profiles, teams",
+    "Raport lunar": "Monthly report",
+    "ore și costuri pe fiecare om": "hours and costs per person",
+    "Dotare echipe": "Team kit",
+    "sculele obligatorii, verificări": "required tools, checks",
+    "ITP, asigurări, revizii, locație": "inspection, insurance, service, location",
+    "date firmă, orar, PIN, limbă": "company info, hours, PIN, language",
+    "Invită muncitorii": "Invite workers",
+    "linkuri și parole": "links and passwords",
+    "Backup și curățenie": "Backup and cleanup",
+    "salvare, restaurare, poze": "save, restore, photos",
+    "🔧 Ale echipei": "🔧 Team's tools",
+    "🏗 Utilaje comune": "🏗 Shared equipment",
+    "🏗 Utilaje": "🏗 Equipment",
+    "🔧 Scule": "🔧 Tools",
+    "🚛 Camioane": "🚛 Trucks",
+    "Niciun camion încă.": "No trucks yet.",
+    "Niciun utilaj încă.": "No equipment yet.",
+    "Nicio sculă comună încă.": "No shared tools yet.",
+    "Excavator, telescopic, dumper — se urmăresc pe locație, nu pe echipă.": "Excavator, telehandler, dumper — tracked by location, not by team.",
+    "Vibrator, generator, bac de beton, betonieră mică — circulă între echipe după nevoie.": "Vibrator, generator, concrete tub, small mixer — move between teams as needed.",
+    "Ștergi această cerere de concediu?": "Delete this leave request?",
+    "Ștergi acest vehicul?": "Delete this vehicle?",
+    "Ștergi acest utilaj?": "Delete this equipment?",
+    "Ștergi acest rol?": "Delete this role?",
   },
 };
 
@@ -1281,7 +1601,7 @@ function App() {
       <table>
         <tr><td>Cifrat</td><td class="n">${bani(b.incasat)}</td></tr>
         <tr><td>Manoperă (${(+oreTot.toFixed(1))}h)</td><td class="n">− ${bani(b.manopera)}</td></tr>
-        ${b.taxe > 0 ? `<tr><td>Taxe pe salarii</td><td class="n">− ${bani(b.taxe)}</td></tr>` : ""}
+        ${b.taxe > 0 ? `<tr><td>{t("Taxe pe salarii")}</td><td class="n">− ${bani(b.taxe)}</td></tr>` : ""}
         <tr><td>Materiale</td><td class="n">− ${bani(b.materiale)}</td></tr>
         ${b.auto > 0 ? `<tr><td>Auto (combustibil/întreținere)</td><td class="n">− ${bani(b.auto)}</td></tr>` : ""}
         <tr class="tot"><td>Marjă</td><td class="n ${b.marja >= 0 ? "verde" : "rosu"}">
@@ -1594,7 +1914,7 @@ function App() {
     salveaza({ ...db, concedii: db.concedii.map((x) =>
       x.id === c.id ? { ...x, status: "respins", motiv: motiv || "", raspunsLa: new Date().toISOString() } : x) });
 
-  const stergeConcediu = (id) => cere("Ștergi această cerere de concediu?", () =>
+  const stergeConcediu = (id) => cere(t("Ștergi această cerere de concediu?"), () =>
     salveaza({ ...db, concedii: db.concedii.filter((x) => x.id !== id) }), "Șterge");
 
   /* adminul adaugă concediu direct, fără cerere */
@@ -2311,9 +2631,9 @@ function App() {
             <>
               <div className="subtab">
                 <button className={subScule === "ale-mele" ? "activ" : ""}
-                  onClick={() => setSubScule("ale-mele")}>🔧 Ale echipei</button>
+                  onClick={() => setSubScule("ale-mele")}>{t("🔧 Ale echipei")}</button>
                 <button className={subScule === "comune" ? "activ" : ""}
-                  onClick={() => setSubScule("comune")}>🏗 Utilaje comune</button>
+                  onClick={() => setSubScule("comune")}>{t("🏗 Utilaje comune")}</button>
               </div>
 
               {subScule === "comune" && (() => {
@@ -2343,7 +2663,7 @@ function App() {
                       {!eSantierulMeu && c.stare !== "service" && (
                         <div className="actiuni">
                           {cerutDeja ? (
-                            <span className="chip alocat">✓ Cerut — așteaptă răspunsul șefului</span>
+                            <span className="chip alocat">{t("✓ Cerut — așteaptă răspunsul șefului")}</span>
                           ) : (
                             <button className="btn btn-mic"
                               onClick={() => trimiteCerere({
@@ -2379,10 +2699,10 @@ function App() {
                   <>
                     <div className="subtab">
                       <button className={subComun === "utilaje" ? "activ" : ""} onClick={() => setSubComun("utilaje")}>
-                        🏗 Utilaje{utilajeGrele.length > 0 && ` (${utilajeGrele.length})`}
+                        {t("🏗 Utilaje")}{utilajeGrele.length > 0 && ` (${utilajeGrele.length})`}
                       </button>
                       <button className={subComun === "scule" ? "activ" : ""} onClick={() => setSubComun("scule")}>
-                        🔧 Scule{sculeComune.length > 0 && ` (${sculeComune.length})`}
+                        {t("🔧 Scule")}{sculeComune.length > 0 && ` (${sculeComune.length})`}
                       </button>
                     </div>
                     {subComun === "utilaje" && (
@@ -2672,11 +2992,11 @@ function App() {
               <div className="actiuni" style={{ marginTop: 9 }}>
                 <button className="btn btn-mic" style={{ flex: 1 }}
                   onClick={() => setFoaie({ tip: "cerereConcediu", tipInitial: "zi-libera", oZi: true })}>
-                  📅 Cer o zi liberă
+                  {t("📅 Cer o zi liberă")}
                 </button>
                 <button className="btn btn-mic" style={{ flex: 1 }}
                   onClick={() => setFoaie({ tip: "cerereConcediu" })}>
-                  🏖 Cer concediu
+                  {t("🏖 Cer concediu")}
                 </button>
               </div>
 
@@ -2685,7 +3005,7 @@ function App() {
                 if (aleMele.length === 0) return null;
                 return (
                   <>
-                    <div className="sectiune">Concediile tale</div>
+                    <div className="sectiune">{t("Concediile tale")}</div>
                     {aleMele.map((x) => {
                       const tip = numeTipConcediu(x.tip);
                       const zile = zileLucratoareIntre(x.start, x.final, db.setari?.program);
@@ -2695,7 +3015,7 @@ function App() {
                             <div>
                               <div className="titlu">{tip.ico} {dataRo(x.start)} – {dataRo(x.final)}</div>
                               <div className="sub">
-                                {tip.nume} · <b>{zile} {zile === 1 ? "zi lucrătoare" : "zile lucrătoare"}</b>
+                                {t(tip.nume)} · <b>{zile} {zile === 1 ? t("zi lucrătoare") : t("zile lucrătoare")}</b>
                                 {x.motivCerere && <><br />{x.motivCerere}</>}
                                 {x.status === "respins" && x.motiv && (
                                   <><br /><span style={{ color: "var(--rosu)" }}>Refuzat: {x.motiv}</span></>
@@ -2913,7 +3233,7 @@ function App() {
 
             <button className="btn btn-mic pericol" style={{ width: "100%", marginBottom: 14 }}
               onClick={() => setFoaie({ tip: "concediuDirect", tipInitial: "absenta", oZi: true })}>
-              🚫 N-a venit cineva astăzi
+              {t("🚫 N-a venit cineva astăzi")}
             </button>
 
             {alerteCamioane.length > 0 && (
@@ -3126,8 +3446,8 @@ function App() {
                         <button className="btn btn-mic" onClick={() => Number(m.cant) > 0 && iesireRapida(m, 1)}>−1</button>
                         <button className="btn btn-mic" onClick={() => salvMaterial({ ...m, cant: Number(m.cant) + 1 })}>+1</button>
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "iesire", item: m })}>Scoate</button>
-                        <button className="btn btn-mic" onClick={() => setFoaie({ tip: "material", item: m })}>Modifică</button>
-                        <button className="btn btn-mic pericol" onClick={() => stergeGen("materiale", "Ștergi acest material?")(m.id)}>Șterge</button>
+                        <button className="btn btn-mic" onClick={() => setFoaie({ tip: "material", item: m })}>{t("Modifică")}</button>
+                        <button className="btn btn-mic pericol" onClick={() => stergeGen("materiale", "Ștergi acest material?")(m.id)}>{t("Șterge")}</button>
                       </div>
                     </div>
                   );
@@ -3228,12 +3548,12 @@ function App() {
                         <button className="btn btn-mic principal" onClick={() => returneazaScula(s.id)}>Returnează</button>
                       )}
                       {s.stare !== "service" && s.stare !== "problema"
-                        ? <button className="btn btn-mic" onClick={() => trimiteService(s.id)}>Service</button>
+                        ? <button className="btn btn-mic" onClick={() => trimiteService(s.id)}>{t("Service")}</button>
                         : s.stare === "service"
-                        ? <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "finalService", item: s })}>A revenit reparată</button>
-                        : <button className="btn btn-mic" onClick={() => returneazaScula(s.id)}>Înapoi în depozit</button>}
-                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "scula", item: s })}>Modifică</button>
-                      <button className="btn btn-mic pericol" onClick={() => stergeGen("scule", "Ștergi această sculă?")(s.id)}>Șterge</button>
+                        ? <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "finalService", item: s })}>{t("A revenit reparată")}</button>
+                        : <button className="btn btn-mic" onClick={() => returneazaScula(s.id)}>{t("Înapoi în depozit")}</button>}
+                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "scula", item: s })}>{t("Modifică")}</button>
+                      <button className="btn btn-mic pericol" onClick={() => stergeGen("scule", "Ștergi această sculă?")(s.id)}>{t("Șterge")}</button>
                     </div>
                   </div>
                 ))}
@@ -3273,7 +3593,7 @@ function App() {
                   return sectiuni.map(([id, ico, lbl, desc]) => (
                     <button key={id} onClick={() => { setSubSet(id); setCauta(""); }}>
                       <span>{ico}</span>
-                      <div style={{ flex: 1 }}>{lbl}<span className="ms-desc">{desc}</span></div>
+                      <div style={{ flex: 1 }}>{t(lbl)}<span className="ms-desc">{t(desc)}</span></div>
                       <span className="ms-sageata">›</span>
                     </button>
                   ));
@@ -3295,7 +3615,7 @@ function App() {
           <>
             <div className="subtab">
               <button className={subOam === "angajati" ? "activ" : ""} onClick={() => setSubOam("angajati")}>Angajați</button>
-              <button className={subOam === "echipe" ? "activ" : ""} onClick={() => setSubOam("echipe")}>Echipe</button>
+              <button className={subOam === "echipe" ? "activ" : ""} onClick={() => setSubOam("echipe")}>{t("Echipe")}</button>
             </div>
 
             {subOam === "angajati" && (
@@ -3361,8 +3681,8 @@ function App() {
                       )}
                       <div className="actiuni">
                         <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "membri", item: e })}>Gestionează membri</button>
-                        <button className="btn btn-mic" onClick={() => setFoaie({ tip: "echipa", item: e })}>Modifică</button>
-                        <button className="btn btn-mic pericol" onClick={() => stergeEchipa(e.id)}>Șterge</button>
+                        <button className="btn btn-mic" onClick={() => setFoaie({ tip: "echipa", item: e })}>{t("Modifică")}</button>
+                        <button className="btn btn-mic pericol" onClick={() => stergeEchipa(e.id)}>{t("Șterge")}</button>
                       </div>
                     </div>
                   );
@@ -3494,11 +3814,11 @@ function App() {
                     <button className="btn btn-mic" onClick={() => setFoaie({ tip: "detaliiSantier", item: s })}>Detalii</button>
                     {(esteProprietar || permisiuni.santiereEditare) && (
                       <>
-                        <button className="btn btn-mic" onClick={() => setFoaie({ tip: "santier", item: s })}>Modifică</button>
+                        <button className="btn btn-mic" onClick={() => setFoaie({ tip: "santier", item: s })}>{t("Modifică")}</button>
                         <button className="btn btn-mic" onClick={() => salvSantier({ ...s, status: finalizat ? "activ" : "finalizat" })}>
                           {finalizat ? "Redeschide" : "Finalizează"}
                         </button>
-                        <button className="btn btn-mic pericol" onClick={() => stergeSantier(s.id)}>Șterge</button>
+                        <button className="btn btn-mic pericol" onClick={() => stergeSantier(s.id)}>{t("Șterge")}</button>
                       </>
                     )}
                   </div>
@@ -4130,7 +4450,7 @@ function App() {
                 salariul lunar al celor de la birou, pornind de la costul lor orar.
               </div>
               <div className="camp" style={{ marginTop: 11, marginBottom: 4 }}>
-                <label>Ore pe săptămână</label>
+                <label>{t("Ore pe săptămână")}</label>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <input type="number" step="0.5" style={{ maxWidth: 100 }}
                     value={db.setari?.oreSaptamana ?? 35}
@@ -4219,8 +4539,8 @@ function App() {
                       <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "intretinere", item: c })}>+ Întreținere</button>
                       <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "alimentare", item: c })}>⛽ Alimentare</button>
                       <button className="btn btn-mic" onClick={() => setFoaie({ tip: "istoricCamion", item: c })}>Istoric ({istoric.length})</button>
-                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "camion", item: c })}>Modifică</button>
-                      <button className="btn btn-mic pericol" onClick={() => stergeGen("camioane", "Ștergi acest vehicul?")(c.id)}>Șterge</button>
+                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "camion", item: c })}>{t("Modifică")}</button>
+                      <button className="btn btn-mic pericol" onClick={() => stergeGen("camioane", t("Ștergi acest vehicul?"))(c.id)}>{t("Șterge")}</button>
                     </div>
                   </div>
                 );
@@ -4260,20 +4580,20 @@ function App() {
                       </div>
                     )}
                     <div className="actiuni">
-                      <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "mutaUtilaj", item: c })}>Mută</button>
+                      <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "mutaUtilaj", item: c })}>{t("Mută")}</button>
                       {c.stare === "alocat" && (
-                        <button className="btn btn-mic" onClick={() => aduLaDepozitUtilaj(c.id)}>Adu la depozit</button>
+                        <button className="btn btn-mic" onClick={() => aduLaDepozitUtilaj(c.id)}>{t("Adu la depozit")}</button>
                       )}
                       <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "intretinere", item: c })}>+ Întreținere</button>
                       <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "alimentare", item: c })}>⛽ Alimentare</button>
                       {c.stare !== "service" ? (
-                        <button className="btn btn-mic" onClick={() => trimiteServiceUtilaj(c.id)}>Service</button>
+                        <button className="btn btn-mic" onClick={() => trimiteServiceUtilaj(c.id)}>{t("Service")}</button>
                       ) : (
-                        <button className="btn btn-mic" onClick={() => aduLaDepozitUtilaj(c.id)}>Înapoi în depozit</button>
+                        <button className="btn btn-mic" onClick={() => aduLaDepozitUtilaj(c.id)}>{t("Înapoi în depozit")}</button>
                       )}
                       <button className="btn btn-mic" onClick={() => setFoaie({ tip: "istoricCamion", item: c })}>Istoric ({istoric.length})</button>
-                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "camion", item: c })}>Modifică</button>
-                      <button className="btn btn-mic pericol" onClick={() => stergeGen("camioane", "Ștergi acest utilaj?")(c.id)}>Șterge</button>
+                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "camion", item: c })}>{t("Modifică")}</button>
+                      <button className="btn btn-mic pericol" onClick={() => stergeGen("camioane", t("Ștergi acest utilaj?"))(c.id)}>{t("Șterge")}</button>
                     </div>
                   </div>
                 );
@@ -4290,29 +4610,29 @@ function App() {
 
                   <div className="subtab">
                     <button className={subAuto === "camioane" ? "activ" : ""} onClick={() => setSubAuto("camioane")}>
-                      🚛 Camioane{camioane.length > 0 && ` (${camioane.length})`}
+                      {t("🚛 Camioane")}{camioane.length > 0 && ` (${camioane.length})`}
                     </button>
                     <button className={subAuto === "utilaje" ? "activ" : ""} onClick={() => setSubAuto("utilaje")}>
-                      🏗 Utilaje{utilaje.length > 0 && ` (${utilaje.length})`}
+                      {t("🏗 Utilaje")}{utilaje.length > 0 && ` (${utilaje.length})`}
                     </button>
                     <button className={subAuto === "scule" ? "activ" : ""} onClick={() => setSubAuto("scule")}>
-                      🔧 Scule{sculeComune.length > 0 && ` (${sculeComune.length})`}
+                      {t("🔧 Scule")}{sculeComune.length > 0 && ` (${sculeComune.length})`}
                     </button>
                   </div>
 
                   {subAuto === "camioane" && (
                     camioane.length === 0
-                      ? <div className="gol-msg">Niciun camion încă.</div>
+                      ? <div className="gol-msg">{t("Niciun camion încă.")}</div>
                       : camioane.map(cardCamion)
                   )}
 
                   {subAuto === "utilaje" && (
                     <>
                       <div className="sub" style={{ marginBottom: 10 }}>
-                        Excavator, telescopic, dumper — se urmăresc pe locație, nu pe echipă.
+                        {t("Excavator, telescopic, dumper — se urmăresc pe locație, nu pe echipă.")}
                       </div>
                       {utilaje.length === 0
-                        ? <div className="gol-msg">Niciun utilaj încă.</div>
+                        ? <div className="gol-msg">{t("Niciun utilaj încă.")}</div>
                         : utilaje.map(cardUtilaj)}
                     </>
                   )}
@@ -4320,10 +4640,10 @@ function App() {
                   {subAuto === "scule" && (
                     <>
                       <div className="sub" style={{ marginBottom: 10 }}>
-                        Vibrator, generator, bac de beton, betonieră mică — circulă între echipe după nevoie.
+                        {t("Vibrator, generator, bac de beton, betonieră mică — circulă între echipe după nevoie.")}
                       </div>
                       {sculeComune.length === 0
-                        ? <div className="gol-msg">Nicio sculă comună încă.</div>
+                        ? <div className="gol-msg">{t("Nicio sculă comună încă.")}</div>
                         : sculeComune.map(cardUtilaj)}
                     </>
                   )}
@@ -4520,7 +4840,7 @@ function App() {
                     </div>
                     <div className="actiuni">
                       <button className="btn btn-mic principal" onClick={() => restaureazaCopie(c.cheie)}>Restaurează</button>
-                      <button className="btn btn-mic pericol" onClick={() => stergeCopie(c.cheie)}>Șterge</button>
+                      <button className="btn btn-mic pericol" onClick={() => stergeCopie(c.cheie)}>{t("Șterge")}</button>
                     </div>
                   </div>
                 ))}
@@ -4604,7 +4924,7 @@ function App() {
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "respinge", item: x })}>
                           Refuză
                         </button>
-                        <button className="btn btn-mic pericol" onClick={() => stergeSuplimentare(x.id)}>Șterge</button>
+                        <button className="btn btn-mic pericol" onClick={() => stergeSuplimentare(x.id)}>{t("Șterge")}</button>
                       </div>
                     )}
                   </div>
@@ -4614,7 +4934,7 @@ function App() {
                 <>
                   <div className="sectiune">⏱ Ore suplimentare {noi.length > 0 && `(${noi.length} de aprobat)`}</div>
                   {noi.map(rand)}
-                  {noi.length === 0 && <div className="gol-msg">Nimic de aprobat.</div>}
+                  {noi.length === 0 && <div className="gol-msg">{t("Nimic de aprobat.")}</div>}
                   {vechi.length > 0 && (
                     <>
                       <div className="sectiune">Istoric suplimentare</div>
@@ -4641,7 +4961,7 @@ function App() {
                       <div>
                         <div className="titlu">{tip.ico} {x.nume}</div>
                         <div className="sub">
-                          {dataRo(x.start)} – {dataRo(x.final)} · <b>{zile} {zile === 1 ? "zi" : "zile"}</b> · {tip.nume}
+                          {dataRo(x.start)} – {dataRo(x.final)} · <b>{zile} {zile === 1 ? t("zi") : t("zile")}</b> · {t(tip.nume)}
                           {x.pusDeAdmin && <> · <span style={{ color: "var(--mut)" }}>trecut de tine</span></>}
                           {x.motivCerere && <><br />{x.motivCerere}</>}
                           {x.status === "nou" && suprapuneri.length > 0 && (
@@ -4669,12 +4989,12 @@ function App() {
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "respingeConcediu", item: x })}>
                           Refuză
                         </button>
-                        <button className="btn btn-mic pericol" onClick={() => stergeConcediu(x.id)}>Șterge</button>
+                        <button className="btn btn-mic pericol" onClick={() => stergeConcediu(x.id)}>{t("Șterge")}</button>
                       </div>
                     )}
                     {x.status === "aprobat" && (
                       <div className="actiuni">
-                        <button className="btn btn-mic pericol" onClick={() => stergeConcediu(x.id)}>Anulează concediul</button>
+                        <button className="btn btn-mic pericol" onClick={() => stergeConcediu(x.id)}>{t("Anulează concediul")}</button>
                       </div>
                     )}
                   </div>
@@ -4685,18 +5005,18 @@ function App() {
                   <div className="sectiune">🏖 Concedii {noiC.length > 0 && `(${noiC.length} de aprobat)`}</div>
                   <div className="actiuni" style={{ marginBottom: 10 }}>
                     <button className="btn btn-mic" onClick={() => setFoaie({ tip: "concediuDirect" })}>
-                      + Trec eu un concediu
+                      {t("+ Trec eu un concediu")}
                     </button>
                     <button className="btn btn-mic pericol"
                       onClick={() => setFoaie({ tip: "concediuDirect", tipInitial: "absenta", oZi: true })}>
-                      🚫 N-a venit cineva
+                      {t("🚫 N-a venit cineva")}
                     </button>
                   </div>
                   {noiC.map(randC)}
-                  {noiC.length === 0 && <div className="gol-msg">Nimic de aprobat.</div>}
+                  {noiC.length === 0 && <div className="gol-msg">{t("Nimic de aprobat.")}</div>}
                   {vechiC.length > 0 && (
                     <>
-                      <div className="sectiune">Concedii aprobate și refuzate</div>
+                      <div className="sectiune">{t("Concedii aprobate și refuzate")}</div>
                       {vechiC.map(randC)}
                     </>
                   )}
@@ -4741,7 +5061,7 @@ function App() {
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "respingeAlimentare", item: x })}>
                           Refuză
                         </button>
-                        <button className="btn btn-mic pericol" onClick={() => stergeAlimentare(x.id)}>Șterge</button>
+                        <button className="btn btn-mic pericol" onClick={() => stergeAlimentare(x.id)}>{t("Șterge")}</button>
                       </div>
                     )}
                   </div>
@@ -4751,7 +5071,7 @@ function App() {
                 <>
                   <div className="sectiune">⛽ Alimentări {noiA.length > 0 && `(${noiA.length} de aprobat)`}</div>
                   {noiA.map(randA)}
-                  {noiA.length === 0 && <div className="gol-msg">Nimic de aprobat.</div>}
+                  {noiA.length === 0 && <div className="gol-msg">{t("Nimic de aprobat.")}</div>}
                   {vechiA.length > 0 && (
                     <>
                       <div className="sectiune">Istoric alimentări</div>
@@ -4837,7 +5157,7 @@ function App() {
                     {c.status === "nou"
                       ? <button className="btn btn-mic" onClick={() => marcheazaCerere(c.id, "rezolvat")}>Marchează rezolvată</button>
                       : <button className="btn btn-mic" onClick={() => marcheazaCerere(c.id, "nou")}>Redeschide</button>}
-                    <button className="btn btn-mic pericol" onClick={() => stergeCerere(c.id)}>Șterge</button>
+                    <button className="btn btn-mic pericol" onClick={() => stergeCerere(c.id)}>{t("Șterge")}</button>
                   </div>
                 </div>
               );
@@ -5374,7 +5694,7 @@ function CategoriiMateriale({ db, onSalveaza, cere }) {
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
                   <button className="btn btn-mic" onClick={() => { setEditez(c); setRedenumire(c); }}>Redenumește</button>
-                  <button className="btn btn-mic pericol" onClick={() => sterge(c)}>Șterge</button>
+                  <button className="btn btn-mic pericol" onClick={() => sterge(c)}>{t("Șterge")}</button>
                 </div>
               </div>
             )}
@@ -5476,7 +5796,7 @@ function CategoriiScule({ db, onSalveaza, cere }) {
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
                   <button className="btn btn-mic" onClick={() => { setEditez(c); setRedenumire(c); }}>Redenumește</button>
-                  <button className="btn btn-mic pericol" onClick={() => sterge(c)}>Șterge</button>
+                  <button className="btn btn-mic pericol" onClick={() => sterge(c)}>{t("Șterge")}</button>
                 </div>
               </div>
             )}
@@ -5503,7 +5823,7 @@ function RoluriFirma({ db, onSalveaza, cere, setFoaie }) {
     cere(
       nrOameni > 0
         ? `Ștergi rolul? ${nrOameni} ${nrOameni === 1 ? "angajat rămâne" : "angajați rămân"} fără rol — intră normal, ca muncitor.`
-        : "Ștergi acest rol?",
+        : t("Ștergi acest rol?"),
       () => onSalveaza({
         ...db,
         roluriFirma: roluri.filter((r) => r.id !== id),
@@ -5516,14 +5836,14 @@ function RoluriFirma({ db, onSalveaza, cere, setFoaie }) {
   return (
     <>
       <div className="card">
-        <div className="titlu">🔑 Rolurile firmei</div>
+        <div className="titlu">{t("🔑 Rolurile firmei")}</div>
         <div className="sub">
           Fiecare rol e un pachet de bife. Îl dai unui angajat din fișa lui, iar el intră cu
           parola personală direct în partea din aplicație pe care i-o permiți — nimic mai mult.
         </div>
       </div>
 
-      <button className="btn btn-galben" onClick={() => setFoaie({ tip: "rolNou" })}>+ Rol nou</button>
+      <button className="btn btn-galben" onClick={() => setFoaie({ tip: "rolNou" })}>{t("+ Rol nou")}</button>
       <div style={{ height: 12 }} />
 
       {roluri.length === 0 ? (
@@ -5546,8 +5866,8 @@ function RoluriFirma({ db, onSalveaza, cere, setFoaie }) {
                 </div>
               </div>
               <div className="actiuni">
-                <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "rolNou", item: r })}>Modifică</button>
-                <button className="btn btn-mic pericol" onClick={() => stergeRol(r.id)}>Șterge</button>
+                <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "rolNou", item: r })}>{t("Modifică")}</button>
+                <button className="btn btn-mic pericol" onClick={() => stergeRol(r.id)}>{t("Șterge")}</button>
               </div>
             </div>
           );
@@ -5565,18 +5885,18 @@ function FormRol({ item, onSalveaza, onClose }) {
   return (
     <Foaie titlu={item ? "Modifică rol" : "Rol nou"} onClose={onClose}>
       <div className="camp">
-        <label>Numele rolului *</label>
+        <label>{t("Numele rolului *")}</label>
         <input value={f.nume} onChange={(e) => setF({ ...f, nume: e.target.value })}
           placeholder="ex. Secretariat, Achiziții, Șef șantier" autoFocus />
       </div>
 
       {GRUPURI_PERMISIUNI.map((grup) => (
         <div className="camp" key={grup.titlu}>
-          <label>{grup.titlu}</label>
+          <label>{t(grup.titlu)}</label>
           {grup.chei.map(([cheie, descriere]) => (
             <label key={cheie} className="rand-bifa">
               <input type="checkbox" checked={!!f.permisiuni[cheie]} onChange={() => bifeaza(cheie)} />
-              <span>{descriere}</span>
+              <span>{t(descriere)}</span>
             </label>
           ))}
         </div>
@@ -5801,7 +6121,7 @@ function IstoricVerificari({ echipa, verificari, onSterge, onClose }) {
               </div>
             )}
             <div className="actiuni">
-              <button className="btn btn-mic pericol" onClick={() => onSterge(v.id)}>Șterge</button>
+              <button className="btn btn-mic pericol" onClick={() => onSterge(v.id)}>{t("Șterge")}</button>
             </div>
           </div>
         );
@@ -6422,7 +6742,7 @@ function FormCerereAlimentare({ camion, santiere = [], onTrimite, onClose }) {
         <div className="camp">
           <label>Pe ce șantier (opțional)</label>
           <select value={santierId} onChange={(e) => setSantierId(e.target.value)}>
-            <option value="">— fără —</option>
+            <option value="">{t("— fără —")}</option>
             {santiere.map((x) => <option key={x.id} value={x.id}>{x.nume}</option>)}
           </select>
         </div>
@@ -6543,7 +6863,7 @@ function FormMaterial({ item, santiere = [], categorii = [], onSalveaza, onClose
   const valoare = (Number(f.cant) || 0) * (Number(f.pret) || 0);
   return (
     <Foaie titlu={item ? "Modifică material" : "Material nou"} onClose={onClose}>
-      <div className="camp"><label>Denumire *</label>
+      <div className="camp"><label>{t("Denumire *")}</label>
         <input value={f.nume} onChange={set("nume")} placeholder="ex. Ciment CEM II 42,5" /></div>
       <div className="rand2">
         <div className="camp"><label>Cantitate *</label>
@@ -6628,7 +6948,7 @@ function FormFinalService({ scula, onFinalizeaza, onClose }) {
   return (
     <Foaie titlu={`A revenit: ${scula.nume}`} onClose={onClose}>
       <div className="camp">
-        <label>Cât te-a costat reparația (€)</label>
+        <label>{t("Cât te-a costat reparația (€)")}</label>
         <input type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)}
           placeholder="ex. 45" autoFocus />
       </div>
@@ -6637,7 +6957,7 @@ function FormFinalService({ scula, onFinalizeaza, onClose }) {
         {costPana > 0 && <> Ai mai cheltuit cu ea până acum: <b>{bani(costPana)}</b>.</>}
       </div>
       <div className="camp">
-        <label>Ce s-a reparat (opțional)</label>
+        <label>{t("Ce s-a reparat (opțional)")}</label>
         <input value={nota} onChange={(e) => setNota(e.target.value)} placeholder="ex. schimbat perii motor" />
       </div>
       <button className="btn btn-galben" onClick={() => onFinalizeaza(cost, nota.trim())}>
@@ -6652,7 +6972,7 @@ function FormScula({ item, categorii = [], onSalveaza, onClose }) {
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   return (
     <Foaie titlu={item ? "Modifică sculă" : "Sculă nouă"} onClose={onClose}>
-      <div className="camp"><label>Denumire *</label>
+      <div className="camp"><label>{t("Denumire *")}</label>
         <input value={f.nume} onChange={set("nume")} placeholder="ex. Flex Makita 230mm" /></div>
       <div className="camp"><label>Categorie</label>
         {f.categorie === "__noua__" || (f.categorie && !categorii.includes(f.categorie)) ? (
@@ -6760,12 +7080,12 @@ function FormAngajat({ item, echipe, esteProprietar, roluriFirma = [], oreSaptam
         <input value={f.nume} onChange={set("nume")} placeholder="ex. Ionuț Popescu" /></div>
 
       <div className="rand2">
-        <div className="camp"><label>Funcție / rol</label>
+        <div className="camp"><label>{t("Funcție / rol")}</label>
           {roluriFirma.length === 0 ? (
-            <div className="sub">Niciun rol definit — creează-le din Setări → Roluri și permisiuni.</div>
+            <div className="sub">{t("Niciun rol definit — creează-le din Setări → Roluri și permisiuni.")}</div>
           ) : (
             <select value={f.rolFirmaId || ""} onChange={(e) => alegeRol(e.target.value)}>
-              <option value="">— fără —</option>
+              <option value="">{t("— fără —")}</option>
               {roluriFirma.map((r) => <option key={r.id} value={r.id}>{r.nume}</option>)}
             </select>
           )}
@@ -6948,19 +7268,19 @@ function FormCamion({ item, onSalveaza, onClose }) {
   return (
     <Foaie titlu={item ? "Modifică" : "Adaugă"} onClose={onClose}>
       <div className="camp">
-        <label>Ce fel de vehicul</label>
+        <label>{t("Ce fel de vehicul")}</label>
         <div className="subtab">
-          <button className={f.tip === "camion" ? "activ" : ""} onClick={() => setF({ ...f, tip: "camion" })}>🚛 Camion</button>
-          <button className={eUtilaj ? "activ" : ""} onClick={() => setF({ ...f, tip: "utilaj" })}>🏗 Utilaj greu</button>
-          <button className={eScula ? "activ" : ""} onClick={() => setF({ ...f, tip: "scula" })}>🔧 Sculă comună</button>
+          <button className={f.tip === "camion" ? "activ" : ""} onClick={() => setF({ ...f, tip: "camion" })}>{t("🚛 Camion")}</button>
+          <button className={eUtilaj ? "activ" : ""} onClick={() => setF({ ...f, tip: "utilaj" })}>{t("🏗 Utilaj greu")}</button>
+          <button className={eScula ? "activ" : ""} onClick={() => setF({ ...f, tip: "scula" })}>{t("🔧 Sculă comună")}</button>
         </div>
         <div className="sub" style={{ marginTop: 6 }}>
-          {eUtilaj ? "Excavator, telescopic, dumper — utilaj greu, urmărit pe șantier."
-            : eScula ? "Vibrator, generator, bac de beton, betonieră mică — sculă care circulă între echipe."
-            : "Camion sau furgon cu placă de înmatriculare, alocat sau nu unei echipe."}
+          {eUtilaj ? t("Excavator, telescopic, dumper — utilaj greu, urmărit pe șantier.")
+            : eScula ? t("Vibrator, generator, bac de beton, betonieră mică — sculă care circulă între echipe.")
+            : t("Camion sau furgon cu placă de înmatriculare, alocat sau nu unei echipe.")}
         </div>
       </div>
-      <div className="camp"><label>Denumire *</label>
+      <div className="camp"><label>{t("Denumire *")}</label>
         <input value={f.nume} onChange={set("nume")}
           placeholder={eUtilaj ? "ex. Excavator Kubota" : eScula ? "ex. Vibrator de beton" : "ex. Iveco Daily basculabil"} /></div>
       <div className="rand2">
@@ -6976,9 +7296,9 @@ function FormCamion({ item, onSalveaza, onClose }) {
           <div className="camp"><label>{eUtilaj ? "ITP / inspecție (dacă are)" : "ITP / Contrôle technique valabil până la"}</label>
             <input type="date" value={f.itp} onChange={set("itp")} /></div>
           <div className="rand2">
-            <div className="camp"><label>Asigurare până la</label>
+            <div className="camp"><label>{t("Asigurare până la")}</label>
               <input type="date" value={f.asigurare} onChange={set("asigurare")} /></div>
-            <div className="camp"><label>Următoarea revizie</label>
+            <div className="camp"><label>{t("Următoarea revizie")}</label>
               <input type="date" value={f.revizie} onChange={set("revizie")} /></div>
           </div>
         </>
@@ -7359,7 +7679,7 @@ function ProgramLucru({ program, onSchimba }) {
               <div style={{ marginTop: 11 }}>
                 <div className="rand2">
                   <div className="camp">
-                    <label>De la</label>
+                    <label>{t("De la")}</label>
                     <input type="time" value={pz.start} onChange={(e) => setSpecial(c, "start", e.target.value)} />
                   </div>
                   <div className="camp">
@@ -7468,7 +7788,7 @@ function ImprumutSofer({ echipa, zile, angajati, echipe, concedii, planificare, 
 
           {partiali.length > 0 && (
             <>
-              <div className="sectiune">Disponibili doar parțial</div>
+              <div className="sectiune">{t("Disponibili doar parțial")}</div>
               {partiali.map(({ a, echipaLui, zileInConcediu }) => (
                 <div className="card" key={a.id} style={{ opacity: .7 }}>
                   <div className="card-rand">
@@ -7525,7 +7845,7 @@ function FormConcediu({ eu, angajati, program, inchideri = [], tipInitial, oZi,
     <Foaie titlu={tip === "absenta" ? "N-a venit la muncă" : eAdmin ? "Trece un concediu" : (singuraZi ? "Cerere de zi liberă" : "Cerere de concediu")} onClose={onClose}>
       {eAdmin && (
         <div className="camp">
-          <label>Pentru cine</label>
+          <label>{t("Pentru cine")}</label>
           <select value={angajatId} onChange={(e) => setAngajatId(e.target.value)}>
             {angajati.map((a) => <option key={a.id} value={a.id}>{a.nume}</option>)}
           </select>
@@ -7533,33 +7853,33 @@ function FormConcediu({ eu, angajati, program, inchideri = [], tipInitial, oZi,
       )}
 
       <div className="camp">
-        <label>Ce fel de concediu</label>
+        <label>{t("Ce fel de concediu")}</label>
         <select value={tip} onChange={(e) => setTip(e.target.value)}>
-          {TIPURI_CONCEDIU.map((t) => <option key={t.cod} value={t.cod}>{t.ico} {t.nume}</option>)}
+          {TIPURI_CONCEDIU.map((tp) => <option key={tp.cod} value={tp.cod}>{tp.ico} {t(tp.nume)}</option>)}
         </select>
       </div>
 
       <div className="subtab" style={{ marginBottom: 12 }}>
-        <button className={singuraZi ? "activ" : ""} onClick={() => setSinguraZi(true)}>O singură zi</button>
-        <button className={!singuraZi ? "activ" : ""} onClick={() => setSinguraZi(false)}>Mai multe zile</button>
+        <button className={singuraZi ? "activ" : ""} onClick={() => setSinguraZi(true)}>{t("O singură zi")}</button>
+        <button className={!singuraZi ? "activ" : ""} onClick={() => setSinguraZi(false)}>{t("Mai multe zile")}</button>
       </div>
 
       {singuraZi ? (
         <div className="camp">
-          <label>În ce zi</label>
+          <label>{t("În ce zi")}</label>
           <input type="date" value={start} onChange={(e) => { setStart(e.target.value); setFinal(e.target.value); }} />
         </div>
       ) : (
         <div className="rand2">
           <div className="camp">
-            <label>De la</label>
+            <label>{t("De la")}</label>
             <input type="date" value={start} onChange={(e) => {
               setStart(e.target.value);
               if (final < e.target.value) setFinal(e.target.value);
             }} />
           </div>
           <div className="camp">
-            <label>Până la (inclusiv)</label>
+            <label>{t("Până la (inclusiv)")}</label>
             <input type="date" value={final} min={start} onChange={(e) => setFinal(e.target.value)} />
           </div>
         </div>
@@ -7604,7 +7924,7 @@ function FormConcediu({ eu, angajati, program, inchideri = [], tipInitial, oZi,
       </div>
 
       {!eAdmin && (
-        <div className="sub" style={{ marginBottom: 12 }}>Cererea ajunge la șef, care o aprobă sau o refuză.</div>
+        <div className="sub" style={{ marginBottom: 12 }}>{t("Cererea ajunge la șef, care o aprobă sau o refuză.")}</div>
       )}
 
       <button className="btn btn-galben" disabled={!valid}
@@ -7635,14 +7955,14 @@ function FormInchidere({ item, program, onSalveaza, onClose }) {
 
       <div className="rand2">
         <div className="camp">
-          <label>De la</label>
+          <label>{t("De la")}</label>
           <input type="date" value={f.start} onChange={(e) => {
             const v = e.target.value;
             setF({ ...f, start: v, final: f.final < v ? v : f.final });
           }} />
         </div>
         <div className="camp">
-          <label>Până la (inclusiv)</label>
+          <label>{t("Până la (inclusiv)")}</label>
           <input type="date" value={f.final} min={f.start} onChange={(e) => setF({ ...f, final: e.target.value })} />
         </div>
       </div>
@@ -7934,7 +8254,7 @@ function FormSantier({ item, onSalveaza, onClose }) {
 
   return (
     <Foaie titlu={item ? "Modifică șantier" : "Șantier nou"} onClose={onClose}>
-      <div className="camp"><label>Denumire *</label>
+      <div className="camp"><label>{t("Denumire *")}</label>
         <input value={f.nume} onChange={set("nume")} placeholder="ex. Casă P+1 Beaucouzé" /></div>
       <div className="rand2">
         <div className="camp"><label>Client / beneficiar</label>
@@ -8040,7 +8360,7 @@ function FormConsum({ santier, materiale, onSalveaza, onClose }) {
       </div>
       {!f.materialId && (
         <div className="rand2">
-          <div className="camp"><label>Denumire *</label>
+          <div className="camp"><label>{t("Denumire *")}</label>
             <input value={f.nume} onChange={(e) => setF({ ...f, nume: e.target.value })} placeholder="ex. Beton C25/30" /></div>
           <div className="camp"><label>Unitate</label>
             <input value={f.unitate} onChange={(e) => setF({ ...f, unitate: e.target.value })} placeholder="m³" /></div>
@@ -8276,7 +8596,7 @@ function DetaliiSantier({ santier, pontaj, consum, bilant, matPrev, orePrevTot, 
       <div className="fisa-rand"><span className="k">Cifrat</span><b className="mono">{bani(bilant.incasat)}</b></div>
       <div className="fisa-rand"><span className="k">Manoperă</span><b className="mono">−{bani(bilant.manopera)}</b></div>
       {bilant.taxe > 0 && (
-        <div className="fisa-rand"><span className="k">Taxe pe salarii</span><b className="mono">−{bani(bilant.taxe)}</b></div>
+        <div className="fisa-rand"><span className="k">{t("Taxe pe salarii")}</span><b className="mono">−{bani(bilant.taxe)}</b></div>
       )}
       <div className="fisa-rand"><span className="k">Materiale</span><b className="mono">−{bani(bilant.materiale)}</b></div>
       {bilant.auto > 0 && (
@@ -8653,7 +8973,7 @@ function FormPlan({ item, data, santiere, echipe, angajati, planificare, program
             : (inConcediu.length === 1 ? "E indisponibil" : "Sunt indisponibili")}</b>
           {inConcediu.map(({ a, c }, i) => (
             <div key={i} className="cf-rand">
-              <b>{a.nume}</b> — {numeTipConcediu(c.tip).nume.toLowerCase()},{" "}
+              <b>{a.nume}</b> — {t(numeTipConcediu(c.tip).nume).toLowerCase()},{" "}
               {dataRo(c.start)} – {dataRo(c.final)}.
             </div>
           ))}
@@ -8809,7 +9129,7 @@ function ListaSarcini({ santier, sarcini, onAdauga, onComuta, onSterge, onClose 
         <button className="btn btn-mic" onClick={() => onComuta(x.id)}>
           {x.status === "rezolvat" ? "Redeschide" : "Marchează rezolvat"}
         </button>
-        <button className="btn btn-mic pericol" onClick={() => onSterge(x.id)}>Șterge</button>
+        <button className="btn btn-mic pericol" onClick={() => onSterge(x.id)}>{t("Șterge")}</button>
       </div>
     </div>
   );
