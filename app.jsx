@@ -2783,12 +2783,12 @@ function App() {
                       <div>
                         <div className="titlu">{a.z < 0 ? "🔴" : "🟠"} {a.camion.nume}</div>
                         <div className="sub">
-                          {a.tip === "Revizie" ? "Revizie programată" : a.tip} · {dataRo(a.d)}
+                          {a.tip === "Revizie" ? t("Revizie programată") : t(a.tip)} · {dataRo(a.d)}
                           {a.camion.numar && <> · <span className="mono">{a.camion.numar}</span></>}
                         </div>
                       </div>
                       <span className="chip alerta">
-                        {a.z < 0 ? `Depășit ${-a.z} z` : a.z === 0 ? "Azi" : `${a.z} zile`}
+                        {a.z < 0 ? `${t("Depășit")} ${-a.z} z` : a.z === 0 ? t("Azi") : `${a.z} ${t("zile")}`}
                       </span>
                     </div>
                   </div>
@@ -2847,11 +2847,11 @@ function App() {
                       <div>
                         <div className="titlu">{s.nume}</div>
                         <div className="sub">
-                          {s.problema?.note || s.problema?.tip} · {numeEchipa(s.echipaId)}
+                          {s.problema?.note || t(s.problema?.tip)} · {numeEchipa(s.echipaId)}
                           <br /><span className="mono">{s.problema?.de}, {s.problema?.cand}</span>
                         </div>
                       </div>
-                      <span className="chip alerta">{s.problema?.tip}</span>
+                      <span className="chip alerta">{t(s.problema?.tip)}</span>
                     </div>
                   </div>
                 ))}
@@ -3246,7 +3246,7 @@ function App() {
               {[["activitate", "Ultima activitate"], ["marja", "Marjă"], ["nume", "Nume"],
                 ["valoare", "Valoare"], ["finalizate", "Finalizate"]].map(([id, et]) => (
                 <button key={id} className={sortSant === id ? "activ" : ""}
-                  onClick={() => setSortSant(id)}>{et}</button>
+                  onClick={() => setSortSant(id)}>{t(et)}</button>
               ))}
             </div>
             {db.santiere
@@ -3384,7 +3384,7 @@ function App() {
                 <button className="btn btn-mic" onClick={() => setSaptamana(saptamana + 1)}>›</button>
               </div>
               <div className="actiuni" style={{ marginTop: 0, marginBottom: 12 }}>
-                {saptamana !== 0 && <button className="btn btn-mic" onClick={() => setSaptamana(0)}>Azi</button>}
+                {saptamana !== 0 && <button className="btn btn-mic" onClick={() => setSaptamana(0)}>{t("Azi")}</button>}
                 <button className="btn btn-mic principal" onClick={() => umpleSaptamana(luni)}>
                   {t("⚡ Completează după program")}
                 </button>
@@ -4072,7 +4072,7 @@ function App() {
                       <div className="lista-in-card">
                         {expirari.map((e, i) => (
                           <div key={i}>
-                            {e.z <= 30 ? "🔴" : "🟢"} {e.t}: {dataRo(e.d)}
+                            {e.z <= 30 ? "🔴" : "🟢"} {t(e.t)}: {dataRo(e.d)}
                             {e.z !== null && <span style={{ color: e.z <= 30 ? "var(--rosu)" : "var(--mut)" }}> · {e.z < 0 ? `expirat de ${-e.z} zile` : `${e.z} zile`}</span>}
                           </div>
                         ))}
@@ -4116,7 +4116,7 @@ function App() {
                       <div className="lista-in-card">
                         {expirari.map((e, i) => (
                           <div key={i}>
-                            {e.z <= 30 ? "🔴" : "🟢"} {e.t}: {dataRo(e.d)}
+                            {e.z <= 30 ? "🔴" : "🟢"} {t(e.t)}: {dataRo(e.d)}
                             {e.z !== null && <span style={{ color: e.z <= 30 ? "var(--rosu)" : "var(--mut)" }}> · {e.z < 0 ? `expirat de ${-e.z} zile` : `${e.z} zile`}</span>}
                           </div>
                         ))}
@@ -6271,7 +6271,7 @@ function FormAprovizionare({ material, santiere = [], onSalveaza, onClose }) {
 
       <button className="btn btn-galben" disabled={!Number(cant)}
         onClick={() => Number(cant) && onSalveaza(cant, pret, { santierId, fazaId })}>
-        {santierId ? "Trimite direct pe șantier" : "Adaugă în stoc"}
+        {santierId ? t("Trimite direct pe șantier") : t("Adaugă în stoc")}
       </button>
     </Foaie>
   );
@@ -7438,7 +7438,7 @@ function FormConcediu({ eu, angajati, program, inchideri = [], tipInitial, oZi,
   const inchidereSuprapusa = (inchideri || []).find((x) => start <= x.final && final >= x.start);
 
   return (
-    <Foaie titlu={tip === "absenta" ? "N-a venit la muncă" : eAdmin ? "Trece un concediu" : (singuraZi ? "Cerere de zi liberă" : "Cerere de concediu")} onClose={onClose}>
+    <Foaie titlu={tip === "absenta" ? t("N-a venit la muncă") : eAdmin ? t("Trece un concediu") : (singuraZi ? t("Cerere de zi liberă") : t("Cerere de concediu"))} onClose={onClose}>
       {eAdmin && (
         <div className="camp">
           <label>{t("Pentru cine")}</label>
@@ -7494,7 +7494,7 @@ function FormConcediu({ eu, angajati, program, inchideri = [], tipInitial, oZi,
         <div className="rezumat" style={{ marginBottom: 12 }}>
           <div>
             <div className="rz-nr mono">{zile}</div>
-            <div className="rz-lbl">{zile === 1 ? "zi lucrătoare" : "zile lucrătoare"}</div>
+            <div className="rz-lbl">{zile === 1 ? t("zi lucrătoare") : t("zile lucrătoare")}</div>
           </div>
         </div>
       )}
@@ -7529,7 +7529,7 @@ function FormConcediu({ eu, angajati, program, inchideri = [], tipInitial, oZi,
           nume: eAdmin ? angajati.find((a) => a.id === angajatId)?.nume : eu?.nume,
           tip, start, final: finalReal, motivCerere: motivCerere.trim(),
         })}>
-        {tip === "absenta" ? "Marchează absența" : eAdmin ? "Trece concediul" : (singuraZi ? "Cer ziua asta liberă" : "Trimite cererea")}
+        {tip === "absenta" ? t("Marchează absența") : eAdmin ? t("Trece concediul") : (singuraZi ? t("Cer ziua asta liberă") : t("Trimite cererea"))}
       </button>
     </Foaie>
   );
@@ -7571,7 +7571,7 @@ function FormInchidere({ item, program, onSalveaza, onClose }) {
         <div className="rezumat" style={{ marginBottom: 12 }}>
           <div>
             <div className="rz-nr mono">{zile}</div>
-            <div className="rz-lbl">{zile === 1 ? "zi lucrătoare" : "zile lucrătoare"} închise</div>
+            <div className="rz-lbl">{zile === 1 ? t("zi lucrătoare") : t("zile lucrătoare")} {t("închise")}</div>
           </div>
         </div>
       )}
@@ -8075,7 +8075,7 @@ function FormPontaj({ santier, angajati, echipe, program, pontajExistent = [], s
         <div className="actiuni" style={{ marginTop: 4, marginBottom: 11 }}>
           {echipe.map((e) => (
             <button key={e.id} className="btn btn-mic" onClick={() => bifeazaEchipa(e.id)}>
-              + Toată {e.nume}
+              + {t("Toată")} {e.nume}
             </button>
           ))}
         </div>
