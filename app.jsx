@@ -103,7 +103,19 @@ const LIMBI = [
 
 /* traducătorul global: se setează o dată, la alegerea limbii */
 let LIMBA = "ro";
-const t = (text) => (LIMBA === "ro" ? text : (TRAD[LIMBA] && TRAD[LIMBA][text]) || text);
+/* traducerile vin dintr-un fișier separat (traduceri.js), încărcat înaintea
+   acestui fișier — le citesc prin window, ca să nu depind de cum tratează
+   browserul variabilele între două bucăți de cod evaluate separat */
+const TRAD = (typeof window !== "undefined" && window.TRAD) || {};
+
+const t = (text) => {
+  if (LIMBA === "ro") return text;
+  try {
+    return (typeof TRAD !== "undefined" && TRAD[LIMBA] && TRAD[LIMBA][text]) || text;
+  } catch (e) {
+    return text; // traducerile n-au ajuns să se încarce — rămânem în română, nu blocăm aplicația
+  }
+};
 const zileTrad = () => ZILE.map((z) => t(z));
 
 /* Pozele se micșorează și se comprimă până intră sub bugetul de mărime.

@@ -12,7 +12,7 @@
    arată în română).
    ============================================================ */
 
-const TRAD = {
+window.TRAD = {
   fr: {
     /* intrare */
     "Alege limba": "Choisis la langue",

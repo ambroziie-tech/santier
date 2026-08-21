@@ -104,7 +104,7 @@
         .catch(function (e) {
           // fara traduceri, aplicatia tot merge — ramane doar in romana
           pas("traduceri.js n-a mers (" + (e.message || e) + "), continui doar cu romana", false);
-          (0, eval)("const TRAD = {};");
+          window.TRAD = {};
         });
     }
 
