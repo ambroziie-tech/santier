@@ -925,7 +925,7 @@ function App() {
       const text = JSON.stringify(pachet);
       const nume = numeFisier();
       const rezultat = await descarca(text, nume);
-      setLucruBackup(rezultat === "partajat" ? "Trimis prin partajare."
+      setLucruBackup(rezultat === "partajat" ? t("Trimis prin partajare.")
         : rezultat === "descarcat" ? "Fișier descărcat."
         : "Nu s-a putut descărca — folosește copia rapidă de mai sus.");
     } catch (e) {
@@ -942,13 +942,13 @@ function App() {
       const d = pachet.date || pachet;
       if (!d || typeof d !== "object" || !Array.isArray(d.santiere))
         throw new Error("Fișierul nu pare un backup al acestei aplicații.");
-      const candS = pachet.cand ? new Date(pachet.cand).toLocaleString("ro-RO") : "necunoscut";
-      cere(`Backup din ${candS} · ${rezumatDate(d)}. Se înlocuiește TOT ce e acum în aplicație. Continui?`,
+      const candS = pachet.cand ? new Date(pachet.cand).toLocaleString("ro-RO") : t("necunoscut");
+      cere(`${t("Backup din")} ${candS} · ${rezumatDate(d)}. ${t("Se înlocuiește TOT ce e acum în aplicație. Continui?")}`,
         async () => {
           const poze = pachet.poze || {};
           const nrPoze = Object.keys(poze).length;
           if (nrPoze) {
-            setLucruBackup(`Se pun la loc ${nrPoze} poze…`);
+            setLucruBackup(`${t("Se pun la loc")} ${nrPoze} ${t("poze…")}`);
             for (const [id, dataUrl] of Object.entries(poze)) {
               try { await stocare.set(`foto:${id}`, dataUrl, true); } catch (e) {}
             }
@@ -1010,7 +1010,7 @@ function App() {
     const sterse = (db.cereri.length - cereriRamase.length) + (db.suplimentare.length - supRamase.length);
     if (sterse === 0) return 0;
     await salveaza({ ...db, cereri: cereriRamase, suplimentare: supRamase });
-    if (!tacut) setCuratenie(`${sterse} intrări vechi șterse.`);
+    if (!tacut) setCuratenie(`${sterse} ${t("intrări vechi șterse.")}`);
     return sterse;
   }, [db, salveaza]);
 
@@ -1084,7 +1084,7 @@ function App() {
   const capRaport = (titlu, sub) => `
     <h1>${titlu}</h1>
     <div class="cap">${sub}<br>${db.firma?.nume || ""}${db.firma?.siret ? " · " + db.firma.siret : ""}
-    · generat ${new Date().toLocaleDateString("ro-RO")}</div>`;
+    · ${t("generat")} ${new Date().toLocaleDateString("ro-RO")}</div>`;
 
   const raportSantier = (s) => {
     const b = bilant(s);
@@ -1180,8 +1180,8 @@ function App() {
     const totalCostReal = randuri.reduce((t, r) => t + r.costReal, 0);
 
     deschideRaport(`Raport ${numeLuna}`, `
-      ${capRaport(`Raport lunar — ${numeLuna}`, `${randuri.length} angajați cu ore înregistrate` +
-        (procTaxe > 0 ? ` · ${procTaxe}% taxe pe salarii` : ""))}
+      ${capRaport(`${t("Raport lunar —")} ${numeLuna}`, `${randuri.length} ${t("angajați cu ore înregistrate")}` +
+        (procTaxe > 0 ? ` · ${procTaxe}% ${t("taxe pe salarii")}` : ""))}
 
       <table>
         <tr><th>{t("Angajat")}</th><th class="n">{t("Zile")}</th><th class="n">{t("Ore")}</th><th class="n">{t("Suplimentare")}</th>
@@ -1248,7 +1248,7 @@ function App() {
     materiale = materiale.map((x) => (x.id === nou.id ? { ...x, cant: 0 } : x));
 
     salveaza(cuJurnal({ ...db, materiale, consum: [intrare, ...db.consum] },
-      `${santier?.nume || "Șantier"}: primit direct ${cant} ${nou.unitate} ${nou.nume}`));
+      `${santier?.nume || t("Șantier")}: ${t("primit direct")} ${cant} ${nou.unitate} ${nou.nume}`));
     setFoaie(null);
   };
   const salvCamion = salvGen("camioane");
@@ -1271,14 +1271,14 @@ function App() {
     const echipa = db.echipe.find((x) => x.id === echipaId);
     if (!scula || !echipa) return;
     const lista = db.scule.map((x) => x.id === sculaId ? { ...x, stare: "alocat", echipaId, dataAlocare: azi() } : x);
-    salveaza(cuJurnal({ ...db, scule: lista }, `${scula.nume} → alocată echipei ${echipa.nume}`));
+    salveaza(cuJurnal({ ...db, scule: lista }, `${scula.nume} → ${t("alocată echipei")} ${echipa.nume}`));
     setFoaie(null);
   };
   const returneazaScula = (sculaId) => {
     const scula = db.scule.find((x) => x.id === sculaId);
     const echipa = db.echipe.find((x) => x.id === scula?.echipaId);
     const lista = db.scule.map((x) => x.id === sculaId ? { ...x, stare: "depozit", echipaId: null, dataAlocare: null } : x);
-    salveaza(cuJurnal({ ...db, scule: lista }, `${scula.nume} ← returnată în depozit${echipa ? ` de ${echipa.nume}` : ""}`));
+    salveaza(cuJurnal({ ...db, scule: lista }, `${scula.nume} ← ${t("returnată în depozit")}${echipa ? ` ${t("de")} ${echipa.nume}` : ""}`));
   };
   const trimiteService = (sculaId) => {
     const scula = db.scule.find((x) => x.id === sculaId);
@@ -1294,7 +1294,7 @@ function App() {
           costServiceTotal: (Number(x.costServiceTotal) || 0) + c }
       : x);
     salveaza(cuJurnal({ ...db, scule: lista },
-      `${scula.nume} ← revenită din service${c > 0 ? ` · ${bani(c)}` : ""}${nota ? ` (${nota})` : ""}`));
+      `${scula.nume} ← ${t("revenită din service")}${c > 0 ? ` · ${bani(c)}` : ""}${nota ? ` (${nota})` : ""}`));
     setFoaie(null);
   };
 
@@ -1305,20 +1305,20 @@ function App() {
     const lista = db.camioane.map((x) =>
       x.id === utilajId ? { ...x, stare: "alocat", santierId, dataAlocare: azi() } : x);
     salveaza(cuJurnal({ ...db, camioane: lista },
-      `${utilaj.nume} → mutat pe ${santier?.nume || "șantier"}`));
+      `${utilaj.nume} → ${t("mutat pe")} ${santier?.nume || t("șantier")}`));
     setFoaie(null);
   };
   const aduLaDepozitUtilaj = (utilajId) => {
     const utilaj = db.camioane.find((x) => x.id === utilajId);
     const lista = db.camioane.map((x) =>
       x.id === utilajId ? { ...x, stare: "depozit", santierId: null, dataAlocare: null } : x);
-    salveaza(cuJurnal({ ...db, camioane: lista }, `${utilaj.nume} ← adus la depozit`));
+    salveaza(cuJurnal({ ...db, camioane: lista }, `${utilaj.nume} ← ${t("adus la depozit")}`));
   };
   const trimiteServiceUtilaj = (utilajId) => {
     const utilaj = db.camioane.find((x) => x.id === utilajId);
     const lista = db.camioane.map((x) =>
       x.id === utilajId ? { ...x, stare: "service", santierId: null, dataAlocare: null } : x);
-    salveaza(cuJurnal({ ...db, camioane: lista }, `${utilaj.nume} → trimis la service`));
+    salveaza(cuJurnal({ ...db, camioane: lista }, `${utilaj.nume} → ${t("trimis la service")}`));
   };
 
   /* angajați */
@@ -1328,7 +1328,7 @@ function App() {
     let nou = { ...db, angajati: lista };
     if (vechi && vechi.echipaId !== a.echipaId) {
       const spre = db.echipe.find((e) => e.id === a.echipaId);
-      nou = cuJurnal(nou, `${a.nume} mutat la ${spre ? "echipa " + spre.nume : "fără echipă"}`);
+      nou = cuJurnal(nou, `${a.nume} ${t("mutat la")} ${spre ? t("echipa") + " " + spre.nume : t("fără echipă")}`);
     }
     salveaza(nou);
     setFoaie(null);
@@ -1375,7 +1375,7 @@ function App() {
     }));
     const totalOre = intrari.reduce((s, i) => s + i.ore, 0);
     salveaza(cuJurnal({ ...db, pontaj: [...intrari, ...db.pontaj] },
-      `Pontaj ${santier.nume}: ${intrari.length} ${intrari.length === 1 ? "om" : "oameni"} · ${totalOre}h`));
+      `${t("Pontaj")} ${santier.nume}: ${intrari.length} ${intrari.length === 1 ? t("om") : t("oameni")} · ${totalOre}h`));
     setFoaie(null);
   };
   /* ---------- ore suplimentare, cu aprobarea adminului ---------- */
@@ -1404,7 +1404,7 @@ function App() {
           ? { ...x, status: "aprobat", oreAprobate: Number(sup.ore) || 0,
               notaAdmin: sup.notaAdmin || "", raspunsLa: new Date().toISOString() }
           : x),
-    }, `Suplimentare aprobate: ${sup.nume} · ${sup.ore}h pe ${santier?.nume || "șantier"} (${dataRo(sup.data)})`));
+    }, `${t("Suplimentare aprobate:")} ${sup.nume} · ${sup.ore}h ${t("pe")} ${santier?.nume || t("șantier")} (${dataRo(sup.data)})`));
   };
 
   /* ---------- concedii ---------- */
@@ -1422,7 +1422,7 @@ function App() {
       ...db,
       concedii: db.concedii.map((x) =>
         x.id === c.id ? { ...x, status: "aprobat", raspunsLa: new Date().toISOString() } : x),
-    }, `Concediu aprobat: ${c.nume} · ${dataRo(c.start)} – ${dataRo(c.final)} (${zile} zile)`));
+    }, `${t("Concediu aprobat:")} ${c.nume} · ${dataRo(c.start)} – ${dataRo(c.final)} (${zile} ${t("zile")})`));
   };
 
   const respingeConcediu = (c, motiv) =>
@@ -1435,7 +1435,7 @@ function App() {
   /* adminul adaugă concediu direct, fără cerere */
   const adaugaConcediuDirect = (c) => {
     const zile = zileLucratoareIntre(c.start, c.final, db.setari?.program);
-    const eticheta = c.tip === "absenta" ? "Absență" : "Concediu trecut";
+    const eticheta = c.tip === "absenta" ? t("Absență") : t("Concediu trecut");
     salveaza(cuJurnal({
       ...db,
       concedii: [{ ...c, id: uid(), status: "aprobat", trimisLa: new Date().toISOString(),
@@ -1450,7 +1450,7 @@ function App() {
       ? db.inchideriFirma.map((y) => (y.id === x.id ? x : y))
       : [...db.inchideriFirma, { ...x, id: uid() }];
     salveaza(cuJurnal({ ...db, inchideriFirma: lista },
-      `Firma închisă: ${x.motiv || "vacanță"} · ${dataRo(x.start)} – ${dataRo(x.final)}`));
+      `${t("Firma închisă:")} ${x.motiv || t("vacanță")} · ${dataRo(x.start)} – ${dataRo(x.final)}`));
     setFoaie(null);
   };
 
@@ -1495,7 +1495,7 @@ function App() {
         x.id === al.id
           ? { ...x, status: "aprobat", litriAprobati: litri, costAprobat: cost, raspunsLa: new Date().toISOString() }
           : x),
-    }, `Alimentare aprobată: ${camion?.nume || "vehicul"} · ${litri} L · ${al.nume} (${dataRo(al.data)})`));
+    }, `${t("Alimentare aprobată:")} ${camion?.nume || t("vehicul")} · ${litri} L · ${al.nume} (${dataRo(al.data)})`));
   };
 
   const respingeAlimentare = (al, motiv) =>
@@ -1534,8 +1534,8 @@ function App() {
         m.id === mat.id ? { ...m, cant: Math.max(0, Number(m.cant) - intrare.cant) } : m);
     salveaza(cuJurnal(nou,
       santier
-        ? `${santier.nume}: consum ${intrare.cant} ${intrare.unitate} ${intrare.nume}${intrare.inregistratDe ? ` — notat de ${intrare.inregistratDe}` : ""}`
-        : `Ieșire fără șantier: ${intrare.cant} ${intrare.unitate} ${intrare.nume}${intrare.motiv ? ` (${intrare.motiv})` : ""}`));
+        ? `${santier.nume}: ${t("consum")} ${intrare.cant} ${intrare.unitate} ${intrare.nume}${intrare.inregistratDe ? ` — ${t("notat de")} ${intrare.inregistratDe}` : ""}`
+        : `${t("Ieșire fără șantier:")} ${intrare.cant} ${intrare.unitate} ${intrare.nume}${intrare.motiv ? ` (${intrare.motiv})` : ""}`));
     setFoaie(null);
   };
   /* ieșire rapidă din stoc, fără șantier — intră la pierderi */
@@ -1549,7 +1549,7 @@ function App() {
       ...db,
       consum: [intrare, ...db.consum],
       materiale: db.materiale.map((m) => m.id === mat.id ? { ...m, cant: Math.max(0, Number(m.cant) - intrare.cant) } : m),
-    }, `Ieșire fără șantier: ${intrare.cant} ${intrare.unitate} ${intrare.nume}`));
+    }, `${t("Ieșire fără șantier:")} ${intrare.cant} ${intrare.unitate} ${intrare.nume}`));
   };
 
   const stergeConsum = (id) => {
@@ -1584,7 +1584,7 @@ function App() {
     const noua = { ...alta, echipaId: "", angajatIds: raman };
     const nume = c.comuni.map((id) => db.angajati.find((a) => a.id === id)?.nume).filter(Boolean).join(", ");
     salveaza(cuJurnal({ ...db, planificare: db.planificare.map((p) => (p.id === alta.id ? noua : p)) },
-      `Planing ${dataRo(alta.data)}: ${nume} scos de pe ${santier?.nume || "un șantier"} — înlocuit`));
+      `${t("Planing")} ${dataRo(alta.data)}: ${nume} ${t("scos de pe")} ${santier?.nume || t("un șantier")} — ${t("înlocuit")}`));
   };
 
   /* împarte programul vechi în două bucăți, ca oamenii să revină acolo
@@ -1621,7 +1621,7 @@ function App() {
     }
     const nume = c.comuni.map((id) => db.angajati.find((a) => a.id === id)?.nume).filter(Boolean).join(", ");
     salveaza(cuJurnal({ ...db, planificare },
-      `Planing ${dataRo(alta.data)}: ${nume} plecat ${start}–${final} de pe ${santier?.nume || "un șantier"}, revine după`));
+      `${t("Planing")} ${dataRo(alta.data)}: ${nume} ${t("plecat")} ${start}–${final} ${t("de pe")} ${santier?.nume || t("un șantier")}, ${t("revine după")}`));
   };
 
   /* umple o săptămână după programul firmei: fiecare echipă merge pe șantierul
@@ -1662,7 +1662,7 @@ function App() {
 
     cere(`Pun ${noi.length} zile de lucru după programul firmei? Zilele cu program special (ex. vineri) primesc orele lor. Ce e deja pus nu se atinge.`,
       () => salveaza(cuJurnal({ ...db, planificare: [...db.planificare, ...noi] },
-        `Planing generat automat: ${noi.length} intrări`)),
+        `${t("Planing generat automat:")} ${noi.length} ${t("intrări")}`)),
       "Completează");
   };
 
@@ -1676,7 +1676,7 @@ function App() {
     const zileSursa = [...Array(7)].map((_, i) => iso(adaugaZile(deLaLuni, i)));
     const sursa = db.planificare.filter((p) => zileSursa.includes(p.data));
     if (sursa.length === 0) return cere("Săptămâna asta e goală, n-am ce copia.", () => {}, "Am înțeles");
-    cere(`Copiez ${sursa.length} intrări în săptămâna următoare?`, () => {
+    cere(`${t("Copiez")} ${sursa.length} ${t("intrări în săptămâna următoare?")}`, () => {
     const copii = sursa.map((p) => ({ ...p, id: uid(), data: iso(adaugaZile(new Date(p.data), 7)) }));
     salveaza({ ...db, planificare: [...db.planificare, ...copii] });
     }, "Copiază");
@@ -1691,7 +1691,7 @@ function App() {
       return a;
     });
     const echipa = db.echipe.find((e) => e.id === echipaId);
-    salveaza(cuJurnal({ ...db, angajati }, `Echipa ${echipa.nume}: ${ids.length} membri actualizați`));
+    salveaza(cuJurnal({ ...db, angajati }, `${t("Echipa")} ${echipa.nume}: ${ids.length} ${t("membri actualizați")}`));
     setFoaie(null);
   };
 
@@ -1756,7 +1756,7 @@ function App() {
       cand: azi(), status: "nou",
     };
     salveaza(cuJurnal({ ...db, scule, cereri: [cerere, ...db.cereri] },
-      `${scula.nume}: ${tip} — raportat de ${cine}`));
+      `${scula.nume}: ${t(tip)} — ${t("raportat de")} ${cine}`));
     setFoaie(null);
   };
 
@@ -1767,7 +1767,7 @@ function App() {
     if (actiune === "sterge") {
       cere(`Scoți definitiv „${scula.nume}" din inventar?`, () =>
         salveaza(cuJurnal({ ...db, scule: db.scule.filter((x) => x.id !== sculaId) },
-          `${scula.nume}: scoasă din inventar`)), "Scoate");
+          `${scula.nume}: ${t("scoasă din inventar")}`)), "Scoate");
       return;
     }
     const scule = db.scule.map((x) =>
@@ -1810,7 +1810,7 @@ function App() {
       ...db, materiale,
       consum: [...intrari, ...db.consum],
       cereri: db.cereri.map((x) => (x.id === cerere.id ? { ...x, status: "rezolvat" } : x)),
-    }, `Trimis pe ${santier?.nume || "șantier"}: ${(cerere.linii || []).map((l) => `${l.cant} ${l.unitate} ${l.nume}`).join(", ")}`));
+    }, `${t("Trimis pe")} ${santier?.nume || t("șantier")}: ${(cerere.linii || []).map((l) => `${l.cant} ${l.unitate} ${l.nume}`).join(", ")}`));
   };
   const marcheazaCerere = (id, status) =>
     salveaza({ ...db, cereri: db.cereri.map((c) => (c.id === id
@@ -1977,7 +1977,7 @@ function App() {
     return (
       <div className="app"><style>{css}</style>
         <ConfigurareFirma
-          onSalveaza={(firma) => salveaza(cuJurnal({ ...db, firma }, `Firmă configurată: ${firma.nume}`))}
+          onSalveaza={(firma) => salveaza(cuJurnal({ ...db, firma }, `${t("Firmă configurată:")} ${firma.nume}`))}
           onIesi={() => setIdent(null)} />
       </div>
     );
@@ -3703,7 +3703,7 @@ function App() {
                       </div>
                       {totalBirouTaxe > 0 && (
                         <div className="fisa-rand" style={{ borderBottom: "none" }}>
-                          <span className="k">+ taxe pe salarii ({db.setari?.procentTaxe}%)</span>
+                          <span className="k">+ {t("taxe pe salarii")} ({db.setari?.procentTaxe}%)</span>
                           <b className="mono">{bani(totalBirouTaxe)}</b>
                         </div>
                       )}
@@ -4033,7 +4033,7 @@ function App() {
                         <div className="sub">
                           {c.numar && <><span className="mono">{c.numar}</span> · </>}
                           {c.km && <><b className="mono">{Number(c.km).toLocaleString("ro-RO")} km</b> · </>}
-                          cheltuieli totale: <b>{bani(costTotal)}</b>
+                          {t("cheltuieli totale:")} <b>{bani(costTotal)}</b>
                         </div>
                       </div>
                       {expirari.some((e) => e.z <= 30)
@@ -4074,10 +4074,10 @@ function App() {
                       <div>
                         <div className="titlu">{c.nume}</div>
                         <div className="sub">
-                          {c.stare === "alocat" ? <>🏗 <b>{santierC?.nume || "șantier șters"}</b> din {c.dataAlocare}</>
-                            : c.stare === "service" ? "În service"
-                            : "🏠 La depozit — liber"}
-                          {" · "}cheltuieli totale: <b>{bani(costTotal)}</b>
+                          {c.stare === "alocat" ? <>🏗 <b>{santierC?.nume || t("șantier șters")}</b> {t("din")} {c.dataAlocare}</>
+                            : c.stare === "service" ? t("În service")
+                            : t("🏠 La depozit — liber")}
+                          {" · "}{t("cheltuieli totale:")} <b>{bani(costTotal)}</b>
                         </div>
                       </div>
                       {expirari.some((e) => e.z <= 30)
@@ -4186,11 +4186,11 @@ function App() {
                           <div className="actiuni">
                             <button className="btn btn-mic pericol"
                               onClick={() => cere(
-                                `Ștergi definitiv toate cele ${orfane.length} cheltuieli, totalizând ${bani(totalOrfan)}? Nu se poate anula.`,
+                                `${t("Ștergi definitiv toate cele")} ${orfane.length} ${t("cheltuieli, totalizând")} ${bani(totalOrfan)}? ${t("Nu se poate anula.")}`,
                                 () => salveaza(cuJurnal({
                                   ...db,
                                   intretinere: db.intretinere.filter((i) => idVehicule.has(i.camionId)),
-                                }, `Curățate ${orfane.length} cheltuieli auto fără vehicul (${bani(totalOrfan)})`)),
+                                }, `${t("Curățate")} ${orfane.length} ${t("cheltuieli auto fără vehicul")} (${bani(totalOrfan)})`)),
                                 "Șterge tot")}>
                               Șterge tot ({bani(totalOrfan)})
                             </button>
@@ -4748,13 +4748,13 @@ function App() {
                 consum: [{ id: uid(), santierId: dest.santierId, fazaId: null,
                   materialId: m.id, nume: m.nume, cant: cantN, unitate: m.unitate,
                   pret: pretN, data: aziISO(), motiv: "livrat direct pe șantier" }, ...db.consum],
-              }, `${sant?.nume}: primit direct ${cantN} ${m.unitate} ${m.nume}`));
+              }, `${sant?.nume}: ${t("primit direct")} ${cantN} ${m.unitate} ${m.nume}`));
             } else {
               salveaza(cuJurnal({
                 ...db,
                 materiale: db.materiale.map((x) =>
                   x.id === m.id ? { ...x, cant: (Number(x.cant) || 0) + cantN, pret: pretN } : x),
-              }, `Aprovizionat: ${cantN} ${m.unitate} ${m.nume}`));
+              }, `${t("Aprovizionat:")} ${cantN} ${m.unitate} ${m.nume}`));
             }
             setFoaie(null);
           }}
@@ -4829,7 +4829,7 @@ function App() {
               return { ...p, angajatIds: [...ids] };
             });
             salveaza(cuJurnal({ ...db, planificare },
-              `${om?.nume} împrumutat la ${foaie.echipa.nume} pentru ${foaie.zile.length} ${foaie.zile.length === 1 ? "zi" : "zile"}`));
+              `${om?.nume} ${t("împrumutat la")} ${foaie.echipa.nume} ${t("pentru")} ${foaie.zile.length} ${foaie.zile.length === 1 ? t("zi") : t("zile")}`));
             setFoaie(null);
           }}
           onClose={() => setFoaie(null)} />
@@ -4873,8 +4873,8 @@ function App() {
               }));
             salveaza(cuJurnal(
               { ...db, verificari: [v, ...db.verificari], scule: [...db.scule, ...noi] },
-              `Verificare dotare ${echipa?.nume}: ${lipsa === 0 ? "complet" : `${lipsa} lipsă`}` +
-              (noi.length ? ` · ${noi.length} scule trecute în inventarul echipei` : "")));
+              `${t("Verificare dotare")} ${echipa?.nume}: ${lipsa === 0 ? t("complet") : `${lipsa} ${t("lipsă")}`}` +
+              (noi.length ? ` · ${noi.length} ${t("scule trecute în inventarul echipei")}` : "")));
             setFoaie(null);
           }}
           onClose={() => setFoaie(null)} />
@@ -7948,7 +7948,7 @@ function FormPontaj({ santier, angajati, echipe, program, pontajExistent = [], s
   const preaMulte = dublate.filter((d) => d.total > oraNormala + 4);
 
   return (
-    <Foaie titlu={`Pontaj: ${santier.nume}`} onClose={onClose}>
+    <Foaie titlu={`${t("Pontaj")}: ${santier.nume}`} onClose={onClose}>
       <div className="rand2">
         <div className="camp"><label>{t("Data")}</label>
           <input type="date" value={data} onChange={(e) => {
