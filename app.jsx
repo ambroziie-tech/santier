@@ -108,10 +108,25 @@ let LIMBA = "ro";
    browserul variabilele între două bucăți de cod evaluate separat */
 const TRAD = (typeof window !== "undefined" && window.TRAD) || {};
 
+/* fiecare text netradus întâlnit se adună aici — deschizi consola și scrii
+   traduceriLipsa() ca să vezi dintr-o dată tot ce lipsește, în loc să cauți
+   manual prin aplicație. Se resetează la fiecare reîncărcare a paginii. */
+const LIPSA_TRAD = new Set();
+if (typeof window !== "undefined") {
+  window.traduceriLipsa = () => {
+    const lista = [...LIPSA_TRAD].sort();
+    console.log(`${lista.length} texte netraduse în [${LIMBA}]:`);
+    lista.forEach((x) => console.log("  " + x));
+    return lista;
+  };
+}
+
 const t = (text) => {
   if (LIMBA === "ro") return text;
   try {
-    return (typeof TRAD !== "undefined" && TRAD[LIMBA] && TRAD[LIMBA][text]) || text;
+    const gasit = typeof TRAD !== "undefined" && TRAD[LIMBA] && TRAD[LIMBA][text];
+    if (!gasit && text && text.trim()) LIPSA_TRAD.add(text);
+    return gasit || text;
   } catch (e) {
     return text; // traducerile n-au ajuns să se încarce — rămânem în română, nu blocăm aplicația
   }
