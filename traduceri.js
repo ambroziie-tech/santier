@@ -1092,6 +1092,11 @@ window.TRAD = {
     "Reîmprospătează": "Actualiser",
     "Nu s-a putut copia automat — selectează textul de mai jos cu degetul.": "La copie automatique a échoué — sélectionne le texte ci-dessous avec le doigt.",
     "🌐 Verifică ce n-a fost tradus încă": "🌐 Vérifier ce qui n'est pas encore traduit",
+    "scos": "retiré",
+    "Raport": "Rapport",
+    "Raport PDF": "Rapport PDF",
+    "Pun": "Je mets",
+    "zile de lucru după programul firmei? Zilele cu program special (ex. vineri) primesc orele lor. Ce e deja pus nu se atinge.": "jours de travail selon l'horaire de l'entreprise ? Les jours à horaire spécial (ex. vendredi) reçoivent leurs propres heures. Ce qui est déjà planifié n'est pas touché.",
   },
   en: {
     "Alege limba": "Choose your language",
@@ -2166,5 +2171,10 @@ window.TRAD = {
     "Reîmprospătează": "Refresh",
     "Nu s-a putut copia automat — selectează textul de mai jos cu degetul.": "Couldn't copy automatically — select the text below with your finger.",
     "🌐 Verifică ce n-a fost tradus încă": "🌐 Check what's not translated yet",
+    "scos": "removed",
+    "Raport": "Report",
+    "Raport PDF": "PDF Report",
+    "Pun": "Setting",
+    "zile de lucru după programul firmei? Zilele cu program special (ex. vineri) primesc orele lor. Ce e deja pus nu se atinge.": "work days according to the company schedule? Days with special hours (e.g. Friday) get their own hours. What's already scheduled stays untouched.",
   },
 };

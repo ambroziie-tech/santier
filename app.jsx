@@ -1123,7 +1123,7 @@ function App() {
 
     const faze = areFaze(s) ? s.faze.map((fz) => ({ fz, b: bilantFaza(s, fz) })) : [];
 
-    deschideRaport(`Raport ${s.nume}`, `
+    deschideRaport(`${t("Raport")} ${s.nume}`, `
       ${capRaport(s.nume, `${s.client ? s.client + " · " : ""}${s.adresaFull || s.adresa || ""}
         ${s.dataStart ? " · început " + dataRo(s.dataStart) : ""}`)}
 
@@ -1587,7 +1587,7 @@ function App() {
     const santier = db.santiere.find((s) => s.id === alta.santierId);
     if (c.totiOamenii) {
       salveaza(cuJurnal({ ...db, planificare: db.planificare.filter((p) => p.id !== alta.id) },
-        `Planing ${dataRo(alta.data)}: scos ${santier?.nume || "un șantier"} (${interval(alta)}) — înlocuit`));
+        `${t("Planing")} ${dataRo(alta.data)}: ${t("scos")} ${santier?.nume || t("un șantier")} (${interval(alta)}) — ${t("înlocuit")}`));
       return;
     }
     /* scot doar oamenii comuni: îi trec din echipă în listă nominală */
@@ -1675,7 +1675,7 @@ function App() {
       return;
     }
 
-    cere(`Pun ${noi.length} zile de lucru după programul firmei? Zilele cu program special (ex. vineri) primesc orele lor. Ce e deja pus nu se atinge.`,
+    cere(`${t("Pun")} ${noi.length} ${t("zile de lucru după programul firmei? Zilele cu program special (ex. vineri) primesc orele lor. Ce e deja pus nu se atinge.")}`,
       () => salveaza(cuJurnal({ ...db, planificare: [...db.planificare, ...noi] },
         `${t("Planing generat automat:")} ${noi.length} ${t("intrări")}`)),
       "Completează");
@@ -3345,7 +3345,7 @@ function App() {
                     )}
                     {finalizat && (
                       <button className="btn btn-mic principal" onClick={() => raportSantier(s)}>
-                        📄 Raport PDF
+                        📄 {t("Raport PDF")}
                       </button>
                     )}
                     <button className="btn btn-mic" onClick={() => setFoaie({ tip: "detaliiSantier", item: s })}>Detalii</button>
