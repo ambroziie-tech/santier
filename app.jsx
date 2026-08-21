@@ -2617,6 +2617,12 @@ function App() {
                     </button>
                   ))}
                 </div>
+                {limba !== "ro" && (
+                  <button className="btn btn-mic" style={{ marginTop: 9, width: "100%" }}
+                    onClick={() => setFoaie({ tip: "traduceriLipsa" })}>
+                    🌐 Verifică ce n-a fost tradus încă
+                  </button>
+                )}
               </div>
               <button className="btn btn-mic" style={{ width: "100%", marginTop: 9 }}
                 onClick={() => setIdent(null)}>
@@ -2669,7 +2675,8 @@ function App() {
             onSalveaza={(tip, note) => raporteazaScula(foaie.item.id, tip, note, eu?.nume)}
             onClose={() => setFoaie(null)} />
         )}
-        {foaie?.tip === "cerereConcediu" && (
+        {foaie?.tip === "traduceriLipsa" && <TraduceriLipsa onClose={() => setFoaie(null)} />}
+      {foaie?.tip === "cerereConcediu" && (
           <FormConcediu eu={eu} program={db.setari?.program}
             inchideri={db.inchideriFirma}
             tipInitial={foaie.tipInitial} oZi={foaie.oZi}
@@ -4009,6 +4016,12 @@ function App() {
                   </button>
                 ))}
               </div>
+              {limba !== "ro" && (
+                <button className="btn btn-mic" style={{ marginTop: 9, width: "100%" }}
+                  onClick={() => setFoaie({ tip: "traduceriLipsa" })}>
+                  🌐 Verifică ce n-a fost tradus încă
+                </button>
+              )}
             </div>
 
             <div className="card">
@@ -4849,6 +4862,7 @@ function App() {
           }}
           onClose={() => setFoaie(null)} />
       )}
+      {foaie?.tip === "traduceriLipsa" && <TraduceriLipsa onClose={() => setFoaie(null)} />}
       {foaie?.tip === "concediuDirect" && (
         <FormConcediu angajati={db.angajati} program={db.setari?.program} inchideri={db.inchideriFirma}
           concediiExistente={db.concedii} tipInitial={foaie.tipInitial} oZi={foaie.oZi}
@@ -6058,6 +6072,58 @@ function ConfigurareFirma({ onSalveaza, onIesi }) {
         Ieși din cont
       </button>
     </div>
+  );
+}
+
+function TraduceriLipsa({ onClose }) {
+  const [lista, setLista] = useState(() => [...LIPSA_TRAD].sort());
+  const [copiat, setCopiat] = useState(false);
+
+  const reimprospateaza = () => setLista([...LIPSA_TRAD].sort());
+
+  const copiaza = async () => {
+    const text = lista.join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiat(true);
+      setTimeout(() => setCopiat(false), 2500);
+    } catch (e) {
+      setCopiat("manual");
+    }
+  };
+
+  return (
+    <Foaie titlu={`🌐 ${t("Traduceri lipsă")} [${LIMBA}]`} onClose={onClose}>
+      <div className="sub" style={{ marginBottom: 12 }}>
+        {t("Vede doar ce ai atins efectiv de când ai deschis aplicația — umblă prin toate ecranele înainte să verifici, ca să prindă tot. Se golește la fiecare reîncărcare.")}
+      </div>
+
+      {lista.length === 0 ? (
+        <div className="gol-msg">{t("Nimic netradus găsit până acum. Umblă prin mai multe ecrane și apasă „Reîmprospătează\".")}</div>
+      ) : (
+        <>
+          <div className="rezumat" style={{ marginBottom: 12 }}>
+            <div>
+              <div className="rz-nr mono">{lista.length}</div>
+              <div className="rz-lbl">{lista.length === 1 ? t("text netradus") : t("texte netraduse")}</div>
+            </div>
+          </div>
+          <div className="actiuni" style={{ marginBottom: 12 }}>
+            <button className="btn btn-mic principal" onClick={copiaza}>
+              {copiat === true ? t("✓ Copiat") : t("Copiază lista")}
+            </button>
+            <button className="btn btn-mic" onClick={reimprospateaza}>{t("Reîmprospătează")}</button>
+          </div>
+          {copiat === "manual" && (
+            <div className="sub" style={{ color: "var(--rosu)", marginBottom: 12 }}>
+              {t("Nu s-a putut copia automat — selectează textul de mai jos cu degetul.")}
+            </div>
+          )}
+          <textarea readOnly rows={Math.min(lista.length + 1, 14)} value={lista.join("\n")}
+            style={{ width: "100%", fontFamily: "monospace", fontSize: 12.5 }} />
+        </>
+      )}
+    </Foaie>
   );
 }
 
