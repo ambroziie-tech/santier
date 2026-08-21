@@ -428,7 +428,7 @@ function ButonHarta({ adresa, mic }) {
       style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
       href={linkHarta(adresa)} target="_blank" rel="noreferrer"
       onClick={(e) => e.stopPropagation()}>
-      📍 {mic ? "Hartă" : "Deschide în hărți"}
+      📍 {mic ? t("Hartă") : t("Deschide în hărți")}
     </a>
   );
 }
@@ -2573,7 +2573,7 @@ function App() {
                               <div className="sub">
                                 {sn?.nume || "—"}
                                 {modificat && x.notaAdmin && (
-                                  <><br /><span style={{ color: "var(--galben)" }}>Șeful a scris: {x.notaAdmin}</span></>
+                                  <><br /><span style={{ color: "var(--galben)" }}>{t("Șeful a scris:")} {x.notaAdmin}</span></>
                                 )}
                                 {x.motivCerere && <><br />{x.motivCerere}</>}
                                 {x.status === "respins" && x.motiv && (
@@ -2679,8 +2679,8 @@ function App() {
             ["cereri", "✉", t("Cereri"), cereriDeschise.length],
           ] : [
             ["azi", "🗓", t("Azi"), sarciniDeschise.length],
-            ["scule", "🔧", "Scule", 0],
-            ...(eu?.poateStoc ? [["materiale", "📦", "Materiale", 0]] : []),
+            ["scule", "🔧", t("Scule"), 0],
+            ...(eu?.poateStoc ? [["materiale", "📦", t("Materiale"), 0]] : []),
             ...(oreVizibile ? [["ore", "⏱", t("Orele tale"), 0]] : []),
             ["cereri", "✉", t("Cereri"),
               cereriDeschise.length +
@@ -2871,14 +2871,14 @@ function App() {
                     <div className="actiuni">
                       <button className="btn btn-mic principal"
                         onClick={() => setFoaie({ tip: "aprovizionare", item: m })}>
-                        + Am cumpărat
+                        {t("+ Am cumpărat")}
                       </button>
                     </div>
                   </div>
                 ))}
                 <button className="btn btn-mic" style={{ width: "100%" }}
                   onClick={() => { setTab("inventar"); setSubInv("materiale"); setFoaie({ tip: "material" }); }}>
-                  + Material nou în stoc
+                  {t("+ Material nou în stoc")}
                 </button>
               </>
             )}
@@ -2914,7 +2914,7 @@ function App() {
                 <div className="rezumat">
                   <div>
                     <div className="rz-nr mono">{bani(valMateriale)}</div>
-                    <div className="rz-lbl">Valoare stoc · {db.materiale.length} poziții</div>
+                    <div className="rz-lbl">{t("Valoare stoc")} · {db.materiale.length} {t("poziții")}</div>
                   </div>
                   {stocScazut.length > 0 && (
                     <span className="chip alerta">{stocScazut.length} sub prag</span>
@@ -2951,7 +2951,7 @@ function App() {
                           <div className="titlu">{m.nume}</div>
                           <div className="sub">
                             <b className="mono">{m.cant} {m.unitate}</b>
-                            {m.pret > 0 && <> · {bani(m.pret)}/{m.unitate} · total <b>{bani(m.cant * m.pret)}</b></>}
+                            {m.pret > 0 && <> · {bani(m.pret)}/{m.unitate} · {t("total")} <b>{bani(m.cant * m.pret)}</b></>}
                             {m.locatie && <> · {m.locatie}</>}
                           </div>
                         </div>
@@ -3028,7 +3028,7 @@ function App() {
                             : s.stare === "alocat" ? <>{t("La")} <b>{numeEchipa(s.echipaId)}</b> din {s.dataAlocare}</>
                             : s.stare === "service" ? t("În service") : t("În depozit")}
                           {Number(s.costServiceTotal) > 0 && (
-                            <> · <span style={{ color: "var(--galben)" }}>cheltuit reparații: {bani(s.costServiceTotal)}</span></>
+                            <> · <span style={{ color: "var(--galben)" }}>{t("cheltuit reparații:")} {bani(s.costServiceTotal)}</span></>
                           )}
                           {s.problema && (
                             <><br /><span style={{ color: "var(--rosu)" }}>
@@ -3291,7 +3291,7 @@ function App() {
                     <div className="pr-col">
                       <div className="pr-lbl">Ore</div>
                       <div className="pr-val mono" style={{ color: culoare(procOre) }}>{ore}h</div>
-                      <div className="pr-prev">din {orePrev ? `${orePrev}h prevăzute` : "—"}{procOre !== null && ` · ${procOre}%`}</div>
+                      <div className="pr-prev">{t("din")} {orePrev ? `${orePrev}${t("h prevăzute")}` : "—"}{procOre !== null && ` · ${procOre}%`}</div>
                     </div>
                     <div className="pr-col">
                       <div className="pr-lbl">Materiale</div>
@@ -3813,10 +3813,10 @@ function App() {
                 <div className="card" key={d.d} style={{ padding: "12px 14px" }}>
                   <div className="card-rand">
                     <div>
-                      <div className="titlu" style={{ fontSize: 14 }}>{d.d}</div>
+                      <div className="titlu" style={{ fontSize: 14 }}>{t(d.d)}</div>
                       <div className="sub">
-                        {d.nr} {d.nr === 1 ? "șantier" : "șantiere"} · <span className="mono">{d.ore}h</span> ·
-                        partea din cifrat {bani(d.cifrat)}
+                        {d.nr} {d.nr === 1 ? t("șantier") : t("șantiere")} · <span className="mono">{d.ore}h</span> ·
+                        {t("partea din cifrat")} {bani(d.cifrat)}
                       </div>
                     </div>
                     <b className="mono" style={{ color: d.marja >= 0 ? "var(--verde)" : "var(--rosu)", whiteSpace: "nowrap" }}>
@@ -3859,7 +3859,7 @@ function App() {
                 {db.firma?.oras || "—"}
                 {db.firma?.siret && <><br />SIRET/CUI: <span className="mono">{db.firma.siret}</span></>}
                 {db.firma?.telefon && <><br />{db.firma.telefon}</>}
-                {db.firma?.moneda && <><br />Monedă: {db.firma.moneda}</>}
+                {db.firma?.moneda && <><br />{t("Monedă:")} {db.firma.moneda}</>}
               </div>
               <div className="actiuni">
                 <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "firma" })}>
@@ -5498,7 +5498,7 @@ function Dotare({ db, onSalveaza, setFoaie, cere }) {
                   <div className="titlu">{e.nume}</div>
                   <div className="sub">
                     {v
-                      ? <>Verificată acum {zile === 0 ? "azi" : `${zile} ${zile === 1 ? "zi" : "zile"}`}
+                      ? <>{t("Verificată acum")} {zile === 0 ? t("azi") : `${zile} ${zile === 1 ? t("zi") : t("zile")}`}
                           {zile > 0 && " în urmă"} · de {v.de}</>
                       : "Niciodată verificată"}
                   </div>
@@ -5569,7 +5569,7 @@ function FormVerificare({ echipa, dotare, scule, onSalveaza, onClose }) {
               style={{ width: 21, height: 21, accentColor: "var(--verde)", flex: "none" }} />
             <span style={{ textDecoration: r.ok ? "none" : "none", color: r.ok ? "var(--text)" : "var(--rosu)" }}>
               {r.nume} {r.cant > 1 && <span className="mono">×{r.cant}</span>}
-              {r.sugestie && <span className="rb-sub">găsit în inventar: {r.sugestie}</span>}
+              {r.sugestie && <span className="rb-sub">{t("găsit în inventar:")} {r.sugestie}</span>}
               {!r.sugestie && <span className="rb-sub">{t("nu apare nimic alocat echipei")}</span>}
             </span>
           </label>
@@ -5620,7 +5620,7 @@ function IstoricVerificari({ echipa, verificari, onSterge, onClose }) {
                 <div className="titlu" style={{ fontSize: 14 }}>
                   {new Date(v.cand).toLocaleDateString("ro-RO")}
                 </div>
-                <div className="sub">de {v.de} · {v.randuri.length} poziții verificate</div>
+                <div className="sub">{t("de")} {v.de} · {v.randuri.length} {t("poziții verificate")}</div>
               </div>
               <span className={"chip " + (lipsa.length > 0 ? "alerta" : "ok")}>
                 {lipsa.length > 0 ? `${lipsa.length} lipsă` : "Complet"}
@@ -7182,7 +7182,7 @@ function ProgramLucru({ program, onSchimba }) {
                 <div className="sub">
                   <span className="mono">{pz.start}–{pz.final}</span>
                   {pz.pauza > 0 && <> · pauză {pz.pauza} min</>}
-                  {" · "}<b>{ore}h plătite</b>
+                  {" · "}<b>{ore}{t("h plătite")}</b>
                 </div>
               </div>
               <span className={"chip " + (pz.special ? "alocat" : "gri")}>
@@ -7695,7 +7695,7 @@ function EditorFaze({ faze, onSchimba }) {
               <div className="camp">
                 <label>{t("Tip de lucrare")}</label>
                 <select value={f.domeniu} onChange={(e) => seteaza(i, "domeniu", e.target.value)}>
-                  {DOMENII.map((d) => <option key={d}>{d}</option>)}
+                  {DOMENII.map((d) => <option key={d} value={d}>{t(d)}</option>)}
                 </select>
               </div>
               <div className="rand2">
@@ -7712,7 +7712,7 @@ function EditorFaze({ faze, onSchimba }) {
               </div>
 
               <div className="camp">
-                <label>Materiale prevăzute pe fază
+                <label>{t("Materiale prevăzute pe fază")}
                   {totalMat(f) > 0 && <span style={{ color: "var(--galben)" }}> · {bani(totalMat(f))}</span>}
                 </label>
                 {(f.materialePrev || []).map((m, j) => (
@@ -7776,7 +7776,7 @@ function FormSantier({ item, onSalveaza, onClose }) {
           <input value={f.client} onChange={set("client")} placeholder="ex. Fam. Martin" /></div>
         <div className="camp"><label>{t("Tip de lucrare")}</label>
           <select value={f.domeniu || DOMENII[0]} onChange={set("domeniu")}>
-            {DOMENII.map((d) => <option key={d}>{d}</option>)}
+            {DOMENII.map((d) => <option key={d} value={d}>{t(d)}</option>)}
           </select></div>
       </div>
       <div className="rand2">
@@ -7817,7 +7817,7 @@ function FormSantier({ item, onSalveaza, onClose }) {
       </div>}
 
       {!peFaze && <div className="camp">
-        <label>Materiale prevăzute {totalPrev > 0 && <span style={{ color: "var(--galben)" }}>· total {bani(totalPrev)}</span>}</label>
+        <label>{t("Materiale prevăzute")} {totalPrev > 0 && <span style={{ color: "var(--galben)" }}>· {t("total")} {bani(totalPrev)}</span>}</label>
         {prev.map((m, i) => (
           <div key={i} className="rand-prev">
             <input value={m.nume} onChange={(e) => setRand(i, "nume", e.target.value)} placeholder="Material" />
@@ -7973,16 +7973,16 @@ function FormPontaj({ santier, angajati, echipe, program, pontajExistent = [], s
           {fazaAleasa && (
             <div className="sub" style={{ marginTop: 6 }}>
               Cifrat {bani(fazaAleasa.valoare)}
-              {Number(fazaAleasa.orePrev) > 0 && <> · {fazaAleasa.orePrev}h prevăzute</>}
+              {Number(fazaAleasa.orePrev) > 0 && <> · {fazaAleasa.orePrev}{t("h prevăzute")}</>}
             </div>
           )}
         </div>
       )}
 
       <div className="camp">
-        <label>Ce fel de muncă {separat && <span style={{ color: "var(--mut)" }}>{t("(pentru toți, dacă nu schimbi mai jos)")}</span>}</label>
+        <label>{t("Ce fel de muncă")} {separat && <span style={{ color: "var(--mut)" }}>{t("(pentru toți, dacă nu schimbi mai jos)")}</span>}</label>
         <select value={tip} onChange={(e) => setTip(e.target.value)}>
-          {DOMENII.map((d) => <option key={d}>{d}</option>)}
+          {DOMENII.map((d) => <option key={d} value={d}>{t(d)}</option>)}
         </select>
       </div>
       <label className="rand-bifa" style={{ borderBottom: "none", paddingTop: 0 }}>
@@ -8016,7 +8016,7 @@ function FormPontaj({ santier, angajati, echipe, program, pontajExistent = [], s
             {separat && sel[a.id] && (
               <select value={tipuri[a.id] || tip} onChange={(e) => setTipuri({ ...tipuri, [a.id]: e.target.value })}
                 style={{ marginTop: 7, padding: "7px 9px", fontSize: 13 }}>
-                {DOMENII.map((d) => <option key={d}>{d}</option>)}
+                {DOMENII.map((d) => <option key={d} value={d}>{t(d)}</option>)}
               </select>
             )}
           </div>
@@ -8031,7 +8031,7 @@ function FormPontaj({ santier, angajati, echipe, program, pontajExistent = [], s
               <b>{d.a.nume}</b> are <b className="mono">{d.ore}h</b> pe{" "}
               {d.unde.join(", ")}
               {d.aici && <span style={{ color: "var(--galben)" }}> (chiar aici)</span>}.
-              {" "}Dacă salvezi, ajunge la <b className="mono">{+d.total.toFixed(1)}h</b> în ziua asta.
+              {" "}{t("Dacă salvezi, ajunge la")} <b className="mono">{+d.total.toFixed(1)}h</b> {t("în ziua asta.")}
             </div>
           ))}
           <div className="cf-sfat">
@@ -8654,14 +8654,14 @@ function ListaSarcini({ santier, sarcini, onAdauga, onComuta, onSterge, onClose 
       <div style={{ height: 12 }} />
       {sarcini.length === 0 ? (
         <div className="gol-msg">
-          Nimic încă. Faci o poză cu ce e de reparat sau de terminat, scrii două vorbe, iar oamenii de pe șantierul ăsta o văd pe telefonul lor.
+          {t("Nimic încă. Faci o poză cu ce e de reparat sau de terminat, scrii două vorbe, iar oamenii de pe șantierul ăsta o văd pe telefonul lor.")}
         </div>
       ) : (
         <>
           {deschise.map(rand)}
           {gata.length > 0 && (
             <>
-              <div className="sectiune">Rezolvate ({gata.length})</div>
+              <div className="sectiune">{t("Rezolvate")} ({gata.length})</div>
               {gata.map(rand)}
             </>
           )}
@@ -8712,14 +8712,14 @@ function FormSarcina({ santierId, onSalveaza, onClose }) {
   const marime = poza ? Math.round((poza.length * 0.75) / 1024) : 0;
 
   return (
-    <Foaie titlu="Problemă de rezolvat" onClose={onClose}>
+    <Foaie titlu={t("Problemă de rezolvat")} onClose={onClose}>
       <div className="camp">
         <label>{t("Ce e de făcut *")}</label>
         <input value={f.titlu} onChange={(e) => setF({ ...f, titlu: e.target.value })}
           placeholder={t("ex. Refăcut colțul de la baie")} />
       </div>
       <div className="camp">
-        <label>Detalii</label>
+        <label>{t("Detalii")}</label>
         <textarea rows={2} value={f.descriere} onChange={(e) => setF({ ...f, descriere: e.target.value })}
           placeholder={t("ex. Nu e la plumb, se vede de la ușă. De reparat înainte de gletuit.")} />
       </div>
@@ -8730,14 +8730,14 @@ function FormSarcina({ santierId, onSalveaza, onClose }) {
           <input type="file" accept="image/*" onChange={alegePoza}
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%",
               opacity: 0, cursor: "pointer", fontSize: 0 }} />
-          {procesez ? "Se pregătește poza…" : poza ? "Schimbă poza" : "📷 Fă o poză sau alege din galerie"}
+          {procesez ? t("Se pregătește poza…") : poza ? t("Schimbă poza") : t("📷 Fă o poză sau alege din galerie")}
         </label>
         {poza && (
           <>
             <img className="poza" src={poza} alt="" style={{ marginTop: 10 }} />
             <div className="sub" style={{ marginTop: 6, display: "flex", justifyContent: "space-between" }}>
-              <span>Pregătită · ~{marime} KB</span>
-              <button className="btn btn-mic pericol" onClick={() => setPoza(null)}>Scoate poza</button>
+              <span>{t("Pregătită")} · ~{marime} KB</span>
+              <button className="btn btn-mic pericol" onClick={() => setPoza(null)}>{t("Scoate poza")}</button>
             </div>
           </>
         )}
