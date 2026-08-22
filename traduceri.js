@@ -1189,6 +1189,7 @@ window.TRAD = {
     "Ștergi": "Supprimer",
     "Ștergi categoria": "Supprimer la catégorie",
     "Ștergi rolul?": "Supprimer le rôle ?",
+    "scule": "outils",
   },
   en: {
     "Alege limba": "Choose your language",
@@ -2360,5 +2361,6 @@ window.TRAD = {
     "Ștergi": "Delete",
     "Ștergi categoria": "Delete category",
     "Ștergi rolul?": "Delete the role?",
+    "scule": "tools",
   },
 };

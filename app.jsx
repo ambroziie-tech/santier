@@ -3906,8 +3906,7 @@ function App() {
             <div className="card">
               <div className="titlu">{t("👁 Ce văd muncitorii")}</div>
               <div className="sub">
-                Dacă opriți, tabul „Orele talet(" dispare complet de pe telefonul lor — restul)
-                (planing, scule, cereri, materiale) rămâne neschimbat.
+                {t("Dacă opriți, tabul „Orele tale\" dispare complet de pe telefonul lor — restul (planing, scule, cereri, materiale) rămâne neschimbat.")}
               </div>
               <div className="actiuni">
                 <button className={"btn btn-mic" + ((db.setari?.oreVizibileMuncitori ?? true) ? " principal" : "")}
@@ -4041,8 +4040,8 @@ function App() {
             <div className="card">
               <div className="titlu">{t("Date în aplicație")}</div>
               <div className="sub">
-                {db.santiere.length} șantiere · {db.materiale.length} materiale · {db.scule.length} scule ·{" "}
-                {db.angajati.length} angajați · {db.camioane.length} vehicule · {db.pontaj.length} pontaje
+                {db.santiere.length} {t("șantiere")} · {db.materiale.length} {t("materiale")} · {db.scule.length} {t("scule")} ·{" "}
+                {db.angajati.length} {t("angajați")} · {db.camioane.length} {t("vehicule")} · {db.pontaj.length} {t("pontaje")}
               </div>
             </div>
           </>
@@ -5386,8 +5385,7 @@ function RoluriFirma({ db, onSalveaza, cere, setFoaie }) {
 
       {roluri.length === 0 ? (
         <div className="gol-msg">
-          Niciun rol încă. Creează unul — de exemplu „Secretariatt(", cu bifele pentru Cifre și)
-          Rapoarte — apoi îl dai cuiva din fișa lui.
+          {t("Niciun rol încă. Creează unul — de exemplu „Secretariat\", cu bifele pentru Cifre și Rapoarte — apoi îl dai cuiva din fișa lui.")}
         </div>
       ) : (
         roluri.map((r) => {
@@ -5903,8 +5901,7 @@ function Invitatii({ db, onSeteazaPin }) {
       <div className="card">
         <div className="titlu">{t("Cum ajung oamenii în aplicație")}</div>
         <div className="sub">
-          Nu există conturi pe server, deci „invitațiat(" e linkul aplicației. Cine îl are, intră.)
-          Fiecare își găsește numele în listă și își pune o parolă — sau îi dai tu una de la început.
+          {t("Nu există conturi pe server, deci „invitația\" e linkul aplicației. Cine îl are, intră. Fiecare își găsește numele în listă și își pune o parolă — sau îi dai tu una de la început.")}
         </div>
       </div>
 
@@ -7273,7 +7270,7 @@ function ProgramLucru({ program, onSchimba }) {
                 <div className="titlu" style={{ fontSize: 14 }}>{t(NUME_ZI[c])}</div>
                 <div className="sub">
                   <span className="mono">{pz.start}–{pz.final}</span>
-                  {pz.pauza > 0 && <> · pauză {pz.pauza} min</>}
+                  {pz.pauza > 0 && <> · {t("pauză")} {pz.pauza} min</>}
                   {" · "}<b>{ore}{t("h plătite")}</b>
                 </div>
               </div>
@@ -7320,7 +7317,7 @@ function ProgramLucru({ program, onSchimba }) {
         <div className="rezumat" style={{ marginTop: 10 }}>
           <div>
             <div className="rz-nr mono">{(+totalSapt.toFixed(2)).toString().replace(".00", "")}h</div>
-            <div className="rz-lbl">pe săptămână, plătite · {zileActive.length} zile</div>
+            <div className="rz-lbl">{t("pe săptămână, plătite")} · {zileActive.length} {t("zile")}</div>
           </div>
         </div>
       )}
@@ -8579,8 +8576,7 @@ function FormPlan({ item, data, santiere, echipe, angajati, planificare, program
             </div>
           ))}
           <div className="cf-sfat">
-            Scoate-i din listă sau alege altă zi. Dacă e din echipă, folosește
-            „Oameni în plust(" ca să pui pe altcineva în locul lui.)
+            {t("Scoate-i din listă sau alege altă zi. Dacă e din echipă, folosește „Oameni în plus\" ca să pui pe altcineva în locul lui.")}
           </div>
           <div className="actiuni">
             <button className="btn btn-mic"
