@@ -2392,7 +2392,7 @@ function App() {
                 </div>
                 <button className="btn btn-galben"
                   onClick={() => setFoaie({ tip: "consumMuncitor", santiere: pentruConsum })}>
-                  + Am folosit materiale
+                  + {t("Am folosit materiale")}
                 </button>
 
                 <div className="sectiune">{t("Notate de tine")}</div>
@@ -2423,7 +2423,7 @@ function App() {
               <div className="rezumat">
                 <div>
                   <div className="rz-nr mono">{totalOreMele}h</div>
-                  <div className="rz-lbl">{t("Total:")} toate lucrările</div>
+                  <div className="rz-lbl">{t("Total:")} {t("toate lucrările")}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div className="rz-nr mono" style={{ color: "var(--galben)" }}>{luna30Mele}h</div>
@@ -2540,7 +2540,7 @@ function App() {
               {!eBirou && (
                 <button className="btn btn-mic" style={{ width: "100%", marginTop: 9 }}
                   onClick={() => setFoaie({ tip: "suplimentare", santiere: pentruConsum })}>
-                  ⏱ Am stat peste program
+                  ⏱ {t("Am stat peste program")}
                 </button>
               )}
               <div className="actiuni" style={{ marginTop: 9 }}>
@@ -2650,7 +2650,7 @@ function App() {
               </div>
               <button className="btn btn-mic" style={{ width: "100%", marginTop: 9 }}
                 onClick={() => setIdent(null)}>
-                {t("Ieși")} din cont
+                {t("Ieși din cont")}
               </button>
               <div style={{ height: 12 }} />
               {cererileMele.length === 0 ? (
@@ -3154,7 +3154,7 @@ function App() {
                   ));
                 })()}
                 <button className="meniu-iesire" onClick={() => setIdent(null)}>
-                  <span>🚪</span>Ieși din cont
+                  <span>🚪</span>{t("Ieși din cont")}
                 </button>
               </div>
             )}

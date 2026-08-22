@@ -1262,6 +1262,8 @@ window.TRAD = {
     "Direct pe": "Directement sur",
     "sac": "sac",
     "Preț": "Prix",
+    "Am folosit materiale": "J'ai utilisé des matériaux",
+    "Am stat peste program": "Je suis resté après l'horaire",
   },
   en: {
     "Alege limba": "Choose your language",
@@ -2506,5 +2508,7 @@ window.TRAD = {
     "Direct pe": "Directly to",
     "sac": "bag",
     "Preț": "Price",
+    "Am folosit materiale": "I used materials",
+    "Am stat peste program": "I stayed past hours",
   },
 };
