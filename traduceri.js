@@ -1259,6 +1259,8 @@ window.TRAD = {
     "Stoc:": "Stock :",
     "minim": "min.",
     "taxe": "charges",
+    "Direct pe": "Directement sur",
+    "sac": "sac",
   },
   en: {
     "Alege limba": "Choose your language",
@@ -2500,5 +2502,7 @@ window.TRAD = {
     "Stoc:": "Stock:",
     "minim": "min.",
     "taxe": "taxes",
+    "Direct pe": "Directly to",
+    "sac": "bag",
   },
 };

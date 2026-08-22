@@ -1187,7 +1187,7 @@ function App() {
       <table>
         <tr><th>${t("Material")}</th><th class="n">${t("Cantitate")}</th><th class="n">${t("Valoare")}</th></tr>
         ${Object.values(peMat).sort((a, b2) => b2.val - a.val)
-          .map((m) => `<tr><td>${m.nume}</td><td class="n">${m.cant} ${m.unitate}</td>
+          .map((m) => `<tr><td>${m.nume}</td><td class="n">${m.cant} ${t(m.unitate)}</td>
             <td class="n">${bani(m.val)}</td></tr>`).join("")}
         <tr class="tot"><td>${t("Total")}</td><td class="n"></td><td class="n">${bani(b.materiale)}</td></tr>
       </table>
@@ -1290,7 +1290,7 @@ function App() {
     materiale = materiale.map((x) => (x.id === nou.id ? { ...x, cant: 0 } : x));
 
     salveaza(cuJurnal({ ...db, materiale, consum: [intrare, ...db.consum] },
-      `${santier?.nume || t("Șantier")}: ${t("primit direct")} ${cant} ${nou.unitate} ${nou.nume}`));
+      `${santier?.nume || t("Șantier")}: ${t("primit direct")} ${cant} ${t(nou.unitate)} ${nou.nume}`));
     setFoaie(null);
   };
   const salvCamion = salvGen("camioane");
@@ -1576,8 +1576,8 @@ function App() {
         m.id === mat.id ? { ...m, cant: Math.max(0, Number(m.cant) - intrare.cant) } : m);
     salveaza(cuJurnal(nou,
       santier
-        ? `${santier.nume}: ${t("consum")} ${intrare.cant} ${intrare.unitate} ${intrare.nume}${intrare.inregistratDe ? ` — ${t("notat de")} ${intrare.inregistratDe}` : ""}`
-        : `${t("Ieșire fără șantier:")} ${intrare.cant} ${intrare.unitate} ${intrare.nume}${intrare.motiv ? ` (${intrare.motiv})` : ""}`));
+        ? `${santier.nume}: ${t("consum")} ${intrare.cant} ${t(intrare.unitate)} ${intrare.nume}${intrare.inregistratDe ? ` — ${t("notat de")} ${intrare.inregistratDe}` : ""}`
+        : `${t("Ieșire fără șantier:")} ${intrare.cant} ${t(intrare.unitate)} ${intrare.nume}${intrare.motiv ? ` (${intrare.motiv})` : ""}`));
     setFoaie(null);
   };
   /* ieșire rapidă din stoc, fără șantier — intră la pierderi */
@@ -1591,7 +1591,7 @@ function App() {
       ...db,
       consum: [intrare, ...db.consum],
       materiale: db.materiale.map((m) => m.id === mat.id ? { ...m, cant: Math.max(0, Number(m.cant) - intrare.cant) } : m),
-    }, `${t("Ieșire fără șantier:")} ${intrare.cant} ${intrare.unitate} ${intrare.nume}`));
+    }, `${t("Ieșire fără șantier:")} ${intrare.cant} ${t(intrare.unitate)} ${intrare.nume}`));
   };
 
   const stergeConsum = (id) => {
@@ -1852,7 +1852,7 @@ function App() {
       ...db, materiale,
       consum: [...intrari, ...db.consum],
       cereri: db.cereri.map((x) => (x.id === cerere.id ? { ...x, status: "rezolvat" } : x)),
-    }, `${t("Trimis pe")} ${santier?.nume || t("șantier")}: ${(cerere.linii || []).map((l) => `${l.cant} ${l.unitate} ${l.nume}`).join(", ")}`));
+    }, `${t("Trimis pe")} ${santier?.nume || t("șantier")}: ${(cerere.linii || []).map((l) => `${l.cant} ${t(l.unitate)} ${l.nume}`).join(", ")}`));
   };
   const marcheazaCerere = (id, status) =>
     salveaza({ ...db, cereri: db.cereri.map((c) => (c.id === id
@@ -2407,7 +2407,7 @@ function App() {
                           <div className="titlu">{c.nume}</div>
                           <div className="sub">{s?.nume || "—"} · {dataRo(c.data)}</div>
                         </div>
-                        <span className="chip gri mono">{c.cant} {c.unitate}</span>
+                        <span className="chip gri mono">{c.cant} {t(c.unitate)}</span>
                       </div>
                     </div>
                   );
@@ -2902,8 +2902,8 @@ function App() {
                       <div>
                         <div className="titlu">{m.nume}</div>
                         <div className="sub">
-                          {t("Stoc:")} <b className="mono">{m.cant} {m.unitate}</b> · {t("minim")} {m.minim}
-                          {m.pret > 0 && <> · {bani(m.pret)}/{m.unitate}</>}
+                          {t("Stoc:")} <b className="mono">{m.cant} {t(m.unitate)}</b> · {t("minim")} {m.minim}
+                          {m.pret > 0 && <> · {bani(m.pret)}/{t(m.unitate)}</>}
                         </div>
                       </div>
                       <span className="chip alerta">{t("Stoc scăzut")}</span>
@@ -2990,8 +2990,8 @@ function App() {
                         <div>
                           <div className="titlu">{m.nume}</div>
                           <div className="sub">
-                            <b className="mono">{m.cant} {m.unitate}</b>
-                            {m.pret > 0 && <> · {bani(m.pret)}/{m.unitate} · {t("total")} <b>{bani(m.cant * m.pret)}</b></>}
+                            <b className="mono">{m.cant} {t(m.unitate)}</b>
+                            {m.pret > 0 && <> · {bani(m.pret)}/{t(m.unitate)} · {t("total")} <b>{bani(m.cant * m.pret)}</b></>}
                             {m.locatie && <> · {m.locatie}</>}
                           </div>
                         </div>
@@ -3763,7 +3763,7 @@ function App() {
                     <div className="lista-in-card">
                       {pierderiSortate.slice(0, 10).map((p, i) => (
                         <div key={i} style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span>📦 {p.nume} <span style={{ color: "var(--mut)" }}>· {p.cant} {p.unitate} {t("în")} {p.ori} {t("ieșiri")}</span></span>
+                          <span>📦 {p.nume} <span style={{ color: "var(--mut)" }}>· {p.cant} {t(p.unitate)} {t("în")} {p.ori} {t("ieșiri")}</span></span>
                           <b className="mono">{bani(p.valoare)}</b>
                         </div>
                       ))}
@@ -4663,7 +4663,7 @@ function App() {
                           <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                             <span>📦 {l.nume}</span>
                             <b className="mono" style={{ color: lipsa ? "var(--rosu)" : "var(--text)", whiteSpace: "nowrap" }}>
-                              {l.cant} {l.unitate}
+                              {l.cant} {t(l.unitate)}
                               {mat && <span style={{ color: "var(--mut)", fontWeight: 400 }}> / {mat.cant} în stoc</span>}
                               {!mat && <span style={{ color: "var(--mut)", fontWeight: 400 }}> {t("· nu e în stoc")}</span>}
                             </b>
@@ -4678,7 +4678,7 @@ function App() {
                     {c.status === "nou" && areLinii && c.santierId && (
                       <button className="btn btn-mic principal"
                         onClick={() => cere(
-                          `${t("Trimiți")} ${c.linii.map((l) => `${l.cant} ${l.unitate} ${l.nume}`).join(", ")} ${t("pe")} ${c.santierNume}? ${t("Se scad din stoc și intră ca material consumat acolo.")}`,
+                          `${t("Trimiți")} ${c.linii.map((l) => `${l.cant} ${t(l.unitate)} ${l.nume}`).join(", ")} ${t("pe")} ${c.santierNume}? ${t("Se scad din stoc și intră ca material consumat acolo.")}`,
                           () => onoreazaCerere(c), t("Trimite"))}>
                         {t("Trimite materialele")}
                       </button>
@@ -4768,13 +4768,13 @@ function App() {
                 consum: [{ id: uid(), santierId: dest.santierId, fazaId: null,
                   materialId: m.id, nume: m.nume, cant: cantN, unitate: m.unitate,
                   pret: pretN, data: aziISO(), motiv: t("livrat direct pe șantier") }, ...db.consum],
-              }, `${sant?.nume}: ${t("primit direct")} ${cantN} ${m.unitate} ${m.nume}`));
+              }, `${sant?.nume}: ${t("primit direct")} ${cantN} ${t(m.unitate)} ${m.nume}`));
             } else {
               salveaza(cuJurnal({
                 ...db,
                 materiale: db.materiale.map((x) =>
                   x.id === m.id ? { ...x, cant: (Number(x.cant) || 0) + cantN, pret: pretN } : x),
-              }, `${t("Aprovizionat:")} ${cantN} ${m.unitate} ${m.nume}`));
+              }, `${t("Aprovizionat:")} ${cantN} ${t(m.unitate)} ${m.nume}`));
             }
             setFoaie(null);
           }}
@@ -4919,7 +4919,7 @@ function App() {
             <div className="jurnal-rand" key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div className="cand mono">{dataRo(c.data)}{c.motiv && ` · ${c.motiv}`}</div>
-                <div className="ce">{c.nume} · <b className="mono">{c.cant} {c.unitate}</b>{c.pret > 0 && <> · {bani(c.cant * c.pret)}</>}</div>
+                <div className="ce">{c.nume} · <b className="mono">{c.cant} {t(c.unitate)}</b>{c.pret > 0 && <> · {bani(c.cant * c.pret)}</>}</div>
               </div>
               <button className="btn btn-mic pericol" onClick={() => stergeConsum(c.id)}>✕</button>
             </div>
@@ -5728,7 +5728,7 @@ function ConsumSimplu({ santiere, materiale, numeleMeu, onSalveaza, onClose }) {
           <div className="bifa-mare">✓</div>
           <div className="titlu" style={{ fontSize: 17 }}>{t("Am notat")}</div>
           <div className="sub">
-            {cant} {mat.unitate} {mat.nume}<br />pe {santier?.nume}
+            {cant} {t(mat.unitate)} {mat.nume}<br />pe {santier?.nume}
           </div>
         </div>
         <button className="btn btn-galben" onClick={() => {
@@ -5798,7 +5798,7 @@ function ConsumSimplu({ santiere, materiale, numeleMeu, onSalveaza, onClose }) {
             <button key={m.id} className="btn btn-mare"
               onClick={() => { setMat(m); setCant(1); setPas(3); }}>
               <span>📦 {m.nume}</span>
-              <span className="bm-stoc">{m.cant} {m.unitate}</span>
+              <span className="bm-stoc">{m.cant} {t(m.unitate)}</span>
             </button>
           ))
         )}
@@ -5810,14 +5810,14 @@ function ConsumSimplu({ santiere, materiale, numeleMeu, onSalveaza, onClose }) {
   return (
     <Foaie titlu={mat.nume} onClose={onClose}>
       <div className="sub" style={{ marginBottom: 14 }}>
-        Pe {santier?.nume} · {t("în depozit:")} <b className="mono">{mat.cant} {mat.unitate}</b>
+        Pe {santier?.nume} · {t("în depozit:")} <b className="mono">{mat.cant} {t(mat.unitate)}</b>
       </div>
 
       <div className="stepper">
         <button onClick={() => setCant(Math.max(0.5, +(cant - 1).toFixed(2)))}>−</button>
         <div>
           <div className="st-nr mono">{cant}</div>
-          <div className="st-um">{mat.unitate}</div>
+          <div className="st-um">{t(mat.unitate)}</div>
         </div>
         <button onClick={() => setCant(+(cant + 1).toFixed(2))}>+</button>
       </div>
@@ -5829,13 +5829,13 @@ function ConsumSimplu({ santiere, materiale, numeleMeu, onSalveaza, onClose }) {
       </div>
 
       {ramane < 0 && (
-        <div className="conflict"><b>⚠ În depozit sunt doar {mat.cant} {mat.unitate}</b>
+        <div className="conflict"><b>⚠ În depozit sunt doar {mat.cant} {t(mat.unitate)}</b>
           <div className="cf-sfat">{t("Poți nota oricum — stocul ajunge la 0 și șeful vede că nu se potrivește.")}</div>
         </div>
       )}
 
       <button className="btn btn-galben" onClick={trimite}>
-        Am folosit {cant} {mat.unitate}
+        Am folosit {cant} {t(mat.unitate)}
       </button>
       <button className="btn btn-mic" style={{ width: "100%", marginTop: 9 }} onClick={() => setPas(2)}>
         ← Alt material
@@ -6243,13 +6243,13 @@ function FormAprovizionare({ material, santiere = [], onSalveaza, onClose }) {
   return (
     <Foaie titlu={`${t("Am cumpărat")}: ${material.nume}`} onClose={onClose}>
       <div className="sub" style={{ marginBottom: 12 }}>
-        În stoc acum: <b className="mono">{material.cant} {material.unitate}</b> · minim {material.minim} {material.unitate}
+        {t("În stoc acum:")} <b className="mono">{material.cant} {t(material.unitate)}</b> · {t("minim")} {material.minim} {t(material.unitate)}
       </div>
       <div className="rand2">
         <div className="camp"><label>{t("Cât ai cumpărat *")}</label>
           <input type="number" step="0.01" value={cant} onChange={(e) => setCant(e.target.value)}
             placeholder={`ex. ${material.minim || 20}`} autoFocus /></div>
-        <div className="camp"><label>Preț / {material.unitate}</label>
+        <div className="camp"><label>Preț / {t(material.unitate)}</label>
           <input type="number" step="0.01" value={pret} onChange={(e) => setPret(e.target.value)} /></div>
       </div>
 
@@ -6258,7 +6258,7 @@ function FormAprovizionare({ material, santiere = [], onSalveaza, onClose }) {
           <label>{t("Unde a ajuns")}</label>
           <select value={santierId} onChange={(e) => { setSantierId(e.target.value); setFazaId(""); }}>
             <option value="">{t("🏠 În depozit")}</option>
-            {santiere.map((x) => <option key={x.id} value={x.id}>🏗 Direct pe {x.nume}</option>)}
+            {santiere.map((x) => <option key={x.id} value={x.id}>🏗 {t("Direct pe")} {x.nume}</option>)}
           </select>
         </div>
       )}
@@ -6507,7 +6507,7 @@ function FormMaterial({ item, santiere = [], categorii = [], onSalveaza, onClose
             <select value={dest.santierId}
               onChange={(e) => setDest({ santierId: e.target.value, fazaId: "" })}>
               <option value="">{t("🏠 În depozit")}</option>
-              {santiere.map((x) => <option key={x.id} value={x.id}>🏗 Direct pe {x.nume}</option>)}
+              {santiere.map((x) => <option key={x.id} value={x.id}>🏗 {t("Direct pe")} {x.nume}</option>)}
             </select>
           </div>
 
@@ -7015,7 +7015,7 @@ function FormCerere({ eu, santiere = [], materiale = [], tipInitial, onTrimite, 
         {gasite.map((m) => (
           <button key={m.id} className="btn btn-mare" onClick={() => adaugaDinStoc(m)}>
             <span>📦 {m.nume}</span>
-            <span className="bm-stoc">{m.cant} {m.unitate} în depozit</span>
+            <span className="bm-stoc">{m.cant} {t(m.unitate)} în depozit</span>
           </button>
         ))}
         {cauta.trim() && (
@@ -7034,7 +7034,7 @@ function FormCerere({ eu, santiere = [], materiale = [], tipInitial, onTrimite, 
     : (linii.length > 0 || text.trim().length > 0);
 
   const trimite = () => {
-    const listaText = linii.map((l) => `${l.cant} ${l.unitate} ${l.nume}`).join(", ");
+    const listaText = linii.map((l) => `${l.cant} ${t(l.unitate)} ${l.nume}`).join(", ");
     const corp = tip === "necesar"
       ? [listaText, text.trim()].filter(Boolean).join(" — ")
       : text.trim();
@@ -7081,7 +7081,7 @@ function FormCerere({ eu, santiere = [], materiale = [], tipInitial, onTrimite, 
                   <div className="sub" style={{ marginTop: 1 }}>
                     {l.stoc === null
                       ? t("nu e în depozit")
-                      : <>{t("în depozit:")} <b className="mono">{l.stoc} {l.unitate}</b></>}
+                      : <>{t("în depozit:")} <b className="mono">{l.stoc} {t(l.unitate)}</b></>}
                   </div>
                 </div>
                 <div className="rc-cant">
@@ -7940,7 +7940,7 @@ function FormConsum({ santier, materiale, onSalveaza, onClose }) {
         <select value={f.materialId} onChange={(e) => alegeMaterial(e.target.value)}>
           <option value="">{t("— altul, îl scriu eu —")}</option>
           {materiale.map((m) => (
-            <option key={m.id} value={m.id}>{m.nume} (stoc {m.cant} {m.unitate})</option>
+            <option key={m.id} value={m.id}>{m.nume} (stoc {m.cant} {t(m.unitate)})</option>
           ))}
         </select>
       </div>
@@ -7953,7 +7953,7 @@ function FormConsum({ santier, materiale, onSalveaza, onClose }) {
         </div>
       )}
       <div className="rand2">
-        <div className="camp"><label>Cantitate * {mat && <span style={{ color: "var(--mut)" }}>({mat.unitate})</span>}</label>
+        <div className="camp"><label>Cantitate * {mat && <span style={{ color: "var(--mut)" }}>({t(mat.unitate)})</span>}</label>
           <input type="number" step="0.01" value={f.cant} onChange={(e) => setF({ ...f, cant: e.target.value })} placeholder="0" /></div>
         <div className="camp"><label>{t("Preț / unitate (€)")}</label>
           <input type="number" step="0.01" value={f.pret} onChange={(e) => setF({ ...f, pret: e.target.value })} placeholder="0" /></div>
@@ -7970,7 +7970,7 @@ function FormConsum({ santier, materiale, onSalveaza, onClose }) {
       {total > 0 && <div className="sub" style={{ marginBottom: 12 }}>Valoare: <b style={{ color: "var(--galben)" }}>{bani(total)}</b></div>}
       {mat && f.scadeDinStoc && Number(f.cant) > Number(mat.cant) && (
         <div className="sub" style={{ color: "var(--rosu)", marginBottom: 10 }}>
-          ⚠ Ceri mai mult decât ai în stoc ({mat.cant} {mat.unitate}). Stocul va ajunge la 0.
+          ⚠ Ceri mai mult decât ai în stoc ({mat.cant} {t(mat.unitate)}). Stocul va ajunge la 0.
         </div>
       )}
       <button className="btn btn-galben" disabled={!valid} onClick={() => valid && onSalveaza(f)}>{t("Salvează consumul")}</button>
@@ -8250,9 +8250,9 @@ function DetaliiSantier({ santier, pontaj, consum, bilant, matPrev, orePrevTot, 
             const depasit = real && real.cant > (Number(m.cant) || 0);
             return (
               <div className="fisa-rand" key={i}>
-                <span>{m.nume} <span className="k">· prevăzut {m.cant} {m.unitate}</span></span>
+                <span>{m.nume} <span className="k">· prevăzut {m.cant} {t(m.unitate)}</span></span>
                 <b className="mono" style={{ color: real ? (depasit ? "var(--rosu)" : "var(--verde)") : "var(--mut)" }}>
-                  {real ? `folosit ${real.cant} ${real.unitate}` : "nefolosit"}
+                  {real ? `folosit ${real.cant} ${t(real.unitate)}` : "nefolosit"}
                 </b>
               </div>
             );
@@ -8268,7 +8268,7 @@ function DetaliiSantier({ santier, pontaj, consum, bilant, matPrev, orePrevTot, 
           {Object.values(consumPeNume).map((v, i) => (
             <div className="fisa-rand" key={i}>
               <span>📦 {v.nume}</span>
-              <b className="mono">{v.cant} {v.unitate} · {bani(v.valoare)}</b>
+              <b className="mono">{v.cant} {t(v.unitate)} · {bani(v.valoare)}</b>
             </div>
           ))}
           <div style={{ height: 8 }} />
@@ -8276,7 +8276,7 @@ function DetaliiSantier({ santier, pontaj, consum, bilant, matPrev, orePrevTot, 
             <div className="jurnal-rand" key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div className="cand mono">{dataRo(c.data)}{c.inregistratDe && ` · ${c.inregistratDe}`}</div>
-                <div className="ce">{c.nume} · <b className="mono">{c.cant} {c.unitate}</b>{c.pret > 0 && <> · {bani(c.cant * c.pret)}</>}</div>
+                <div className="ce">{c.nume} · <b className="mono">{c.cant} {t(c.unitate)}</b>{c.pret > 0 && <> · {bani(c.cant * c.pret)}</>}</div>
               </div>
               <button className="btn btn-mic pericol" onClick={() => onStergeConsum(c.id)}>✕</button>
             </div>
@@ -8840,11 +8840,11 @@ function FormIesire({ material, santiere, onSalveaza, onClose }) {
   return (
     <Foaie titlu={`${t("Scoate din stoc")}: ${material.nume}`} onClose={onClose}>
       <div className="sub" style={{ marginBottom: 12 }}>
-        În stoc: <b className="mono">{material.cant} {material.unitate}</b>
-        {material.pret > 0 && <> · {bani(material.pret)}/{material.unitate}</>}
+        În stoc: <b className="mono">{material.cant} {t(material.unitate)}</b>
+        {material.pret > 0 && <> · {bani(material.pret)}/{t(material.unitate)}</>}
       </div>
       <div className="rand2">
-        <div className="camp"><label>Cantitate * ({material.unitate})</label>
+        <div className="camp"><label>Cantitate * ({t(material.unitate)})</label>
           <input type="number" step="0.01" value={f.cant} onChange={(e) => setF({ ...f, cant: e.target.value })} placeholder="0" /></div>
         <div className="camp"><label>{t("Data")}</label>
           <input type="date" value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} /></div>
