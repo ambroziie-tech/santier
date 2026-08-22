@@ -1245,6 +1245,11 @@ window.TRAD = {
     "sub prag": "sous seuil",
     "Șeful trebuie să le aprobe ca să intre la plată.": "Le chef doit les approuver pour qu'elles soient payées.",
     "și-au setat parola.": "ont défini leur mot de passe.",
+    "costat": "coûté",
+    "din tot materialul ieșit din depozit": "de tout le matériel sorti du dépôt",
+    "ieșiri": "sorties",
+    "scurgere": "de perte",
+    "în": "sur",
   },
   en: {
     "Alege limba": "Choose your language",
@@ -2472,5 +2477,10 @@ window.TRAD = {
     "sub prag": "below threshold",
     "Șeful trebuie să le aprobe ca să intre la plată.": "Your manager needs to approve them for payment.",
     "și-au setat parola.": "have set their password.",
+    "costat": "cost",
+    "din tot materialul ieșit din depozit": "of all material out of the depot",
+    "ieșiri": "outflows",
+    "scurgere": "leakage",
+    "în": "over",
   },
 };

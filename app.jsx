@@ -3160,7 +3160,7 @@ function App() {
             )}
             {subSet && (
               <button className="btn-inapoi" onClick={() => { setSubSet(null); setCauta(""); }}>
-                {t("‹ Setări")}<span>{SECTIUNI_SETARI.find((x) => x[0] === subSet)?.[2]}</span>
+                {t("‹ Setări")}<span>{t(SECTIUNI_SETARI.find((x) => x[0] === subSet)?.[2])}</span>
               </button>
             )}
           </>
@@ -3755,15 +3755,15 @@ function App() {
                   <div className="card">
                     <div className="card-rand">
                       <div>
-                        <div className="titlu" style={{ color: "var(--rosu)" }}>{bani(pierderiTotal)} scurgere</div>
-                        <div className="sub">{procPierderi}% din tot materialul ieșit din depozit · {consumNealocat.length} ieșiri</div>
+                        <div className="titlu" style={{ color: "var(--rosu)" }}>{bani(pierderiTotal)} {t("scurgere")}</div>
+                        <div className="sub">{procPierderi}% {t("din tot materialul ieșit din depozit")} · {consumNealocat.length} {t("ieșiri")}</div>
                       </div>
                       <span className="chip alerta">{t("Pierdut")}</span>
                     </div>
                     <div className="lista-in-card">
                       {pierderiSortate.slice(0, 10).map((p, i) => (
                         <div key={i} style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span>📦 {p.nume} <span style={{ color: "var(--mut)" }}>· {p.cant} {p.unitate} în {p.ori} ieșiri</span></span>
+                          <span>📦 {p.nume} <span style={{ color: "var(--mut)" }}>· {p.cant} {p.unitate} {t("în")} {p.ori} {t("ieșiri")}</span></span>
                           <b className="mono">{bani(p.valoare)}</b>
                         </div>
                       ))}
@@ -3811,7 +3811,7 @@ function App() {
                       <div>
                         <div className="titlu" style={{ fontSize: 14 }}>{a.nume}</div>
                         <div className="sub">
-                          <span className="mono">{a.ore}h</span> pe {a.nrSantiere} {a.nrSantiere === 1 ? "șantier" : "șantiere"} · costat {bani(a.cost)}
+                          <span className="mono">{a.ore}h</span> {t("pe")} {a.nrSantiere} {a.nrSantiere === 1 ? t("șantier") : t("șantiere")} · {t("costat")} {bani(a.cost)}
                         </div>
                       </div>
                       <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
