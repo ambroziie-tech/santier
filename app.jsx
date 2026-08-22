@@ -2232,7 +2232,7 @@ function App() {
                                 linii: [], dataCeruta: null, oameniCeruti: null,
                                 autorId: eu?.id || null, autorNume: eu?.nume || "Necunoscut",
                               })}>
-                              Cer utilajul ăsta
+                              {t("Cer utilajul ăsta")}
                             </button>
                           )}
                         </div>
@@ -2388,10 +2388,7 @@ function App() {
               <>
                 <div className="card">
                   <div className="titlu">{t("📦 Materiale folosite")}</div>
-                  <div className="sub">
-                    Notează ce ați consumat pe șantier. Se scade singur din depozit, ca șeful să știe
-                    ce mai e pe stoc și cât a costat lucrarea.
-                  </div>
+                  <div className="sub">{t("Notează ce ați consumat pe șantier. Se scade singur din depozit, ca șeful să știe ce mai e pe stoc și cât a costat lucrarea.")}</div>
                 </div>
                 <button className="btn btn-galben"
                   onClick={() => setFoaie({ tip: "consumMuncitor", santiere: pentruConsum })}>
@@ -2647,7 +2644,7 @@ function App() {
                 {limba !== "ro" && (
                   <button className="btn btn-mic" style={{ marginTop: 9, width: "100%" }}
                     onClick={() => setFoaie({ tip: "traduceriLipsa" })}>
-                    🌐 Verifică ce n-a fost tradus încă
+                    {t("🌐 Verifică ce n-a fost tradus încă")}
                   </button>
                 )}
               </div>
@@ -2754,10 +2751,7 @@ function App() {
         <div className="intrare">
           <h1>Șantier <span>{t("Manager")}</span></h1>
           <div className="hazard" />
-          <div className="gol-msg">
-            Contul tău nu are niciun rol activ, sau rolul a fost șters. Cere-i proprietarului
-            să-ți atribuie un rol din fișa ta.
-          </div>
+          <div className="gol-msg">{t("Contul tău nu are niciun rol activ, sau rolul a fost șters. Cere-i proprietarului să-ți atribuie un rol din fișa ta.")}</div>
           <button className="btn btn-mic" onClick={() => setIdent(null)}>{t("Ieși din cont")}</button>
         </div>
       </div>
@@ -2856,10 +2850,7 @@ function App() {
                       </div>
                     </div>
                   ))}
-                  <div className="sub" style={{ marginBottom: 6 }}>
-                    Poate fi corect (a lucrat pe două șantiere), dar merită verificat —
-                    intri pe șantier → Detalii → Intrări pontaj și ștergi ce e în plus.
-                  </div>
+                  <div className="sub" style={{ marginBottom: 6 }}>{t("Poate fi corect (a lucrat pe două șantiere), dar merită verificat — intri pe șantier → Detalii → Intrări pontaj și ștergi ce e în plus.")}</div>
                 </>
               );
             })()}
@@ -3189,9 +3180,7 @@ function App() {
                   <button className="btn btn-galben" onClick={() => setFoaie({ tip: "angajat" })}>{t("+ Adaugă angajat")}</button>
                 )}
                 {!esteProprietar && !permisiuni.oameniEditare && (
-                  <div className="sub" style={{ marginBottom: 10 }}>
-                    Vezi fișele, dar nu le poți modifica — rolul tău nu are voie.
-                  </div>
+                  <div className="sub" style={{ marginBottom: 10 }}>{t("Vezi fișele, dar nu le poți modifica — rolul tău nu are voie.")}</div>
                 )}
                 <div style={{ height: 12 }} />
                 <div className="lista-2col">
@@ -3473,7 +3462,7 @@ function App() {
                         <div className="actiuni" style={{ marginTop: 6 }}>
                           <button className="btn btn-mic principal"
                             onClick={() => setFoaie({ tip: "imprumutSofer", echipa, zile: zileP })}>
-                            Împrumută un șofer
+                            {t("Împrumută un șofer")}
                           </button>
                         </div>
                       </div>
@@ -3526,7 +3515,7 @@ function App() {
                               `${t("Golești ziua de")} ${zileTrad()[i]} ${dataRo(zi)}? ${t("Se șterg")} ${intrari.length} ${intrari.length === 1 ? t("intrare") : t("intrări")}.`,
                               () => salveaza({ ...db, planificare: db.planificare.filter((p) => p.data !== zi) }),
                               t("Golește ziua"))}>
-                            Golește
+                            {t("Golește")}
                           </button>
                         )}
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "plan", data: zi })}>+</button>
@@ -3736,10 +3725,7 @@ function App() {
                   <>
                     <div className="sectiune">{t("🏢 Personal de birou (estimat lunar)")}</div>
                     <div className="card">
-                      <div className="sub" style={{ marginTop: 0, marginBottom: 10 }}>
-                        Nu sunt legați de șantiere, deci nu intră în marja de mai sus — e o cifră
-                        separată, ca să știi cât te costă lunar și pe ei.
-                      </div>
+                      <div className="sub" style={{ marginTop: 0, marginBottom: 10 }}>{t("Nu sunt legați de șantiere, deci nu intră în marja de mai sus — e o cifră separată, ca să știi cât te costă lunar și pe ei.")}</div>
                       {birou.map((a) => (
                         <div className="fisa-rand" key={a.id}>
                           <span>{a.nume} <span className="k">· {a.grad || "—"}</span></span>
@@ -3962,20 +3948,14 @@ function App() {
 
             <div className="card">
               <div className="titlu">{t("🕖 Programul de lucru")}</div>
-              <div className="sub">
-                Orele standard ale firmei. Se folosesc când pui ceva în planing, la pontaj și
-                când completezi automat săptămâna.
-              </div>
+              <div className="sub">{t("Orele standard ale firmei. Se folosesc când pui ceva în planing, la pontaj și când completezi automat săptămâna.")}</div>
               <ProgramLucru program={db.setari?.program}
                 onSchimba={(pr) => salveaza({ ...db, setari: { ...db.setari, program: pr } })} />
             </div>
 
             <div className="card">
               <div className="titlu">{t("🏖 Închiderea firmei")}</div>
-              <div className="sub">
-                Perioadele în care nu se lucrează deloc — vacanța de vară, sărbătorile de iarnă.
-                Apar în planing pentru toată lumea și nu se pot pune lucrări atunci.
-              </div>
+              <div className="sub">{t("Perioadele în care nu se lucrează deloc — vacanța de vară, sărbătorile de iarnă. Apar în planing pentru toată lumea și nu se pot pune lucrări atunci.")}</div>
               <div className="actiuni">
                 <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "inchidere" })}>
                   {t("+ Adaugă perioadă")}
@@ -3996,7 +3976,7 @@ function App() {
                             <span className="k"> · {dataRo(x.start)} – {dataRo(x.final)}</span>
                           </span>
                           <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                            <b className="mono">{zile} {zile === 1 ? "zi" : "zile"}</b>
+                            <b className="mono">{zile} {zile === 1 ? t("zi") : t("zile")}</b>
                             <button className="btn btn-mic" onClick={() => setFoaie({ tip: "inchidere", item: x })}>✎</button>
                             <button className="btn btn-mic pericol" onClick={() => stergeInchidere(x.id)}>✕</button>
                           </span>
@@ -4010,8 +3990,7 @@ function App() {
             <div className="card">
               <div className="titlu">{t("📅 Normă întreagă")}</div>
               <div className="sub">
-                Câte ore are o săptămână de lucru cu normă întreagă. Din asta se calculează
-                salariul lunar al celor de la birou, pornind de la costul lor orar.
+                {t("Câte ore are o săptămână de lucru cu normă întreagă. Din asta se calculează salariul lunar al celor de la birou, pornind de la costul lor orar.")}
               </div>
               <div className="camp" style={{ marginTop: 11, marginBottom: 4 }}>
                 <label>{t("Ore pe săptămână")}</label>
@@ -4024,8 +4003,8 @@ function App() {
                 </div>
               </div>
               <div className="sub">
-                Un cost orar de 20 €/h înseamnă <b className="mono">
-                {bani(salariuDinTarif(20, db.setari?.oreSaptamana ?? 35))}</b>/lună brut.
+                {t("Un cost orar de 20 €/h înseamnă")} <b className="mono">
+                {bani(salariuDinTarif(20, db.setari?.oreSaptamana ?? 35))}</b>{t("/lună brut.")}
               </div>
             </div>
 
@@ -4046,7 +4025,7 @@ function App() {
               {limba !== "ro" && (
                 <button className="btn btn-mic" style={{ marginTop: 9, width: "100%" }}
                   onClick={() => setFoaie({ tip: "traduceriLipsa" })}>
-                  🌐 Verifică ce n-a fost tradus încă
+                  {t("🌐 Verifică ce n-a fost tradus încă")}
                 </button>
               )}
             </div>
@@ -4311,10 +4290,7 @@ function App() {
 
             <div className="card">
               <div className="titlu">{t("🧹 Curățenie automată a pozelor")}</div>
-              <div className="sub">
-                Pozele problemelor rezolvate se șterg singure după un timp. Textul rămâne —
-                dispare doar imaginea, care ocupă locul. Așa nu rămâi fără spațiu.
-              </div>
+              <div className="sub">{t("Pozele problemelor rezolvate se șterg singure după un timp. Textul rămâne — dispare doar imaginea, care ocupă locul. Așa nu rămâi fără spațiu.")}</div>
               <div className="actiuni">
                 {[[7, "7 zile"], [30, "30 zile"], [90, "3 luni"], [0, t("Niciodată")]].map(([z, et]) => (
                   <button key={z}
@@ -4378,7 +4354,7 @@ function App() {
                       if (n === 0) setCuratenie(t("Nimic de șters deocamdată."));
                       setTimeout(() => setCuratenie(""), 5000);
                     }, t("Curăță"))}>
-                  Curăță acum
+                  {t("Curăță acum")}
                 </button>
               </div>
             </div>
@@ -4430,10 +4406,7 @@ function App() {
               </label>
             </div>
 
-            <div className="sub" style={{ margin: "14px 0 8px", lineHeight: 1.6 }}>
-              Sfat practic: fă un backup complet o dată pe lună și înainte de orice curățenie mare (ștergeri de șantiere,
-              de angajați). Fișierul e text simplu — îl poți deschide și citi oricând, chiar și fără aplicație.
-            </div>
+            <div className="sub" style={{ margin: "14px 0 8px", lineHeight: 1.6 }}>{t("Sfat practic: fă un backup complet o dată pe lună și înainte de orice curățenie mare (ștergeri de șantiere, de angajați). Fișierul e text simplu — îl poți deschide și citi oricând, chiar și fără aplicație.")}</div>
           </>
         )}
 
@@ -4489,10 +4462,10 @@ function App() {
                       <div className="actiuni">
                         <button className="btn btn-mic principal"
                           onClick={() => setFoaie({ tip: "aproba", item: x })}>
-                          Aprobă
+                          {t("Aprobă")}
                         </button>
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "respinge", item: x })}>
-                          Refuză
+                          {t("Refuză")}
                         </button>
                         <button className="btn btn-mic pericol" onClick={() => stergeSuplimentare(x.id)}>{t("Șterge")}</button>
                       </div>
@@ -4554,10 +4527,10 @@ function App() {
                           onClick={() => cere(
                             `${t("Aprobi concediul lui")} ${x.nume}, ${dataRo(x.start)} – ${dataRo(x.final)}? ${t("Sunt")} ${zile} ${t("zile lucrătoare.")}`,
                             () => aprobaConcediu(x), t("Aprobă"))}>
-                          Aprobă
+                          {t("Aprobă")}
                         </button>
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "respingeConcediu", item: x })}>
-                          Refuză
+                          {t("Refuză")}
                         </button>
                         <button className="btn btn-mic pericol" onClick={() => stergeConcediu(x.id)}>{t("Șterge")}</button>
                       </div>
@@ -4626,10 +4599,10 @@ function App() {
                     {x.status === "nou" && (
                       <div className="actiuni">
                         <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "aprobaAlimentare", item: x })}>
-                          Aprobă
+                          {t("Aprobă")}
                         </button>
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "respingeAlimentare", item: x })}>
-                          Refuză
+                          {t("Refuză")}
                         </button>
                         <button className="btn btn-mic pericol" onClick={() => stergeAlimentare(x.id)}>{t("Șterge")}</button>
                       </div>
@@ -5225,10 +5198,7 @@ function CategoriiMateriale({ db, onSalveaza, cere }) {
     <>
       <div className="card">
         <div className="titlu">{t("🏷️ Categoriile tale")}</div>
-        <div className="sub">
-          Le vezi apoi la fiecare material, la alegere. Le poți redenumi sau șterge oricând —
-          materialele care le foloseau nu se șterg, doar rămân fără categorie.
-        </div>
+        <div className="sub">{t("Le vezi apoi la fiecare material, la alegere. Le poți redenumi sau șterge oricând — materialele care le foloseau nu se șterg, doar rămân fără categorie.")}</div>
       </div>
 
       <div className="camp">
@@ -5408,10 +5378,7 @@ function RoluriFirma({ db, onSalveaza, cere, setFoaie }) {
     <>
       <div className="card">
         <div className="titlu">{t("🔑 Rolurile firmei")}</div>
-        <div className="sub">
-          Fiecare rol e un pachet de bife. Îl dai unui angajat din fișa lui, iar el intră cu
-          parola personală direct în partea din aplicație pe care i-o permiți — nimic mai mult.
-        </div>
+        <div className="sub">{t("Fiecare rol e un pachet de bife. Îl dai unui angajat din fișa lui, iar el intră cu parola personală direct în partea din aplicație pe care i-o permiți — nimic mai mult.")}</div>
       </div>
 
       <button className="btn btn-galben" onClick={() => setFoaie({ tip: "rolNou" })}>{t("+ Rol nou")}</button>
@@ -5475,7 +5442,7 @@ function FormRol({ item, onSalveaza, onClose }) {
 
       <button className="btn btn-galben" disabled={!f.nume.trim()}
         onClick={() => f.nume.trim() && onSalveaza(f)}>
-        Salvează rolul
+        {t("Salvează rolul")}
       </button>
     </Foaie>
   );
@@ -5502,10 +5469,7 @@ function Dotare({ db, onSalveaza, setFoaie, cere }) {
     <>
       <div className="card">
         <div className="titlu">{t("🧰 Dotarea standard")}</div>
-        <div className="sub">
-          Sculele pe care trebuie să le aibă orice echipă, indiferent de șantier. După ce o scrii o dată,
-          verifici din când în când fiecare echipă și rămâne notat ce lipsea și când.
-        </div>
+        <div className="sub">{t("Sculele pe care trebuie să le aibă orice echipă, indiferent de șantier. După ce o scrii o dată, verifici din când în când fiecare echipă și rămâne notat ce lipsea și când.")}</div>
       </div>
 
       <div className="camp">
@@ -5519,10 +5483,7 @@ function Dotare({ db, onSalveaza, setFoaie, cere }) {
       </div>
 
       {db.dotare.length === 0 ? (
-        <div className="gol-msg">
-          Lista e goală. Scrie ce nu trebuie să lipsească din nicio dubă: flex, bormașină, nivelă,
-          prelungitor, trusă de chei, cască și vestă.
-        </div>
+        <div className="gol-msg">{t("Lista e goală. Scrie ce nu trebuie să lipsească din nicio dubă: flex, bormașină, nivelă, prelungitor, trusă de chei, cască și vestă.")}</div>
       ) : (
         db.dotare.map((d) => (
           <div className="card" key={d.id} style={{ padding: "11px 14px" }}>
@@ -5613,10 +5574,7 @@ function FormVerificare({ echipa, dotare, scule, onSalveaza, onClose }) {
 
   return (
     <Foaie titlu={`Verificare: ${echipa.nume}`} onClose={onClose}>
-      <div className="sub" style={{ marginBottom: 12 }}>
-        Bifat = are. Am pornit cu ce am găsit alocat echipei, dar verifică pe teren — bifa e a ta, nu a aplicației.
-        Ce bifezi și nu e încă în inventar intră automat în inventarul echipei.
-      </div>
+      <div className="sub" style={{ marginBottom: 12 }}>{t("Bifat = are. Am pornit cu ce am găsit alocat echipei, dar verifică pe teren — bifa e a ta, nu a aplicației. Ce bifezi și nu e încă în inventar intră automat în inventarul echipei.")}</div>
 
       {randuri.map((r, i) => (
         <div key={r.dotareId} style={{ borderBottom: "1px dashed var(--linie)", padding: "9px 2px" }}>
@@ -6015,10 +5973,7 @@ function Invitatii({ db, onSeteazaPin }) {
           Oricine primește linkul poate intra și își poate alege orice nume din listă dacă omul acela
           n-a apucat încă să-și pună parola. Când pleacă cineva din firmă, șterge-l din Oameni —
           altfel linkul rămâne bun la el.
-          <br /><br />
-          Parolele sunt ca să nu se încurce oamenii între ei, nu ca protecție serioasă.
-          Pentru conturi adevărate, cu invitații care expiră, ar trebui un server în spate.
-        </div>
+          <br /><br />{t("Parolele sunt ca să nu se încurce oamenii între ei, nu ca protecție serioasă. Pentru conturi adevărate, cu invitații care expiră, ar trebui un server în spate.")}</div>
       </div>
     </>
   );
@@ -6090,13 +6045,10 @@ function ConfigurareFirma({ onSalveaza, onIesi }) {
       <h1 style={{ fontSize: 20, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".5px" }}>
         {t("Bun venit")}
       </h1>
-      <div className="sub" style={{ margin: "8px 0 18px", lineHeight: 1.6 }}>
-        Spune-mi câteva lucruri despre firma ta. Numele apare în capul aplicației, la tine
-        și la oamenii tăi. Restul îl completezi acum sau mai târziu, din Setări.
-      </div>
+      <div className="sub" style={{ margin: "8px 0 18px", lineHeight: 1.6 }}>{t("Spune-mi câteva lucruri despre firma ta. Numele apare în capul aplicației, la tine și la oamenii tăi. Restul îl completezi acum sau mai târziu, din Setări.")}</div>
       <CampuriFirma valoare={{}} onSalveaza={onSalveaza} butonText={t("Gata, intru în aplicație")} />
       <button className="btn btn-mic" style={{ width: "100%", marginTop: 10 }} onClick={onIesi}>
-        Ieși din cont
+        {t("Ieși din cont")}
       </button>
     </div>
   );
@@ -6384,10 +6336,7 @@ function FormCerereAlimentare({ camion, santiere = [], onTrimite, onClose }) {
 
   return (
     <Foaie titlu={`${t("Am făcut plinul")}: ${camion.nume}`} onClose={onClose}>
-      <div className="sub" style={{ marginBottom: 12 }}>
-        Trimiți spre aprobare — șeful vede suma și decide. Dacă ai bonul, fă-i o poză, ajută la
-        verificare.
-      </div>
+      <div className="sub" style={{ marginBottom: 12 }}>{t("Trimiți spre aprobare — șeful vede suma și decide. Dacă ai bonul, fă-i o poză, ajută la verificare.")}</div>
       <div className="rand2">
         <div className="camp"><label>{t("Litri *")}</label>
           <input type="number" step="0.1" value={litri} onChange={(e) => setLitri(e.target.value)}
@@ -6551,7 +6500,7 @@ function FormMaterial({ item, santiere = [], categorii = [], onSalveaza, onClose
               placeholder={t("ex. Zidărie")} autoFocus style={{ flex: 1 }} />
             {categorii.length > 0 && (
               <button className="btn btn-mic" onClick={() => setF({ ...f, categorie: categorii[0] })}>
-                Anulează
+                {t("Anulează")}
               </button>
             )}
           </div>
@@ -6598,7 +6547,7 @@ function FormMaterial({ item, santiere = [], categorii = [], onSalveaza, onClose
 
       <button className="btn btn-galben"
         onClick={() => f.nume.trim() && onSalveaza({ ...f, cant: Number(f.cant) || 0, pret: Number(f.pret) || 0 }, dest)}>
-        Salvează
+        {t("Salvează")}
       </button>
     </Foaie>
   );
@@ -6646,7 +6595,7 @@ function FormScula({ item, categorii = [], onSalveaza, onClose }) {
               placeholder="ex. Electrice" autoFocus style={{ flex: 1 }} />
             {categorii.length > 0 && (
               <button className="btn btn-mic" onClick={() => setF({ ...f, categorie: categorii[0] })}>
-                Anulează
+                {t("Anulează")}
               </button>
             )}
           </div>
@@ -6701,10 +6650,7 @@ function FormEchipa({ item, santiere = [], camioane = [], onSalveaza, onClose })
           <option value="">{t("— fără, se stabilește prin planing —")}</option>
           {santiere.map((x) => <option key={x.id} value={x.id}>{x.nume}</option>)}
         </select>
-        <div className="sub" style={{ marginTop: 6 }}>
-          Dacă echipa merge mereu pe același șantier, alege-l aici — folosește la
-          completarea automată a planingului (⚡ din tab-ul Planing).
-        </div>
+        <div className="sub" style={{ marginTop: 6 }}>{t("Dacă echipa merge mereu pe același șantier, alege-l aici — folosește la completarea automată a planingului (⚡ din tab-ul Planing).")}</div>
       </div>
 
       <button className="btn btn-galben" onClick={() => f.nume.trim() && onSalveaza(f)}>{t("Salvează")}</button>
@@ -6816,7 +6762,7 @@ function FormAngajat({ item, echipe, esteProprietar, roluriFirma = [], oreSaptam
 
       <button className="btn btn-galben"
         onClick={() => f.nume.trim() && onSalveaza({ ...f, poateStoc: eBirou ? false : (f.poateStoc ?? !!permisiuniRol?.consumStoc) })}>
-        Salvează
+        {t("Salvează")}
       </button>
     </Foaie>
   );
@@ -6909,7 +6855,7 @@ function FisaAngajat({ angajat, echipe, numeEchipa, pontaj, santiere, roluriFirm
       )}
       {doarCitire && (
         <div className="sub" style={{ margin: "10px 0" }}>
-          Doar proprietarul poate modifica sau șterge angajați.
+          {t("Doar proprietarul poate modifica sau șterge angajați.")}
         </div>
       )}
       {!doarCitire && (
@@ -7026,10 +6972,7 @@ function FormAlimentare({ camion, santiere = [], onSalveaza, onClose }) {
             <option value="">{t("— fără, cost general —")}</option>
             {santiere.map((x) => <option key={x.id} value={x.id}>{x.nume}</option>)}
           </select>
-          <div className="sub" style={{ marginTop: 6 }}>
-            Dacă alegi un șantier, costul intră direct în marja lui. Altfel rămâne cheltuială
-            generală a firmei.
-          </div>
+          <div className="sub" style={{ marginTop: 6 }}>{t("Dacă alegi un șantier, costul intră direct în marja lui. Altfel rămâne cheltuială generală a firmei.")}</div>
         </div>
       )}
 
@@ -7042,7 +6985,7 @@ function FormAlimentare({ camion, santiere = [], onSalveaza, onClose }) {
           data: azi(), tip: `⛽ Alimentare ${litri} L`, cost, km: km || undefined,
           note, santierId: santierId || null,
         })}>
-        Salvează
+        {t("Salvează")}
       </button>
     </Foaie>
   );
@@ -7166,7 +7109,7 @@ function FormCerere({ eu, santiere = [], materiale = [], tipInitial, onTrimite, 
             ))}
             <button className="btn btn-mic" style={{ width: "100%", marginTop: linii.length ? 8 : 0 }}
               onClick={() => setAlege(true)}>
-              + Adaugă material
+              {t("+ Adaugă material")}
             </button>
           </div>
 
@@ -7415,10 +7358,7 @@ function ImprumutSofer({ echipa, zile, angajati, echipe, concedii, planificare, 
       </div>
 
       {candidati.length === 0 ? (
-        <div className="gol-msg">
-          Nimeni cu permis nu e disponibil. Marchează pe cineva ca având permis din fișa lui,
-          sau mută lucrarea în altă zi.
-        </div>
+        <div className="gol-msg">{t("Nimeni cu permis nu e disponibil. Marchează pe cineva ca având permis din fișa lui, sau mută lucrarea în altă zi.")}</div>
       ) : (
         <>
           {buni.map(({ a, echipaLui, lasaGol, altiSoferi }) => (
@@ -7444,7 +7384,7 @@ function ImprumutSofer({ echipa, zile, angajati, echipe, concedii, planificare, 
               <div className="actiuni">
                 <button className={"btn btn-mic" + (lasaGol ? "" : " principal")}
                   onClick={() => onImprumuta(a.id)}>
-                  Îl împrumut
+                  {t("Îl împrumut")}
                 </button>
               </div>
             </div>
@@ -7468,7 +7408,7 @@ function ImprumutSofer({ echipa, zile, angajati, echipe, concedii, planificare, 
                   </div>
                   <div className="actiuni">
                     <button className="btn btn-mic" onClick={() => onImprumuta(a.id)}>
-                      Îl pun oricum
+                      {t("Îl pun oricum")}
                     </button>
                   </div>
                 </div>
@@ -7551,7 +7491,7 @@ function FormConcediu({ eu, angajati, program, inchideri = [], tipInitial, oZi,
 
       {invers ? (
         <div className="sub" style={{ color: "var(--rosu)", marginBottom: 11 }}>
-          Data de final trebuie să fie după cea de start.
+          {t("Data de final trebuie să fie după cea de start.")}
         </div>
       ) : zile === 0 ? (
         <div className="sub" style={{ color: "var(--galben)", marginBottom: 11 }}>
@@ -7633,7 +7573,7 @@ function FormInchidere({ item, program, onSalveaza, onClose }) {
 
       {invers ? (
         <div className="sub" style={{ color: "var(--rosu)", marginBottom: 11 }}>
-          Data de final trebuie să fie după cea de start.
+          {t("Data de final trebuie să fie după cea de start.")}
         </div>
       ) : (
         <div className="rezumat" style={{ marginBottom: 12 }}>
@@ -7649,7 +7589,7 @@ function FormInchidere({ item, program, onSalveaza, onClose }) {
       </div>
 
       <button className="btn btn-galben" disabled={!valid} onClick={() => valid && onSalveaza(f)}>
-        Salvează
+        {t("Salvează")}
       </button>
     </Foaie>
   );
@@ -7750,10 +7690,7 @@ function RaportLunar({ db, bani, dataRo, onRaport }) {
     <>
       <div className="card">
         <div className="titlu">{t("📄 Raport lunar pe fiecare om")}</div>
-        <div className="sub">
-          Ore, zile lucrate, suplimentare și cost, defalcate pe fiecare angajat și pe șantierele
-          lui. Se deschide ca pagină de tipărit — de acolo alegi „Salvează ca PDF".
-        </div>
+        <div className="sub">{t("Ore, zile lucrate, suplimentare și cost, defalcate pe fiecare angajat și pe șantierele lui. Se deschide ca pagină de tipărit — de acolo alegi „Salvează ca PDF\".")}</div>
       </div>
 
       <div className="camp">
@@ -7985,7 +7922,7 @@ function FormSantier({ item, onSalveaza, onClose }) {
             ? { ...f, faze: (f.faze || []).filter((x) => x.nume.trim()),
                 valoare: 0, orePrev: 0, materialePrev: [] }
             : { ...f, faze: [], valoare: Number(f.valoare) || 0, orePrev: Number(f.orePrev) || 0 })}>
-        Salvează
+        {t("Salvează")}
       </button>
     </Foaie>
   );
