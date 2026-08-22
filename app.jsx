@@ -6249,7 +6249,7 @@ function FormAprovizionare({ material, santiere = [], onSalveaza, onClose }) {
         <div className="camp"><label>{t("Cât ai cumpărat *")}</label>
           <input type="number" step="0.01" value={cant} onChange={(e) => setCant(e.target.value)}
             placeholder={`ex. ${material.minim || 20}`} autoFocus /></div>
-        <div className="camp"><label>Preț / {t(material.unitate)}</label>
+        <div className="camp"><label>{t("Preț")} / {t(material.unitate)}</label>
           <input type="number" step="0.01" value={pret} onChange={(e) => setPret(e.target.value)} /></div>
       </div>
 

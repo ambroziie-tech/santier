@@ -1261,6 +1261,7 @@ window.TRAD = {
     "taxe": "charges",
     "Direct pe": "Directement sur",
     "sac": "sac",
+    "Preț": "Prix",
   },
   en: {
     "Alege limba": "Choose your language",
@@ -2504,5 +2505,6 @@ window.TRAD = {
     "taxe": "taxes",
     "Direct pe": "Directly to",
     "sac": "bag",
+    "Preț": "Price",
   },
 };
