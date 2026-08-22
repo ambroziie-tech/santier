@@ -4949,7 +4949,7 @@ function App() {
           onSalveaza={(sid, c) => adaugaConsum(sid, c)} onClose={() => setFoaie(null)} />
       )}
       {foaie?.tip === "pierderi" && (
-        <Foaie titlu=t("Ieșiri fără șantier") onClose={() => setFoaie(null)}>
+        <Foaie titlu={t("Ieșiri fără șantier")} onClose={() => setFoaie(null)}>
           {consumNealocat.map((c) => (
             <div className="jurnal-rand" key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
@@ -5798,7 +5798,7 @@ function ConsumSimplu({ santiere, materiale, numeleMeu, onSalveaza, onClose }) {
   /* pasul 1 — unde */
   if (pas === 1)
     return (
-      <Foaie titlu=t("Unde ai lucrat?") onClose={onClose}>
+      <Foaie titlu={t("Unde ai lucrat?")} onClose={onClose}>
         {santiere.length === 0 ? (
           <div className="gol-msg">{t("Nu ești pe niciun șantier activ. Vorbește cu șeful.")}</div>
         ) : (
@@ -5819,7 +5819,7 @@ function ConsumSimplu({ santiere, materiale, numeleMeu, onSalveaza, onClose }) {
   /* pasul intermediar — pe ce fază, dacă șantierul are faze */
   if (pas === 1.5)
     return (
-      <Foaie titlu=t("La ce fază?") onClose={onClose}>
+      <Foaie titlu={t("La ce fază?")} onClose={onClose}>
         <div className="sub" style={{ marginBottom: 12 }}>Pe {santier?.nume}</div>
         {fazeleLui(santierId).map((fz) => (
           <button key={fz.id} className="btn btn-mare" onClick={() => { setFazaId(fz.id); setPas(2); }}>
@@ -5836,7 +5836,7 @@ function ConsumSimplu({ santiere, materiale, numeleMeu, onSalveaza, onClose }) {
   /* pasul 2 — ce */
   if (pas === 2)
     return (
-      <Foaie titlu=t("Ce ai folosit?") onClose={onClose}>
+      <Foaie titlu={t("Ce ai folosit?")} onClose={onClose}>
         <div className="sub" style={{ marginBottom: 10 }}>
           Pe {santier?.nume}
           {santiere.length > 1 && (
@@ -6094,7 +6094,7 @@ function ConfigurareFirma({ onSalveaza, onIesi }) {
         Spune-mi câteva lucruri despre firma ta. Numele apare în capul aplicației, la tine
         și la oamenii tăi. Restul îl completezi acum sau mai târziu, din Setări.
       </div>
-      <CampuriFirma valoare={{}} onSalveaza={onSalveaza} butonText=t("Gata, intru în aplicație") />
+      <CampuriFirma valoare={{}} onSalveaza={onSalveaza} butonText={t("Gata, intru în aplicație")} />
       <button className="btn btn-mic" style={{ width: "100%", marginTop: 10 }} onClick={onIesi}>
         Ieși din cont
       </button>
@@ -7081,7 +7081,7 @@ function FormCerere({ eu, santiere = [], materiale = [], tipInitial, onTrimite, 
   /* ecranul de ales material */
   if (alege)
     return (
-      <Foaie titlu=t("Ce vă trebuie?") onClose={() => { setAlege(false); setCauta(""); }}>
+      <Foaie titlu={t("Ce vă trebuie?")} onClose={() => { setAlege(false); setCauta(""); }}>
         <input className="cautare" placeholder={t("Caută sau scrie ce vă trebuie…")} value={cauta}
           onChange={(e) => setCauta(e.target.value)} autoFocus />
         {gasite.map((m) => (
@@ -7122,7 +7122,7 @@ function FormCerere({ eu, santiere = [], materiale = [], tipInitial, onTrimite, 
   };
 
   return (
-    <Foaie titlu=t("Raportează") onClose={onClose}>
+    <Foaie titlu={t("Raportează")} onClose={onClose}>
       <div className="subtab">
         <button className={tip === "problema" ? "activ" : ""} onClick={() => setTip("problema")}>{t("⚠ Problemă")}</button>
         <button className={tip === "necesar" ? "activ" : ""} onClick={() => setTip("necesar")}>{t("📦 Am nevoie de…")}</button>
@@ -8969,7 +8969,7 @@ function FormPin({ actual, onSalveaza, onClose }) {
   const [nou, setNou] = useState("");
   const [eroare, setEroare] = useState("");
   return (
-    <Foaie titlu=t("Schimbă PIN admin") onClose={onClose}>
+    <Foaie titlu={t("Schimbă PIN admin")} onClose={onClose}>
       <div className="camp"><label>{t("PIN actual")}</label>
         <input type="password" inputMode="numeric" value={vechi} onChange={(e) => { setVechi(e.target.value); setEroare(""); }} /></div>
       <div className="camp"><label>{t("PIN nou (minim 4 caractere)")}</label>
