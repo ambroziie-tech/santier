@@ -6423,7 +6423,7 @@ function AprobaSuplimentare({ sup, angajat, santier, onAproba, onClose }) {
           <button onClick={() => setOre(Math.max(0.5, +(ore - 0.5).toFixed(1)))}>−</button>
           <div>
             <div className="st-nr mono">{ore}</div>
-            <div className="st-um">ore</div>
+            <div className="st-um">{t("ore")}</div>
           </div>
           <button onClick={() => setOre(+(ore + 0.5).toFixed(1))}>+</button>
         </div>
@@ -7121,7 +7121,7 @@ function FormCerere({ eu, santiere = [], materiale = [], tipInitial, onTrimite, 
               <button onClick={() => setOameniCeruti(Math.max(1, oameniCeruti - 1))}>−</button>
               <div>
                 <div className="st-nr mono">{oameniCeruti}</div>
-                <div className="st-um">{oameniCeruti === 1 ? "om" : "oameni"}</div>
+                <div className="st-um">{oameniCeruti === 1 ? t("om") : t("oameni")}</div>
               </div>
               <button onClick={() => setOameniCeruti(oameniCeruti + 1)}>+</button>
             </div>
@@ -7635,7 +7635,7 @@ function FormSuplimentare({ eu, santiere = [], program, onTrimite, onClose }) {
           <button onClick={() => setOre(Math.max(0.5, +(ore - 0.5).toFixed(1)))}>−</button>
           <div>
             <div className="st-nr mono">{ore}</div>
-            <div className="st-um">ore</div>
+            <div className="st-um">{t("ore")}</div>
           </div>
           <button onClick={() => setOre(Math.min(12, +(ore + 0.5).toFixed(1)))}>+</button>
         </div>
