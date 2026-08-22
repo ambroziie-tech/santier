@@ -7602,24 +7602,25 @@ function FormSuplimentare({ eu, santiere = [], program, onTrimite, onClose }) {
   const [data, setData] = useState(aziISO());
   const p = program || {};
   const pz = programZi(p, codZiDinData(data));
-  const [oraStart, setOraStart] = useState(pz.final || "17:00");
+  const [oraStart, setOraStart] = useState(pz.start || "07:30");
   const [oraFinal, setOraFinal] = useState("");
-  const [pauza, setPauza] = useState(0);
+  const [pauza, setPauza] = useState(60);
   const [motiv, setMotiv] = useState("");
   const santier = santiere.find((x) => x.id === santierId);
 
   const minStart = minute(oraStart);
   const minFinal = minute(oraFinal);
-  const oreBrute = minStart !== null && minFinal !== null ? (minFinal - minStart) / 60 : null;
-  const ore = oreBrute !== null ? Math.max(0, +(oreBrute - pauza / 60).toFixed(2)) : null;
-  const invalid = oreBrute !== null && oreBrute <= 0;
+  const oreLucrate = minStart !== null && minFinal !== null ? (minFinal - minStart) / 60 - pauza / 60 : null;
+  const oreStandard = oreDinProgram(pz);
+  const ore = oreLucrate !== null ? Math.max(0, +(oreLucrate - oreStandard).toFixed(2)) : null;
+  const invalid = oreLucrate !== null && oreLucrate <= 0;
 
   return (
     <Foaie titlu={t("Ore peste program")} onClose={onClose}>
       <div className="sub" style={{ marginBottom: 14 }}>
         {t("În ziua aia programul e")} <b className="mono">{pz.start}–{pz.final}</b>
-        {pz.pauza > 0 && <> {t("cu")} {pz.pauza} min {t("pauză")}</>} — {t("adică")} {oreDinProgram(pz)}h.
-        {" "}{t("Scrie ora de la care ai stat")} <b>{t("în plus")}</b>. {t("Șeful trebuie să le aprobe ca să intre la plată.")}
+        {pz.pauza > 0 && <> {t("cu")} {pz.pauza} min {t("pauză")}</>} — {t("adică")} {oreStandard}h.
+        {" "}{t("Scrie ora reală de start și de final a zilei — calculăm noi cât e în plus.")}
       </div>
 
       {santiere.length > 0 && (
@@ -7637,21 +7638,21 @@ function FormSuplimentare({ eu, santiere = [], program, onTrimite, onClose }) {
       </div>
 
       <div className="rand2">
-        <div className="camp"><label>{t("De la ora")}</label>
+        <div className="camp"><label>{t("Ora la care ai început ziua")}</label>
           <input type="time" value={oraStart} onChange={(e) => setOraStart(e.target.value)} /></div>
-        <div className="camp"><label>{t("Până la ora")}</label>
+        <div className="camp"><label>{t("Ora la care ai terminat")}</label>
           <input type="time" value={oraFinal} onChange={(e) => setOraFinal(e.target.value)} /></div>
       </div>
 
       <div className="camp">
-        <label>{t("Pauza de masă (min)")}</label>
-        <div className="stepper">
-          <button onClick={() => setPauza(Math.max(0, pauza - 15))}>−</button>
-          <div>
-            <div className="st-nr mono">{pauza}</div>
-            <div className="st-um">min</div>
-          </div>
-          <button onClick={() => setPauza(Math.min(120, pauza + 15))}>+</button>
+        <label>{t("Cât ai stat în pauza de masă")}</label>
+        <div className="actiuni">
+          {[0, 30, 45, 60].map((min) => (
+            <button key={min} className={"btn btn-mic" + (pauza === min ? " principal" : "")}
+              onClick={() => setPauza(min)}>
+              {min === 0 ? t("N-am făcut pauză") : `${min} min`}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -7662,7 +7663,9 @@ function FormSuplimentare({ eu, santiere = [], program, onTrimite, onClose }) {
       )}
       {ore !== null && !invalid && (
         <div className="sub" style={{ marginBottom: 12 }}>
-          {t("Ies")} <b className="mono">{ore}h</b> {t("în plus")}, {t("după ce scad pauza")}.
+          {ore > 0
+            ? <>{t("Ies")} <b className="mono">{ore}h</b> {t("în plus, peste cele")} {oreStandard}h {t("standard.")}</>
+            : t("Din orele astea nu iese nimic peste program.")}
         </div>
       )}
 
