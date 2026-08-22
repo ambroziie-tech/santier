@@ -1256,6 +1256,9 @@ window.TRAD = {
     "la probleme deja rezolvate": "sur des problèmes déjà résolus",
     "permisiuni.": "permissions.",
     "scule lipsesc": "outils manquants",
+    "Stoc:": "Stock :",
+    "minim": "min.",
+    "taxe": "charges",
   },
   en: {
     "Alege limba": "Choose your language",
@@ -2494,5 +2497,8 @@ window.TRAD = {
     "la probleme deja rezolvate": "on already-resolved problems",
     "permisiuni.": "permissions.",
     "scule lipsesc": "tools missing",
+    "Stoc:": "Stock:",
+    "minim": "min.",
+    "taxe": "taxes",
   },
 };

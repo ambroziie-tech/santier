@@ -2902,7 +2902,7 @@ function App() {
                       <div>
                         <div className="titlu">{m.nume}</div>
                         <div className="sub">
-                          Stoc: <b className="mono">{m.cant} {m.unitate}</b> · minim {m.minim}
+                          {t("Stoc:")} <b className="mono">{m.cant} {m.unitate}</b> · {t("minim")} {m.minim}
                           {m.pret > 0 && <> · {bani(m.pret)}/{m.unitate}</>}
                         </div>
                       </div>
@@ -3332,16 +3332,16 @@ function App() {
                       <div className="pr-prev">{t("din")} {orePrev ? `${orePrev}${t("h prevăzute")}` : "—"}{procOre !== null && ` · ${procOre}%`}</div>
                     </div>
                     <div className="pr-col">
-                      <div className="pr-lbl">Materiale</div>
+                      <div className="pr-lbl">{t("Materiale")}</div>
                       <div className="pr-val mono" style={{ color: culoare(procMat) }}>{bani(b.materiale)}</div>
-                      <div className="pr-prev">din {matPrev ? bani(matPrev) + t(" prevăzut") : "—"}{procMat !== null && ` · ${procMat}%`}</div>
+                      <div className="pr-prev">{t("din")} {matPrev ? bani(matPrev) + t(" prevăzut") : "—"}{procMat !== null && ` · ${procMat}%`}</div>
                     </div>
                     <div className="pr-col">
                       <div className="pr-lbl">{t("Manoperă")}</div>
                       <div className="pr-val mono">{bani(b.manopera)}</div>
                       <div className="pr-prev">
-                        {oameni} {oameni === 1 ? "om" : "oameni"}
-                        {b.taxe > 0 && <> · +{bani(b.taxe)} taxe</>}
+                        {oameni} {oameni === 1 ? t("om") : t("oameni")}
+                        {b.taxe > 0 && <> · +{bani(b.taxe)} {t("taxe")}</>}
                       </div>
                     </div>
                   </div>
@@ -3355,7 +3355,7 @@ function App() {
                     {(s.adresaFull || s.adresa) && <ButonHarta adresa={s.adresaFull || s.adresa} mic />}
                     {(esteProprietar || permisiuni.santiereEditare) && (
                       <button className="btn btn-mic" onClick={() => setFoaie({ tip: "sarcini", item: s })}>
-                        📷 De rezolvat{db.sarcini.filter((x) => x.santierId === s.id && x.status === "deschis").length > 0
+                        📷 {t("De rezolvat")}{db.sarcini.filter((x) => x.santierId === s.id && x.status === "deschis").length > 0
                           ? ` (${db.sarcini.filter((x) => x.santierId === s.id && x.status === "deschis").length})` : ""}
                       </button>
                     )}
@@ -3364,7 +3364,7 @@ function App() {
                         📄 {t("Raport PDF")}
                       </button>
                     )}
-                    <button className="btn btn-mic" onClick={() => setFoaie({ tip: "detaliiSantier", item: s })}>Detalii</button>
+                    <button className="btn btn-mic" onClick={() => setFoaie({ tip: "detaliiSantier", item: s })}>{t("Detalii")}</button>
                     {(esteProprietar || permisiuni.santiereEditare) && (
                       <>
                         <button className="btn btn-mic" onClick={() => setFoaie({ tip: "santier", item: s })}>{t("Modifică")}</button>
