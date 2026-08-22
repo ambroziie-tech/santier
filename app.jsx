@@ -6412,7 +6412,10 @@ function AprobaSuplimentare({ sup, angajat, santier, onAproba, onClose }) {
     <Foaie titlu={`${t("Aprobă")}: ${sup.nume}`} onClose={onClose}>
       <div className="card" style={{ marginBottom: 14 }}>
         <div className="sub" style={{ marginTop: 0 }}>
-          A cerut <b className="mono">{sup.ore}h</b> pe {santier?.nume || "—"}, {dataRo(sup.data)}
+          {t("A cerut")} <b className="mono">{sup.ore}h</b> {t("pe")} {santier?.nume || "—"}, {dataRo(sup.data)}
+          {sup.oraStart && sup.oraFinal && (
+            <><br />{sup.oraStart}–{sup.oraFinal}{sup.pauza > 0 && <> · {t("pauză")} {sup.pauza} min</>}</>
+          )}
           {sup.motivCerere && <><br />„{sup.motivCerere}"</>}
         </div>
       </div>
@@ -6431,11 +6434,11 @@ function AprobaSuplimentare({ sup, angajat, santier, onAproba, onClose }) {
 
       {schimbat && (
         <div className="sub" style={{ color: "var(--galben)", marginBottom: 12 }}>
-          A cerut {sup.ore}h, aprobi {ore}h — diferența trebuie explicată omului mai jos.
+          {t("A cerut")} {sup.ore}h, {t("aprobi")} {ore}h — {t("diferența trebuie explicată omului mai jos.")}
         </div>
       )}
 
-      {cost > 0 && <div className="sub" style={{ marginBottom: 12 }}>Cost: <b>{bani(cost)}</b></div>}
+      {cost > 0 && <div className="sub" style={{ marginBottom: 12 }}>{t("Cost:")} <b>{bani(cost)}</b></div>}
 
       {schimbat && (
         <div className="camp">
@@ -6446,7 +6449,7 @@ function AprobaSuplimentare({ sup, angajat, santier, onAproba, onClose }) {
       )}
 
       <button className="btn btn-galben" onClick={() => onAproba(ore, nota.trim())}>
-        Aprobă {ore}h
+        {t("Aprobă")} {ore}h
       </button>
     </Foaie>
   );
@@ -7597,23 +7600,27 @@ function MotivRefuz({ onTrimite }) {
 function FormSuplimentare({ eu, santiere = [], program, onTrimite, onClose }) {
   const [santierId, setSantierId] = useState(santiere[0]?.id || "");
   const [data, setData] = useState(aziISO());
-  const [ore, setOre] = useState(2);
+  const p = program || {};
+  const pz = programZi(p, codZiDinData(data));
+  const [oraStart, setOraStart] = useState(pz.final || "17:00");
+  const [oraFinal, setOraFinal] = useState("");
+  const [pauza, setPauza] = useState(0);
   const [motiv, setMotiv] = useState("");
   const santier = santiere.find((x) => x.id === santierId);
-  const p = program || {};
+
+  const minStart = minute(oraStart);
+  const minFinal = minute(oraFinal);
+  const oreBrute = minStart !== null && minFinal !== null ? (minFinal - minStart) / 60 : null;
+  const ore = oreBrute !== null ? Math.max(0, +(oreBrute - pauza / 60).toFixed(2)) : null;
+  const invalid = oreBrute !== null && oreBrute <= 0;
 
   return (
     <Foaie titlu={t("Ore peste program")} onClose={onClose}>
-      {(() => {
-        const pz = programZi(p, codZiDinData(data));
-        return (
-          <div className="sub" style={{ marginBottom: 14 }}>
-            {t("În ziua aia programul e")} <b className="mono">{pz.start}–{pz.final}</b>
-            {pz.pauza > 0 && <> {t("cu")} {pz.pauza} min {t("pauză")}</>} — {t("adică")} {oreDinProgram(pz)}h.
-            {t("Scrie aici doar orele")} <b>{t("în plus")}</b>. {t("Șeful trebuie să le aprobe ca să intre la plată.")}
-          </div>
-        );
-      })()}
+      <div className="sub" style={{ marginBottom: 14 }}>
+        {t("În ziua aia programul e")} <b className="mono">{pz.start}–{pz.final}</b>
+        {pz.pauza > 0 && <> {t("cu")} {pz.pauza} min {t("pauză")}</>} — {t("adică")} {oreDinProgram(pz)}h.
+        {" "}{t("Scrie ora de la care ai stat")} <b>{t("în plus")}</b>. {t("Șeful trebuie să le aprobe ca să intre la plată.")}
+      </div>
 
       {santiere.length > 0 && (
         <div className="camp">
@@ -7629,17 +7636,35 @@ function FormSuplimentare({ eu, santiere = [], program, onTrimite, onClose }) {
         <input type="date" value={data} max={aziISO()} onChange={(e) => setData(e.target.value)} />
       </div>
 
+      <div className="rand2">
+        <div className="camp"><label>{t("De la ora")}</label>
+          <input type="time" value={oraStart} onChange={(e) => setOraStart(e.target.value)} /></div>
+        <div className="camp"><label>{t("Până la ora")}</label>
+          <input type="time" value={oraFinal} onChange={(e) => setOraFinal(e.target.value)} /></div>
+      </div>
+
       <div className="camp">
-        <label>{t("Câte ore în plus")}</label>
+        <label>{t("Pauza de masă (min)")}</label>
         <div className="stepper">
-          <button onClick={() => setOre(Math.max(0.5, +(ore - 0.5).toFixed(1)))}>−</button>
+          <button onClick={() => setPauza(Math.max(0, pauza - 15))}>−</button>
           <div>
-            <div className="st-nr mono">{ore}</div>
-            <div className="st-um">{t("ore")}</div>
+            <div className="st-nr mono">{pauza}</div>
+            <div className="st-um">min</div>
           </div>
-          <button onClick={() => setOre(Math.min(12, +(ore + 0.5).toFixed(1)))}>+</button>
+          <button onClick={() => setPauza(Math.min(120, pauza + 15))}>+</button>
         </div>
       </div>
+
+      {invalid && (
+        <div className="sub" style={{ color: "var(--rosu)", marginBottom: 12 }}>
+          {t("Ora de final trebuie să fie după cea de start.")}
+        </div>
+      )}
+      {ore !== null && !invalid && (
+        <div className="sub" style={{ marginBottom: 12 }}>
+          {t("Ies")} <b className="mono">{ore}h</b> {t("în plus")}, {t("după ce scad pauza")}.
+        </div>
+      )}
 
       <div className="camp">
         <label>{t("De ce ai stat peste program")}</label>
@@ -7647,12 +7672,12 @@ function FormSuplimentare({ eu, santiere = [], program, onTrimite, onClose }) {
           placeholder={t("ex. am terminat turnarea plăcii, nu se putea lăsa")} />
       </div>
 
-      <button className="btn btn-galben" disabled={!santierId || !ore || !motiv.trim()}
+      <button className="btn btn-galben" disabled={!santierId || !ore || invalid || !motiv.trim()}
         onClick={() => onTrimite({
           angajatId: eu?.id, nume: eu?.nume, santierId, data,
-          ore, motivCerere: motiv.trim(),
+          ore, oraStart, oraFinal, pauza, motivCerere: motiv.trim(),
         })}>
-        Trimite spre aprobare
+        {t("Trimite spre aprobare")}
       </button>
     </Foaie>
   );
