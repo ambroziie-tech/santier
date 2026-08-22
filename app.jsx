@@ -2957,7 +2957,7 @@ function App() {
                     <div className="rz-lbl">{t("Valoare stoc")} · {db.materiale.length} {t("poziții")}</div>
                   </div>
                   {stocScazut.length > 0 && (
-                    <span className="chip alerta">{stocScazut.length} sub prag</span>
+                    <span className="chip alerta">{stocScazut.length} {t("sub prag")}</span>
                   )}
                 </div>
                 <button className="btn btn-galben" onClick={() => setFoaie({ tip: "material" })}>{t("+ Adaugă material")}</button>
@@ -3160,7 +3160,7 @@ function App() {
             )}
             {subSet && (
               <button className="btn-inapoi" onClick={() => { setSubSet(null); setCauta(""); }}>
-                ‹ Setări<span>{SECTIUNI_SETARI.find((x) => x[0] === subSet)?.[2]}</span>
+                {t("‹ Setări")}<span>{SECTIUNI_SETARI.find((x) => x[0] === subSet)?.[2]}</span>
               </button>
             )}
           </>
@@ -3838,9 +3838,7 @@ function App() {
 
               <div className="sectiune">{t("Ce tip de lucrare îți iese mai bine")}</div>
               <div className="sub" style={{ marginBottom: 10 }}>
-                Șantierele cifrate pe faze intră aici cu marja exactă a fiecărei faze.
-                Cele cifrate cu o singură sumă se împart după orele pontate — mai puțin exact,
-                dar orientativ.
+                {t("Șantierele cifrate pe faze intră aici cu marja exactă a fiecărei faze. Cele cifrate cu o singură sumă se împart după orele pontate — mai puțin exact, dar orientativ.")}
               </div>
               {domeniiSortate.length === 0 ? (
                 <div className="gol-msg">{t("Adaugă șantiere cu tip de lucrare ca să vezi comparația.")}</div>
@@ -3883,8 +3881,8 @@ function App() {
             <div className="card">
               <div className="titlu">{t("Parolele muncitorilor")}</div>
               <div className="sub">
-                {db.angajati.filter((a) => a.pin).length} din {db.angajati.length} și-au setat parola.
-                Le resetezi individual din fișa fiecăruia, la Oameni.
+                {db.angajati.filter((a) => a.pin).length} {t("din")} {db.angajati.length} {t("și-au setat parola.")}
+                {" "}{t("Le resetezi individual din fișa fiecăruia, la Oameni.")}
               </div>
             </div>
             <div className="card">
@@ -3923,9 +3921,7 @@ function App() {
             <div className="card">
               <div className="titlu">{t("💰 Taxe pe salarii")}</div>
               <div className="sub">
-                Pe lângă ce plătești direct angajatului, mai ai și cotizații patronale.
-                Procentul de aici se adaugă la manoperă peste tot în aplicație — pe șantiere,
-                în Cifre, în rapoarte — ca marja să reflecte costul real, nu doar salariul brut.
+                {t("Pe lângă ce plătești direct angajatului, mai ai și cotizații patronale. Procentul de aici se adaugă la manoperă peste tot în aplicație — pe șantiere, în Cifre, în rapoarte — ca marja să reflecte costul real, nu doar salariul brut.")}
               </div>
               <div className="camp" style={{ marginTop: 11, marginBottom: 4 }}>
                 <label>{t("Procent peste salariul brut")}</label>
@@ -3939,7 +3935,7 @@ function App() {
               </div>
               {Number(db.setari?.procentTaxe) > 0 && (
                 <div className="sub">
-                  Un salariu de 20 €/h te costă de fapt <b className="mono">
+                  {t("Un salariu de 20 €/h te costă de fapt")} <b className="mono">
                   {bani(20 * (1 + Number(db.setari.procentTaxe) / 100))}</b>/h.
                 </div>
               )}
@@ -4086,7 +4082,7 @@ function App() {
                     <div className="actiuni">
                       <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "intretinere", item: c })}>{t("+ Întreținere")}</button>
                       <button className="btn btn-mic principal" onClick={() => setFoaie({ tip: "alimentare", item: c })}>{t("⛽ Alimentare")}</button>
-                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "istoricCamion", item: c })}>Istoric ({istoric.length})</button>
+                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "istoricCamion", item: c })}>{t("Istoric")} ({istoric.length})</button>
                       <button className="btn btn-mic" onClick={() => setFoaie({ tip: "camion", item: c })}>{t("Modifică")}</button>
                       <button className="btn btn-mic pericol" onClick={() => stergeGen("camioane", t("Ștergi acest vehicul?"))(c.id)}>{t("Șterge")}</button>
                     </div>
@@ -4139,7 +4135,7 @@ function App() {
                       ) : (
                         <button className="btn btn-mic" onClick={() => aduLaDepozitUtilaj(c.id)}>{t("Înapoi în depozit")}</button>
                       )}
-                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "istoricCamion", item: c })}>Istoric ({istoric.length})</button>
+                      <button className="btn btn-mic" onClick={() => setFoaie({ tip: "istoricCamion", item: c })}>{t("Istoric")} ({istoric.length})</button>
                       <button className="btn btn-mic" onClick={() => setFoaie({ tip: "camion", item: c })}>{t("Modifică")}</button>
                       <button className="btn btn-mic pericol" onClick={() => stergeGen("camioane", t("Ștergi acest utilaj?"))(c.id)}>{t("Șterge")}</button>
                     </div>
@@ -4327,9 +4323,7 @@ function App() {
             <div className="card">
               <div className="titlu">{t("🧹 Curățenie cereri și ore suplimentare")}</div>
               <div className="sub">
-                Cererile rezolvate și cererile de ore suplimentare (aprobate sau refuzate) se
-                șterg singure din listă după un timp. Orele deja aprobate rămân în pontaj —
-                se șterge doar cererea, nu munca plătită.
+                {t("Cererile rezolvate și cererile de ore suplimentare (aprobate sau refuzate) se șterg singure din listă după un timp. Orele deja aprobate rămân în pontaj — se șterge doar cererea, nu munca plătită.")}
               </div>
               <div className="actiuni">
                 {[[7, "7 zile"], [30, "30 zile"], [90, "3 luni"], [0, t("Niciodată")]].map(([z, et]) => (
@@ -5296,9 +5290,7 @@ function CategoriiScule({ db, onSalveaza, cere }) {
       <div className="card">
         <div className="titlu">{t("🗂️ Categoriile tale de scule")}</div>
         <div className="sub">
-          Le vezi apoi la fiecare sculă, la alegere, și le folosești ca filtre la lista de scule.
-          Le poți redenumi sau șterge oricând — sculele care le foloseau nu se șterg, doar rămân
-          fără categorie.
+          {t("Le vezi apoi la fiecare sculă, la alegere, și le folosești ca filtre la lista de scule. Le poți redenumi sau șterge oricând — sculele care le foloseau nu se șterg, doar rămân fără categorie.")}
         </div>
       </div>
 
@@ -5513,8 +5505,7 @@ function Dotare({ db, onSalveaza, setFoaie, cere }) {
                   <div className="titlu">{e.nume}</div>
                   <div className="sub">
                     {v
-                      ? <>{t("Verificată acum")} {zile === 0 ? t("azi") : `${zile} ${zile === 1 ? t("zi") : t("zile")}`}
-                          {zile > 0 && t(" în urmă")} · de {v.de}</>
+                      ? <>{zile === 0 ? t("Verificată azi") : `${t("Verificată acum")} ${zile} ${zile === 1 ? t("zi") : t("zile")}`} · {t("de")} {v.de}</>
                       : t("Niciodată verificată")}
                   </div>
                 </div>
@@ -5542,7 +5533,7 @@ function Dotare({ db, onSalveaza, setFoaie, cere }) {
                 </button>
                 {db.verificari.filter((x) => x.echipaId === e.id).length > 0 && (
                   <button className="btn btn-mic" onClick={() => setFoaie({ tip: "istoricVerificari", item: e })}>
-                    Istoric ({db.verificari.filter((x) => x.echipaId === e.id).length})
+                    {t("Istoric")} ({db.verificari.filter((x) => x.echipaId === e.id).length})
                   </button>
                 )}
               </div>
@@ -5967,9 +5958,7 @@ function Invitatii({ db, onSeteazaPin }) {
       <div className="card" style={{ borderColor: "var(--galben)", marginTop: 6 }}>
         <div className="titlu" style={{ color: "var(--galben)" }}>{t("De reținut")}</div>
         <div className="sub">
-          Oricine primește linkul poate intra și își poate alege orice nume din listă dacă omul acela
-          n-a apucat încă să-și pună parola. Când pleacă cineva din firmă, șterge-l din Oameni —
-          altfel linkul rămâne bun la el.
+          {t("Oricine primește linkul poate intra și își poate alege orice nume din listă dacă omul acela n-a apucat încă să-și pună parola. Când pleacă cineva din firmă, șterge-l din Oameni — altfel linkul rămâne bun la el.")}
           <br /><br />{t("Parolele sunt ca să nu se încurce oamenii între ei, nu ca protecție serioasă. Pentru conturi adevărate, cu invitații care expiră, ar trebui un server în spate.")}</div>
       </div>
     </>
@@ -6480,7 +6469,7 @@ function FormMaterial({ item, santiere = [], categorii = [], onSalveaza, onClose
           <input type="number" value={f.cant} onChange={set("cant")} placeholder="0" /></div>
         <div className="camp"><label>{t("Unitate")}</label>
           <select value={f.unitate} onChange={set("unitate")}>
-            {["buc", "saci", "kg", "t", "m", "m²", "m³", "l", "palet", t("rolă"), "cutie"].map((u) => <option key={u}>{u}</option>)}
+            {["buc", "saci", "kg", "t", "m", "m²", "m³", "l", "palet", "rolă", "cutie"].map((u) => <option key={u} value={u}>{t(u)}</option>)}
           </select></div>
       </div>
       <div className="rand2">
@@ -6739,7 +6728,7 @@ function FormAngajat({ item, echipe, esteProprietar, roluriFirma = [], oreSaptam
           <label className="rand-bifa" style={{ marginBottom: 11 }}>
             <input type="checkbox" checked={f.poateStoc ?? !!permisiuniRol?.consumStoc}
               onChange={(e) => setF({ ...f, poateStoc: e.target.checked })} />
-            <span>Poate scădea materiale din stoc
+            <span>{t("Poate scădea materiale din stoc")}
               <span className="rb-sub">{t("Notează de pe telefonul lui ce s-a consumat pe șantier")}</span>
             </span>
           </label>
@@ -7620,9 +7609,9 @@ function FormSuplimentare({ eu, santiere = [], program, onTrimite, onClose }) {
         const pz = programZi(p, codZiDinData(data));
         return (
           <div className="sub" style={{ marginBottom: 14 }}>
-            În ziua aia programul e <b className="mono">{pz.start}–{pz.final}</b>
-            {pz.pauza > 0 && <> cu {pz.pauza} min pauză</>} — adică {oreDinProgram(pz)}h.
-            Scrie aici doar orele <b>{t("în plus")}</b>. Șeful trebuie să le aprobe ca să intre la plată.
+            {t("În ziua aia programul e")} <b className="mono">{pz.start}–{pz.final}</b>
+            {pz.pauza > 0 && <> {t("cu")} {pz.pauza} min {t("pauză")}</>} — {t("adică")} {oreDinProgram(pz)}h.
+            {t("Scrie aici doar orele")} <b>{t("în plus")}</b>. {t("Șeful trebuie să le aprobe ca să intre la plată.")}
           </div>
         );
       })()}
@@ -8547,8 +8536,8 @@ function FormPlan({ item, data, santiere, echipe, angajati, planificare, program
           <b>{t("ℹ Sunt deja puși aici")}</b>
           {dejaAici.map((c, i) => (
             <div key={i} className="cf-rand">
-              {c.nume.join(", ")} {c.nume.length === 1 ? "apare" : "apar"} deja pe acest șantier între{" "}
-              <b className="mono">{c.ore}</b>. Poți salva oricum — o să fie două intrări pentru aceeași zi.
+              {c.nume.join(", ")} {c.nume.length === 1 ? t("apare") : t("apar")} {t("deja pe acest șantier între")}{" "}
+              <b className="mono">{c.ore}</b>. {t("Poți salva oricum — o să fie două intrări pentru aceeași zi.")}
             </div>
           ))}
         </div>
