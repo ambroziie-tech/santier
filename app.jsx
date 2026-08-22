@@ -4300,8 +4300,8 @@ function App() {
                 const rezolvate = cuPoza.filter((x) => x.status === "rezolvat");
                 return (
                   <div className="sub" style={{ marginTop: 11 }}>
-                    Acum: <b>{cuPoza.length}</b> {cuPoza.length === 1 ? "poză" : "poze"} salvate
-                    ({rezolvate.length} la probleme deja rezolvate).
+                    {t("Acum:")} <b>{cuPoza.length}</b> {cuPoza.length === 1 ? t("poză") : t("poze")} {t("salvate")}
+                    ({rezolvate.length} {t("la probleme deja rezolvate")}).
                     {curatenie && <><br /><span style={{ color: "var(--verde)" }}>{curatenie}</span></>}
                   </div>
                 );
@@ -4355,8 +4355,7 @@ function App() {
             <div className="card">
               <div className="titlu">{t("Copie rapidă în aplicație")}</div>
               <div className="sub">
-                Un punct de întoarcere, ținut chiar aici. Se păstrează ultimele {MAX_COPII}, fără poze.
-                Bună înainte de o modificare mare — dar nu înlocuiește fișierul descărcat.
+                {t("Un punct de întoarcere, ținut chiar aici. Se păstrează ultimele")} {MAX_COPII}, {t("fără poze. Bună înainte de o modificare mare — dar nu înlocuiește fișierul descărcat.")}
               </div>
               <div className="actiuni">
                 <button className="btn btn-mic principal" onClick={faCopieRapida}>{t("Fă o copie acum")}</button>
@@ -5389,7 +5388,7 @@ function RoluriFirma({ db, onSalveaza, cere, setFoaie }) {
                 <div>
                   <div className="titlu">{r.nume}</div>
                   <div className="sub">
-                    {bifate} {bifate === 1 ? "permisiune" : "permisiuni"} · {nrOameni} {nrOameni === 1 ? "angajat" : t("angajați")}
+                    {bifate} {bifate === 1 ? t("permisiune") : t("permisiuni")} · {nrOameni} {nrOameni === 1 ? t("angajat") : t("angajați")}
                   </div>
                 </div>
               </div>
@@ -5593,7 +5592,7 @@ function FormVerificare({ echipa, dotare, scule, onSalveaza, onClose }) {
 
       <div className={lipsa > 0 ? "conflict" : ""} style={{ marginBottom: 12 }}>
         <b style={{ color: lipsa > 0 ? "var(--rosu)" : "var(--verde)" }}>
-          {lipsa === 0 ? t("✓ Dotare completă") : `${lipsa} ${lipsa === 1 ? "sculă lipsește" : "scule lipsesc"}`}
+          {lipsa === 0 ? t("✓ Dotare completă") : `${lipsa} ${lipsa === 1 ? t("sculă lipsește") : t("scule lipsesc")}`}
         </b>
       </div>
 
@@ -6697,7 +6696,7 @@ function FormAngajat({ item, echipe, esteProprietar, roluriFirma = [], oreSaptam
 
       {f.rolFirmaId && Object.values(permisiuniRol).some(Boolean) && (
         <div className="sub" style={{ marginTop: -4, marginBottom: 11, color: "var(--galben)" }}>
-          🔑 Rolul ăsta dă acces în aplicație — {Object.values(permisiuniRol).filter(Boolean).length} permisiuni.
+          🔑 {t("Rolul ăsta dă acces în aplicație —")} {Object.values(permisiuniRol).filter(Boolean).length} {t("permisiuni.")}
         </div>
       )}
 
@@ -6790,7 +6789,7 @@ function FisaAngajat({ angajat, echipe, numeEchipa, pontaj, santiere, roluriFirm
         <>
           <div className="fisa-rand">
             <span className="k">{t("Poate scădea din stoc")}</span>
-            <b style={{ color: angajat.poateStoc ? "var(--verde)" : "var(--mut)" }}>{angajat.poateStoc ? "Da" : t("Nu")}</b>
+            <b style={{ color: angajat.poateStoc ? "var(--verde)" : "var(--mut)" }}>{angajat.poateStoc ? t("Da") : t("Nu")}</b>
           </div>
           <div className="fisa-rand">
             <span className="k">{t("Permis de conducere")}</span>
@@ -6798,7 +6797,7 @@ function FisaAngajat({ angajat, echipe, numeEchipa, pontaj, santiere, roluriFirm
           </div>
         </>
       )}
-      <div className="fisa-rand"><span className="k">{t("Cont aplicație")}</span><b style={{ color: angajat.pin ? "var(--verde)" : "var(--mut)" }}>{angajat.pin ? "Parolă setată" : "Fără parolă"}</b></div>
+      <div className="fisa-rand"><span className="k">{t("Cont aplicație")}</span><b style={{ color: angajat.pin ? "var(--verde)" : "var(--mut)" }}>{angajat.pin ? t("Parolă setată") : t("Fără parolă")}</b></div>
       {!eBirou && (
         <div className="fisa-rand"><span className="k">{t("Total pontat")}</span><b className="mono">{totalOre}h · {bani(totalCost)}</b></div>
       )}
